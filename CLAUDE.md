@@ -4,56 +4,117 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the Health Data Bank (HDB) mobile application project, built with React Native for iOS and Android platforms (latest OS versions only). The project is currently in early planning stages with documentation-only content.
+This is the Health Data Bank (HDB) mobile application project, built with React Native for iOS and Android platforms. The project includes a fully functional React Native app in the `HDBApp/` directory with TypeScript, navigation, authentication, and health data management features.
 
-## Project Structure
+## Development Commands
 
-The project contains planning documentation in the `doc/` directory:
-- `アプリケーション実装方式.md` - Technical implementation approach
-- `進捗管理表.md` - Progress management and task tracking
-- `全体作業計画.tsv` - Overall work plan with phases and deliverables
-- `開発対象機能一覧.tsv` - Detailed feature list and requirements
+### Setup
+```bash
+cd HDBApp
+npm install
+cd ios && pod install && cd ..  # iOS only
+```
 
-## Development Status
+### Development
+```bash
+cd HDBApp
+npm start                    # Start Metro bundler
+npm run ios                  # Run on iOS simulator
+npm run android             # Run on Android emulator
+```
 
-This is a greenfield project in the planning phase. No React Native code has been implemented yet. The project documentation indicates:
-- Framework: React Native
-- Platforms: iOS and Android (latest OS only)
-- Development approach: Prototyping phases planned
-- Current status: Language/framework selection completed, environment setup pending
+### Testing and Code Quality
+```bash
+cd HDBApp
+npm test                    # Run Jest tests
+npm run lint               # Run ESLint
+```
 
-## Key Features to Implement
+### Building
+```bash
+cd HDBApp
+# iOS build via Xcode
+npx react-native run-ios --configuration Release
 
-Based on project documentation, the app will include:
-- User authentication (ID/password)
-- Health data integration (HealthKit for iOS, Google Fit/Health Connect for Android)
-- Vital data management (steps, temperature, weight, body fat, blood pressure, pulse)
-- Dashboard and data visualization
-- Push notifications
-- Data backup/restore functionality
-- User profile management
-- WebView integration for external services
+# Android build
+npx react-native run-android --variant=release
+```
 
-## Development Phases
+## Code Architecture
 
-1. **Environment Setup** (20% complete)
-   - Framework selection completed
-   - Environment setup documentation, project creation, Git repo setup pending
+### Core Structure
+- `App.tsx` - Main app entry point with error boundary and navigation setup
+- `src/navigation/AppNavigator.tsx` - Navigation structure with Stack and Drawer navigators
+- `src/screens/` - Screen components (Home, Login, Splash, WebView)
+- `src/components/` - Reusable UI components (Button, Card, Input)
+- `src/hooks/` - Custom React hooks (useAuth for authentication)
+- `src/types/` - TypeScript type definitions for the entire app
+- `src/utils/` - Utility functions and error handling
 
-2. **Prototype Phase 1** (0% complete)
-   - Initial React Native project setup
-   - Basic authentication and navigation
-   - Core UI components
+### Navigation Architecture
+- **Stack Navigator**: Main navigation flow (Splash → Login → Main)
+- **Drawer Navigator**: Main app navigation (Home, Profile, Settings, Notifications)  
+- **Type Safety**: Strongly typed navigation with `RootStackParamList` and `MainDrawerParamList`
 
-3. **Prototype Phase 2** (0% complete)
-   - Health platform integrations
-   - Full feature implementation
-   - Testing and optimization
+### Authentication Flow
+- `useAuth` hook manages authentication state
+- Mock authentication system (ready for real API integration)
+- Persistent state management planned with AsyncStorage
 
-## Notes for Development
+### Health Data Management
+- Type definitions for vital data (steps, weight, temperature, blood pressure, heart rate)
+- Support for multiple data sources (manual, HealthKit, Google Fit)
+- Structured data models in `src/types/index.ts`
 
-- This project requires health platform integrations (HealthKit/Google Fit)
-- WebView components needed for existing HDB system integration
-- Data migration functionality required for user transfers
-- Platform-specific implementations needed for iOS vs Android health data access
-- No existing codebase - all implementation will be from scratch
+### Platform Integration
+- iOS: HealthKit integration planned
+- Android: Google Fit/Health Connect integration planned
+- WebView component for external HDB system integration
+
+## Key Features Implemented
+
+### User Interface
+- Dashboard with health data cards
+- Drawer navigation with Japanese labels
+- Responsive design with proper styling
+- Error boundary for crash protection
+
+### Authentication System
+- Login screen with form validation
+- User state management with hooks
+- Token-based authentication structure
+
+### Health Data Display
+- Mock health data display (steps, weight, temperature, blood pressure)
+- Card-based dashboard layout
+- Notifications and quick actions
+
+### Navigation
+- Multi-level navigation (Stack + Drawer)
+- WebView integration for external content
+- Proper TypeScript typing for navigation props
+
+## Development Notes
+
+### Environment Requirements
+- Node.js 18+
+- React Native 0.80.0
+- TypeScript 5.0.4
+- Xcode (iOS development)
+- Android Studio (Android development)
+
+### Testing
+- Jest configuration for React Native
+- Test files in `__tests__/` directory
+- React Test Renderer for component testing
+
+### Code Style
+- ESLint with React Native config
+- Prettier for code formatting
+- TypeScript strict mode enabled
+
+### Health Platform Integration
+- HealthKit integration pending (iOS)
+- Google Fit/Health Connect integration pending (Android)
+- WebView for existing HDB system integration
+- Data synchronization architecture planned
