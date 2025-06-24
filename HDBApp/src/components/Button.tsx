@@ -55,6 +55,7 @@ export default function Button({
         <ActivityIndicator
           size="small"
           color={variant === 'primary' ? '#ffffff' : '#007AFF'}
+          testID="activity-indicator"
         />
       ) : (
         <Text style={buttonTextStyle}>{title}</Text>
