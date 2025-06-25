@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
+import {useAuth} from '../hooks/useAuth';
 
 type LoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -25,7 +26,7 @@ interface Props {
 export default function LoginScreen({navigation}: Props) {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const {login, isLoading} = useAuth();
 
   const validateInput = () => {
     if (!userId.trim()) {
@@ -42,17 +43,19 @@ export default function LoginScreen({navigation}: Props) {
   const handleLogin = async () => {
     if (!validateInput()) return;
 
-    setIsLoading(true);
     try {
-      // TODO: 実際の認証API呼び出し
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const success = await login({
+        username: userId,
+        password: password,
+      });
       
-      // TODO: 認証結果によってメイン画面に遷移
-      navigation.replace('Main');
+      if (success) {
+        navigation.replace('Main');
+      } else {
+        Alert.alert('エラー', 'ログインに失敗しました');
+      }
     } catch (error) {
       Alert.alert('エラー', 'ログインに失敗しました');
-    } finally {
-      setIsLoading(false);
     }
   };
 
