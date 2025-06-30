@@ -46,10 +46,10 @@ export default function HomeScreen({navigation}: Props) {
   };
 
   const handleWebViewDemo = () => {
-    // TODO: 実際のHDBサイトURLに変更
+    // Yahooを表示するように修正
     navigation.navigate('WebView', {
-      url: 'https://www.example.com',
-      title: 'HDB Web',
+      url: 'https://yahoo.co.jp',
+      title: 'Yahoo! JAPAN',
     });
   };
 
@@ -101,7 +101,7 @@ export default function HomeScreen({navigation}: Props) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>クイックアクション</Text>
         <TouchableOpacity style={styles.actionButton} onPress={handleWebViewDemo}>
-          <Text style={styles.actionButtonText}>HDB Web を開く</Text>
+          <Text style={styles.actionButtonText}>Yahoo! を開く</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
