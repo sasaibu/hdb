@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  FlatList,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import {DrawerNavigationProp} from '@react-navigation/drawer';
 import {CompositeNavigationProp} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
-import {MainDrawerParamList, RootStackParamList} from '../navigation/AppNavigator';
+import {
+  MainDrawerParamList,
+  RootStackParamList,
+} from '../navigation/AppNavigator';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<MainDrawerParamList, 'Home'>,
@@ -28,6 +34,13 @@ interface DashboardCardProps {
   onPress: () => void;
 }
 
+interface RankingData {
+  rank: number;
+  name: string;
+  avatar: string;
+  steps: number;
+}
+
 function DashboardCard({title, value, unit, onPress}: DashboardCardProps) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -41,6 +54,55 @@ function DashboardCard({title, value, unit, onPress}: DashboardCardProps) {
 }
 
 export default function HomeScreen({navigation}: Props) {
+  const [rankingData, setRankingData] = useState<RankingData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRankingData = () => {
+      // --- API呼び出しシミュレーション ---
+      setLoading(true);
+      setTimeout(() => {
+        const dummyData: RankingData[] = [
+          {
+            rank: 1,
+            name: '田中 太郎',
+            avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
+            steps: 12345,
+          },
+          {
+            rank: 2,
+            name: '鈴木 花子',
+            avatar: 'https://randomuser.me/api/portraits/women/2.jpg',
+            steps: 11987,
+          },
+          {
+            rank: 3,
+            name: '佐藤 次郎',
+            avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
+            steps: 10567,
+          },
+          {
+            rank: 4,
+            name: '伊藤 三郎',
+            avatar: 'https://randomuser.me/api/portraits/men/4.jpg',
+            steps: 9876,
+          },
+          {
+            rank: 5,
+            name: '渡辺 久美子',
+            avatar: 'https://randomuser.me/api/portraits/women/5.jpg',
+            steps: 8765,
+          },
+        ];
+        setRankingData(dummyData);
+        setLoading(false);
+      }, 2000);
+      // --- ここまで ---
+    };
+
+    fetchRankingData();
+  }, []);
+
   const handleCardPress = (type: string) => {
     Alert.alert('情報', `${type}の詳細画面に遷移します`);
   };
@@ -53,11 +115,24 @@ export default function HomeScreen({navigation}: Props) {
     });
   };
 
+  const renderRankingItem = ({item}: {item: RankingData}) => (
+    <View style={styles.rankingItemContainer}>
+      <Text style={styles.rankingRank}>{item.rank}</Text>
+      <Image source={{uri: item.avatar}} style={styles.rankingAvatar} />
+      <View style={styles.rankingUserInfo}>
+        <Text style={styles.rankingName}>{item.name}</Text>
+      </View>
+      <Text style={styles.rankingSteps}>{item.steps.toLocaleString()} 歩</Text>
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.welcomeText}>おかえりなさい</Text>
-        <Text style={styles.dateText}>{new Date().toLocaleDateString('ja-JP')}</Text>
+        <Text style={styles.dateText}>
+          {new Date().toLocaleDateString('ja-JP')}
+        </Text>
       </View>
 
       <View style={styles.dashboardGrid}>
@@ -88,6 +163,22 @@ export default function HomeScreen({navigation}: Props) {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>歩数ランキング</Text>
+        <View style={styles.rankingContainer}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#007AFF" />
+          ) : (
+            <FlatList
+              data={rankingData}
+              renderItem={renderRankingItem}
+              keyExtractor={item => item.rank.toString()}
+              scrollEnabled={false}
+            />
+          )}
+        </View>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>お知らせ</Text>
         <View style={styles.notificationCard}>
           <Text style={styles.notificationTitle}>システムメンテナンス</Text>
@@ -100,7 +191,9 @@ export default function HomeScreen({navigation}: Props) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>クイックアクション</Text>
-        <TouchableOpacity style={styles.actionButton} onPress={handleWebViewDemo}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={handleWebViewDemo}>
           <Text style={styles.actionButtonText}>Yahoo! を開く</Text>
         </TouchableOpacity>
       </View>
@@ -166,7 +259,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   section: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   sectionTitle: {
     fontSize: 18,
@@ -210,5 +304,49 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  rankingContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  rankingItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  rankingRank: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ff9500',
+    width: 30,
+  },
+  rankingAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginHorizontal: 12,
+  },
+  rankingUserInfo: {
+    flex: 1,
+  },
+  rankingName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  rankingSteps: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
   },
 });
