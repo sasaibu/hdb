@@ -32,6 +32,12 @@ const VitalDataScreen = ({route}: Props) => {
   const {title} = route.params;
   const [filter, setFilter] = useState('今週');
 
+  const targets = {
+    歩数: 10000,
+    体重: 65.0,
+    体温: 36.5,
+  };
+
   // Dummy data based on title
   const getDummyData = (): VitalListItem[] => {
     switch (title) {
@@ -65,6 +71,33 @@ const VitalDataScreen = ({route}: Props) => {
   };
 
   const [data, setData] = useState(getDummyData());
+
+  const getAchievementRate = () => {
+    if (!data.length || !(title in targets)) {
+      return null;
+    }
+    const latestValueStr = data[0].value;
+    const latestValue = parseFloat(latestValueStr.replace(/[^0-9.]/g, ''));
+    const targetValue = targets[title as keyof typeof targets];
+
+    if (isNaN(latestValue) || !targetValue) {
+      return null;
+    }
+
+    // 体重の場合は目標値に近いほど達成率が高くなるように計算
+    if (title === '体重') {
+      const initialDiff = Math.abs(
+        parseFloat(getDummyData()[getDummyData().length - 1].value.replace(/[^0-9.]/g, '')) - targetValue
+      );
+      if (initialDiff === 0) return 100;
+      const currentDiff = Math.abs(latestValue - targetValue);
+      return Math.max(0, (1 - currentDiff / initialDiff) * 100);
+    }
+
+    return (latestValue / targetValue) * 100;
+  };
+
+  const achievementRate = getAchievementRate();
 
   const handleDelete = (id: string) => {
     Alert.alert('削除', 'この項目を削除しますか？', [
@@ -104,6 +137,25 @@ const VitalDataScreen = ({route}: Props) => {
     <View style={styles.container}>
       <Text style={styles.title}>{title} 一覧</Text>
 
+      {achievementRate !== null && (
+        <View style={styles.achievementContainer}>
+          <View style={styles.progressLabelContainer}>
+            <Text style={styles.achievementTitle}>目標達成率</Text>
+            <Text style={styles.achievementRate}>
+              {achievementRate.toFixed(1)} %
+            </Text>
+          </View>
+          <View style={styles.progressBarBackground}>
+            <View
+              style={[
+                styles.progressBarFill,
+                {width: `${Math.min(achievementRate, 100)}%`},
+              ]}
+            />
+          </View>
+        </View>
+      )}
+
       <View style={styles.filterContainer}>
         {['今週', '今月', '全期間'].map(f => (
           <TouchableOpacity
@@ -141,6 +193,38 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  achievementContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 20,
+  },
+  progressLabelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  achievementTitle: {
+    fontSize: 16,
+    color: '#666',
+  },
+  achievementRate: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  progressBarBackground: {
+    height: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 5,
   },
   filterContainer: {
     flexDirection: 'row',
