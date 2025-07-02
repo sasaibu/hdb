@@ -104,7 +104,7 @@ export default function HomeScreen({navigation}: Props) {
   }, []);
 
   const handleCardPress = (type: string) => {
-    Alert.alert('情報', `${type}の詳細画面に遷移します`);
+    navigation.navigate('VitalData', {title: type});
   };
 
   const handleWebViewDemo = () => {

@@ -7,12 +7,14 @@ import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import WebViewScreen from '../screens/WebViewScreen';
+import VitalDataScreen from '../screens/VitalDataScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
   Main: undefined;
   WebView: {url: string; title?: string};
+  VitalData: {title: string};
 };
 
 export type MainDrawerParamList = {
@@ -72,6 +74,14 @@ export default function AppNavigator() {
           name="WebView"
           component={WebViewScreen}
           options={{headerShown: true}}
+        />
+        <Stack.Screen
+          name="VitalData"
+          component={VitalDataScreen}
+          options={({route}) => ({
+            title: `${route.params.title} 一覧`,
+            headerShown: true,
+          })}
         />
       </Stack.Navigator>
     </NavigationContainer>
