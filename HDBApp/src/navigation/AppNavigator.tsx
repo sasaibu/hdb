@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import WebViewScreen from '../screens/WebViewScreen';
 import VitalDataScreen from '../screens/VitalDataScreen';
+import MyPageScreen from '../screens/MyPageScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -22,6 +23,7 @@ export type MainDrawerParamList = {
   Profile: undefined;
   Settings: undefined;
   Notifications: undefined;
+  MyPage: undefined; // 追加
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -44,7 +46,7 @@ function MainDrawer() {
       />
       <Drawer.Screen
         name="Profile"
-        component={HomeScreen}
+        component={MyPageScreen}
         options={{title: 'マイページ'}}
       />
       <Drawer.Screen
