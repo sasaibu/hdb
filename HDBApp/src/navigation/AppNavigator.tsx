@@ -9,6 +9,7 @@ import HomeScreen from '../screens/HomeScreen';
 import WebViewScreen from '../screens/WebViewScreen';
 import VitalDataScreen from '../screens/VitalDataScreen';
 import MyPageScreen from '../screens/MyPageScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -56,7 +57,7 @@ function MainDrawer() {
       />
       <Drawer.Screen
         name="Notifications"
-        component={HomeScreen}
+        component={NotificationSettingsScreen}
         options={{title: '通知設定'}}
       />
     </Drawer.Navigator>
