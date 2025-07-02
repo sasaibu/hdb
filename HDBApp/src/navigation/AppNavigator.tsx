@@ -10,6 +10,7 @@ import WebViewScreen from '../screens/WebViewScreen';
 import VitalDataScreen from '../screens/VitalDataScreen';
 import MyPageScreen from '../screens/MyPageScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
+import BackupScreen from '../screens/BackupScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -25,6 +26,7 @@ export type MainDrawerParamList = {
   Settings: undefined;
   Notifications: undefined;
   MyPage: undefined; // 追加
+  Backup: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -59,6 +61,11 @@ function MainDrawer() {
         name="Notifications"
         component={NotificationSettingsScreen}
         options={{title: '通知設定'}}
+      />
+      <Drawer.Screen
+        name="Backup"
+        component={BackupScreen}
+        options={{title: 'DBバックアップ'}}
       />
     </Drawer.Navigator>
   );
