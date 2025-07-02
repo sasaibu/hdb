@@ -10,6 +10,7 @@ import {
 import {RouteProp} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
+import VitalInputDialog from '../components/VitalInputDialog';
 
 type VitalDataScreenRouteProp = RouteProp<RootStackParamList, 'VitalData'>;
 type VitalDataScreenNavigationProp = StackNavigationProp<
@@ -31,6 +32,8 @@ interface VitalListItem {
 const VitalDataScreen = ({route}: Props) => {
   const {title} = route.params;
   const [filter, setFilter] = useState('今週');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<VitalListItem | null>(null);
 
   const targets = {
     歩数: 10000,
@@ -113,24 +116,69 @@ const VitalDataScreen = ({route}: Props) => {
   };
 
   const handleEdit = (item: VitalListItem) => {
-    Alert.alert('編集', `「${item.value}」を編集します。`);
+    setSelectedItem(item);
+    setModalVisible(true);
+  };
+
+  const handleSave = (newValue: string) => {
+    if (!selectedItem) return;
+
+    // 歩数のバリデーションチェック
+    if (title === '歩数') {
+      const originalValue = parseInt(
+        selectedItem.value.replace(/[^0-9.]/g, ''),
+        10,
+      );
+      const updatedValue = parseInt(newValue.replace(/[^0-9.]/g, ''), 10);
+      if (isNaN(updatedValue) || updatedValue <= originalValue) {
+        Alert.alert(
+          'エラー',
+          '歩数は現在の値より大きい半角数字で入力してください。',
+        );
+        return;
+      }
+    }
+
+    setData(prevData =>
+      prevData.map(d =>
+        d.id === selectedItem.id
+          ? {...d, value: `${newValue} ${getUnit(title)}`.trim()}
+          : d,
+      ),
+    );
+    setModalVisible(false);
+    setSelectedItem(null);
+  };
+
+  const getUnit = (vitalTitle: string) => {
+    switch (vitalTitle) {
+      case '歩数':
+        return '歩';
+      case '体重':
+        return 'kg';
+      case '体温':
+        return '℃';
+      case '血圧':
+        return 'mmHg';
+      default:
+        return '';
+    }
   };
 
   const renderItem = ({item}: {item: VitalListItem}) => (
-    <View style={styles.listItem}>
-      <View>
-        <Text style={styles.itemDate}>{item.date}</Text>
-        <Text style={styles.itemValue}>{item.value}</Text>
+    <TouchableOpacity onPress={() => handleEdit(item)}>
+      <View style={styles.listItem}>
+        <View>
+          <Text style={styles.itemDate}>{item.date}</Text>
+          <Text style={styles.itemValue}>{item.value}</Text>
+        </View>
+        <View style={styles.itemActions}>
+          <TouchableOpacity onPress={() => handleDelete(item.id)}>
+            <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.itemActions}>
-        <TouchableOpacity onPress={() => handleEdit(item)}>
-          <Text style={styles.actionText}>編集</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDelete(item.id)}>
-          <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -179,6 +227,15 @@ const VitalDataScreen = ({route}: Props) => {
         keyExtractor={item => item.id}
         ListEmptyComponent={<Text>データがありません。</Text>}
       />
+      {selectedItem && (
+        <VitalInputDialog
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSave={handleSave}
+          title={title}
+          initialValue={selectedItem.value.replace(/[^0-9.]/g, '')}
+        />
+      )}
     </View>
   );
 };
