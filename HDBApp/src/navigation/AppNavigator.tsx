@@ -13,6 +13,7 @@ import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import BackupScreen from '../screens/BackupScreen';
 import RestoreScreen from '../screens/RestoreScreen';
 import DataMigrationScreen from '../screens/DataMigrationScreen';
+import DataMigrationLoginScreen from '../screens/DataMigrationLoginScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -20,6 +21,8 @@ export type RootStackParamList = {
   Main: undefined;
   WebView: {url: string; title?: string};
   VitalData: {title: string};
+  DataMigrationLogin: undefined; // 追加
+  DataMigration: undefined; // 追加
 };
 
 export type MainDrawerParamList = {
@@ -30,7 +33,8 @@ export type MainDrawerParamList = {
   MyPage: undefined; // 追加
   Backup: undefined;
   Restore: undefined;
-  DataMigration: undefined;
+  DataMigrationLogin: undefined; // 追加
+  // DataMigration: undefined; // 削除
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -77,8 +81,8 @@ function MainDrawer() {
         options={{title: 'DBリストア'}}
       />
       <Drawer.Screen
-        name="DataMigration"
-        component={DataMigrationScreen}
+        name="DataMigrationLogin" // データ移行ログイン画面へ変更
+        component={DataMigrationLoginScreen}
         options={{title: 'データ移行'}}
       />
     </Drawer.Navigator>
@@ -106,6 +110,16 @@ export default function AppNavigator() {
             title: `${route.params.title} 一覧`,
             headerShown: true,
           })}
+        />
+        <Stack.Screen
+          name="DataMigrationLogin" // 追加
+          component={DataMigrationLoginScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="DataMigration" // 追加
+          component={DataMigrationScreen}
+          options={{headerShown: true, title: 'データ移行'}}
         />
       </Stack.Navigator>
     </NavigationContainer>
