@@ -11,6 +11,7 @@ import VitalDataScreen from '../screens/VitalDataScreen';
 import MyPageScreen from '../screens/MyPageScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import BackupScreen from '../screens/BackupScreen';
+import RestoreScreen from '../screens/RestoreScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -27,6 +28,7 @@ export type MainDrawerParamList = {
   Notifications: undefined;
   MyPage: undefined; // 追加
   Backup: undefined;
+  Restore: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -66,6 +68,11 @@ function MainDrawer() {
         name="Backup"
         component={BackupScreen}
         options={{title: 'DBバックアップ'}}
+      />
+      <Drawer.Screen
+        name="Restore"
+        component={RestoreScreen}
+        options={{title: 'DBリストア'}}
       />
     </Drawer.Navigator>
   );
