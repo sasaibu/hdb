@@ -12,6 +12,7 @@ import MyPageScreen from '../screens/MyPageScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import BackupScreen from '../screens/BackupScreen';
 import RestoreScreen from '../screens/RestoreScreen';
+import DataMigrationScreen from '../screens/DataMigrationScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -29,6 +30,7 @@ export type MainDrawerParamList = {
   MyPage: undefined; // 追加
   Backup: undefined;
   Restore: undefined;
+  DataMigration: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -73,6 +75,11 @@ function MainDrawer() {
         name="Restore"
         component={RestoreScreen}
         options={{title: 'DBリストア'}}
+      />
+      <Drawer.Screen
+        name="DataMigration"
+        component={DataMigrationScreen}
+        options={{title: 'データ移行'}}
       />
     </Drawer.Navigator>
   );
