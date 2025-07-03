@@ -14,6 +14,7 @@ import BackupScreen from '../screens/BackupScreen';
 import RestoreScreen from '../screens/RestoreScreen';
 import DataMigrationScreen from '../screens/DataMigrationScreen';
 import DataMigrationLoginScreen from '../screens/DataMigrationLoginScreen'; // 追加
+import LinkedServicesSettingsScreen from '../screens/LinkedServicesSettingsScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   VitalData: {title: string};
   DataMigrationLogin: undefined; // 追加
   DataMigration: undefined; // 追加
+  LinkedServicesSettings: undefined; // 追加
 };
 
 export type MainDrawerParamList = {
@@ -34,6 +36,7 @@ export type MainDrawerParamList = {
   Backup: undefined;
   Restore: undefined;
   DataMigrationLogin: undefined; // 追加
+  LinkedServicesSettings: undefined; // 追加
   // DataMigration: undefined; // 削除
 };
 
@@ -85,6 +88,11 @@ function MainDrawer() {
         component={DataMigrationLoginScreen}
         options={{title: 'データ移行'}}
       />
+      <Drawer.Screen
+        name="LinkedServicesSettings" // 追加
+        component={LinkedServicesSettingsScreen}
+        options={{title: '連携サービス設定'}}
+      />
     </Drawer.Navigator>
   );
 }
@@ -120,6 +128,11 @@ export default function AppNavigator() {
           name="DataMigration" // 追加
           component={DataMigrationScreen}
           options={{headerShown: true, title: 'データ移行'}}
+        />
+        <Stack.Screen
+          name="LinkedServicesSettings" // 追加
+          component={LinkedServicesSettingsScreen}
+          options={{headerShown: true, title: '連携サービス設定'}}
         />
       </Stack.Navigator>
     </NavigationContainer>
