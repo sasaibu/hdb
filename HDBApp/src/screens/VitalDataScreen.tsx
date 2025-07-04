@@ -165,6 +165,79 @@ const VitalDataScreen = ({route}: Props) => {
     }
   };
 
+  // グラフ用のデータ処理
+  const getChartData = () => {
+    return data.map(item => {
+      const numericValue = parseFloat(item.value.replace(/[^0-9.]/g, ''));
+      return {
+        ...item,
+        numericValue: isNaN(numericValue) ? 0 : numericValue,
+      };
+    }).reverse(); // 古い順に並べ替え
+  };
+
+  const chartData = getChartData();
+  const maxValue = Math.max(...chartData.map(item => item.numericValue));
+
+  // 棒グラフコンポーネント
+  const renderChart = () => {
+    if (chartData.length === 0) return null;
+
+    return (
+      <View style={styles.chartContainer}>
+        <Text style={styles.chartTitle}>📊 推移グラフ</Text>
+        <View style={styles.chartWrapper}>
+          {/* Y軸の目盛り */}
+          <View style={styles.yAxisContainer}>
+            <Text style={styles.yAxisLabel}>{maxValue.toFixed(title === '歩数' ? 0 : 1)}</Text>
+            <Text style={styles.yAxisLabel}>{(maxValue * 0.5).toFixed(title === '歩数' ? 0 : 1)}</Text>
+            <Text style={styles.yAxisLabel}>0</Text>
+          </View>
+          <View style={styles.chartContent}>
+            {/* グリッドライン */}
+            <View style={styles.gridLines}>
+              <View style={styles.gridLine} />
+              <View style={styles.gridLine} />
+              <View style={styles.gridLine} />
+            </View>
+            <View style={styles.chart}>
+              {chartData.map((item, index) => {
+                const barHeight = maxValue > 0 ? (item.numericValue / maxValue) * 140 : 4;
+                const isLatest = index === chartData.length - 1;
+                return (
+                  <View key={item.id} style={styles.barContainer}>
+                    <View style={styles.barWrapper}>
+                      {/* 数値を棒の上に表示 */}
+                      <Text style={[styles.barValueTop, isLatest && styles.barValueTopLatest]}>
+                        {item.numericValue.toFixed(title === '歩数' ? 0 : 1)}
+                      </Text>
+                      <View
+                        style={[
+                          styles.bar,
+                          {
+                            height: Math.max(barHeight, 4),
+                            backgroundColor: isLatest ? '#007AFF' : '#4CAF50',
+                            shadowColor: isLatest ? '#007AFF' : '#4CAF50',
+                          },
+                          isLatest && styles.latestBar,
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.barLabel, isLatest && styles.barLabelLatest]}>
+                      {item.date.slice(5).replace('-', '/')}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+        {/* 単位表示 */}
+        <Text style={styles.unitLabel}>単位: {getUnit(title)}</Text>
+      </View>
+    );
+  };
+
   const renderItem = ({item}: {item: VitalListItem}) => (
     <TouchableOpacity onPress={() => handleEdit(item)}>
       <View style={styles.listItem}>
@@ -220,6 +293,8 @@ const VitalDataScreen = ({route}: Props) => {
           </TouchableOpacity>
         ))}
       </View>
+
+      {renderChart()}
 
       <FlatList
         data={data}
@@ -331,6 +406,128 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: '#ff3b30',
+  },
+  chartContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  chartTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#333',
+  },
+  chartWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  yAxisContainer: {
+    height: 160,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingRight: 8,
+    paddingTop: 10,
+  },
+  yAxisLabel: {
+    fontSize: 10,
+    color: '#999',
+    fontWeight: '500',
+  },
+  chartContent: {
+    flex: 1,
+    position: 'relative',
+  },
+  gridLines: {
+    position: 'absolute',
+    top: 10,
+    left: 0,
+    right: 0,
+    height: 140,
+    justifyContent: 'space-between',
+  },
+  gridLine: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    width: '100%',
+  },
+  chart: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+    width: '100%',
+    height: 180,
+    paddingBottom: 30,
+    paddingTop: 10,
+  },
+  barContainer: {
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 2,
+  },
+  barWrapper: {
+    height: 140,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    width: '100%',
+    position: 'relative',
+  },
+  bar: {
+    width: 28,
+    borderRadius: 6,
+    minHeight: 4,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  latestBar: {
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  barValueTop: {
+    fontSize: 11,
+    color: '#666',
+    fontWeight: '600',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  barValueTopLatest: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  barLabel: {
+    fontSize: 11,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  barLabelLatest: {
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  unitLabel: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 10,
+    fontStyle: 'italic',
   },
 });
 
