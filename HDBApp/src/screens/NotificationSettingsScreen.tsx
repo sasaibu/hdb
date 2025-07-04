@@ -1,5 +1,8 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, Switch, SafeAreaView} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEY = 'notificationSettings';
 
 const NotificationSettingsScreen = () => {
   const [settings, setSettings] = useState({
@@ -9,17 +12,48 @@ const NotificationSettingsScreen = () => {
     stressCheck: false,
   });
 
+  // 設定をAsyncStorageから読み込む
+  const loadSettings = async () => {
+    try {
+      const savedSettings = await AsyncStorage.getItem(STORAGE_KEY);
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(parsedSettings);
+      }
+    } catch (error) {
+      console.error('設定の読み込みに失敗しました:', error);
+    }
+  };
+
+  // 設定をAsyncStorageに保存する
+  const saveSettings = async (newSettings: typeof settings) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+    } catch (error) {
+      console.error('設定の保存に失敗しました:', error);
+    }
+  };
+
+  // コンポーネントマウント時に設定を読み込む
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
   const toggleSwitch = (key: keyof typeof settings) => {
-    setSettings(prev => ({...prev, [key]: !prev[key]}));
+    const newSettings = {...settings, [key]: !settings[key]};
+    setSettings(newSettings);
+    saveSettings(newSettings);
   };
 
   const handleAllSwitch = (value: boolean) => {
-    setSettings({
+    const newSettings = {
       all: value,
       news: value,
       unread: value,
       stressCheck: value,
-    });
+    };
+    setSettings(newSettings);
+    saveSettings(newSettings);
   };
 
   return (
