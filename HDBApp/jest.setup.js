@@ -43,5 +43,23 @@ afterEach(() => {
   console.error = originalError;
 });
 
+// Mock react-native-sqlite-2
+jest.mock('react-native-sqlite-2', () => {
+  return {
+    openDatabase: jest.fn(() => ({
+      transaction: jest.fn((callback) => {
+        const mockTx = {
+          executeSql: jest.fn((sql, params, successCallback) => {
+            if (successCallback) {
+              successCallback(mockTx, { insertId: 1, rows: { length: 0, item: () => ({}) } });
+            }
+          }),
+        };
+        callback(mockTx);
+      }),
+    })),
+  };
+});
+
 // Global test timeout
 jest.setTimeout(10000);
