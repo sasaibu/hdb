@@ -1,34 +1,42 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, Switch, SafeAreaView} from 'react-native';
+import {View, Text, StyleSheet, Switch, SafeAreaView, TouchableOpacity, Alert} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useNavigation} from '@react-navigation/native';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {RootStackParamList} from '../navigation/AppNavigator';
+import NotificationService, {NotificationSettings} from '../services/NotificationService';
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 const STORAGE_KEY = 'notificationSettings';
 
 const NotificationSettingsScreen = () => {
-  const [settings, setSettings] = useState({
-    all: false,
-    news: true,
-    unread: true,
-    stressCheck: false,
+  const navigation = useNavigation<NavigationProp>();
+  const [settings, setSettings] = useState<NotificationSettings>({
+    enabled: false,
+    vitalDataReminder: true,
+    medicationReminder: true,
+    appointmentReminder: true,
+    reminderTime: '09:00',
   });
 
-  // 設定をAsyncStorageから読み込む
+  const notificationService = NotificationService.getInstance();
+
+  // 設定をNotificationServiceから読み込む
   const loadSettings = async () => {
     try {
-      const savedSettings = await AsyncStorage.getItem(STORAGE_KEY);
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
-        setSettings(parsedSettings);
-      }
+      const notificationSettings = await notificationService.getSettings();
+      setSettings(notificationSettings);
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
     }
   };
 
-  // 設定をAsyncStorageに保存する
-  const saveSettings = async (newSettings: typeof settings) => {
+  // 設定をNotificationServiceに保存する
+  const saveSettings = async (newSettings: NotificationSettings) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+      await notificationService.updateSettings(newSettings);
+      setSettings(newSettings);
     } catch (error) {
       console.error('設定の保存に失敗しました:', error);
     }
@@ -39,20 +47,30 @@ const NotificationSettingsScreen = () => {
     loadSettings();
   }, []);
 
-  const toggleSwitch = (key: keyof typeof settings) => {
+  const toggleSwitch = (key: keyof NotificationSettings) => {
     const newSettings = {...settings, [key]: !settings[key]};
-    setSettings(newSettings);
     saveSettings(newSettings);
   };
 
-  const handleAllSwitch = (value: boolean) => {
-    const newSettings = {
-      all: value,
-      news: value,
-      unread: value,
-      stressCheck: value,
-    };
-    setSettings(newSettings);
+  const handlePermissionRequest = async () => {
+    const granted = await notificationService.requestPermission();
+    if (granted) {
+      const newSettings = {...settings, enabled: true};
+      saveSettings(newSettings);
+    }
+  };
+
+  const sendTestNotification = async () => {
+    await notificationService.sendImmediateNotification({
+      id: 'test_' + Date.now(),
+      title: 'テスト通知',
+      body: 'プッシュ通知のテストです',
+      type: 'general',
+    });
+  };
+
+  const handleTimeChange = (time: string) => {
+    const newSettings = {...settings, reminderTime: time};
     saveSettings(newSettings);
   };
 
@@ -67,38 +85,60 @@ const NotificationSettingsScreen = () => {
         </Text>
 
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>プッシュ通知をすべて受け取る</Text>
+          <Text style={styles.settingLabel}>プッシュ通知を有効にする</Text>
           <Switch
             trackColor={{false: '#767577', true: '#81b0ff'}}
-            thumbColor={settings.all ? '#f5dd4b' : '#f4f3f4'}
-            onValueChange={handleAllSwitch}
-            value={settings.all}
+            thumbColor={settings.enabled ? '#f5dd4b' : '#f4f3f4'}
+            onValueChange={settings.enabled ? () => toggleSwitch('enabled') : handlePermissionRequest}
+            value={settings.enabled}
           />
         </View>
 
         <View style={styles.separator} />
 
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>新規お知らせ</Text>
+          <Text style={styles.settingLabel}>バイタルデータ入力リマインダー</Text>
           <Switch
-            onValueChange={() => toggleSwitch('news')}
-            value={settings.news}
+            onValueChange={() => toggleSwitch('vitalDataReminder')}
+            value={settings.vitalDataReminder}
+            disabled={!settings.enabled}
           />
         </View>
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>未閲覧の受信</Text>
+          <Text style={styles.settingLabel}>服薬リマインダー</Text>
           <Switch
-            onValueChange={() => toggleSwitch('unread')}
-            value={settings.unread}
+            onValueChange={() => toggleSwitch('medicationReminder')}
+            value={settings.medicationReminder}
+            disabled={!settings.enabled}
           />
         </View>
         <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>ストレスチェック</Text>
+          <Text style={styles.settingLabel}>予約リマインダー</Text>
           <Switch
-            onValueChange={() => toggleSwitch('stressCheck')}
-            value={settings.stressCheck}
+            onValueChange={() => toggleSwitch('appointmentReminder')}
+            value={settings.appointmentReminder}
+            disabled={!settings.enabled}
           />
         </View>
+
+        <View style={styles.separator} />
+
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>リマインダー時刻: {settings.reminderTime}</Text>
+        </View>
+
+        <View style={styles.separator} />
+
+        <TouchableOpacity style={styles.testButton} onPress={sendTestNotification}>
+          <Text style={styles.testButtonText}>テスト通知を送信</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.historyButton} 
+          onPress={() => navigation.navigate('NotificationHistory')}
+        >
+          <Text style={styles.historyButtonText}>通知履歴を見る</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -143,6 +183,32 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#e0e0e0',
     marginVertical: 10,
+  },
+  testButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  testButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  historyButton: {
+    backgroundColor: '#34C759',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  historyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
