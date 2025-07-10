@@ -15,6 +15,7 @@ import RestoreScreen from '../screens/RestoreScreen';
 import DataMigrationScreen from '../screens/DataMigrationScreen';
 import DataMigrationLoginScreen from '../screens/DataMigrationLoginScreen'; // 追加
 import LinkedServicesSettingsScreen from '../screens/LinkedServicesSettingsScreen'; // 追加
+import NotificationHistoryScreen from '../screens/NotificationHistoryScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -25,6 +26,7 @@ export type RootStackParamList = {
   DataMigrationLogin: undefined; // 追加
   DataMigration: undefined; // 追加
   LinkedServicesSettings: undefined; // 追加
+  NotificationHistory: undefined; // 追加
 };
 
 export type MainDrawerParamList = {
@@ -133,6 +135,11 @@ export default function AppNavigator() {
           name="LinkedServicesSettings" // 追加
           component={LinkedServicesSettingsScreen}
           options={{headerShown: true, title: '連携サービス設定'}}
+        />
+        <Stack.Screen
+          name="NotificationHistory" // 追加
+          component={NotificationHistoryScreen}
+          options={{headerShown: true, title: '通知履歴'}}
         />
       </Stack.Navigator>
     </NavigationContainer>

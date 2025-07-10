@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {RouteProp} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import VitalInputDialog from '../components/VitalInputDialog';
+import {VitalDataService} from '../services/VitalDataService';
+import {VitalDataRecord} from '../services/DatabaseService';
 
 type VitalDataScreenRouteProp = RouteProp<RootStackParamList, 'VitalData'>;
 type VitalDataScreenNavigationProp = StackNavigationProp<
@@ -34,81 +36,74 @@ const VitalDataScreen = ({route}: Props) => {
   const [filter, setFilter] = useState('今週');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<VitalListItem | null>(null);
+  const [data, setData] = useState<VitalListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [achievementRate, setAchievementRate] = useState<number | null>(null);
+  const [vitalDataService] = useState(() => new VitalDataService());
 
-  const targets = {
-    歩数: 10000,
-    体重: 65.0,
-    体温: 36.5,
-  };
-
-  // Dummy data based on title
-  const getDummyData = (): VitalListItem[] => {
-    switch (title) {
-      case '歩数':
-        return [
-          {id: '1', date: '2025-07-02', value: '8,456 歩'},
-          {id: '2', date: '2025-07-01', value: '7,890 歩'},
-          {id: '3', date: '2025-06-30', value: '9,123 歩'},
-        ];
-      case '体重':
-        return [
-          {id: '1', date: '2025-07-02', value: '65.2 kg'},
-          {id: '2', date: '2025-07-01', value: '65.5 kg'},
-          {id: '3', date: '2025-06-30', value: '65.4 kg'},
-        ];
-      case '体温':
-        return [
-          {id: '1', date: '2025-07-02', value: '36.5 ℃'},
-          {id: '2', date: '2025-07-01', value: '36.6 ℃'},
-          {id: '3', date: '2025-06-30', value: '36.4 ℃'},
-        ];
-      case '血圧':
-        return [
-          {id: '1', date: '2025-07-02', value: '120/80 mmHg'},
-          {id: '2', date: '2025-07-01', value: '122/81 mmHg'},
-          {id: '3', date: '2025-06-30', value: '118/79 mmHg'},
-        ];
-      default:
-        return [];
+  // データベースからデータを読み込む
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // サービス初期化（初回のみ）
+      await vitalDataService.initializeService();
+      
+      // データが存在しない場合はダミーデータを挿入
+      const existingData = await vitalDataService.getVitalDataByType(title);
+      if (existingData.length === 0) {
+        await vitalDataService.insertDummyData();
+      }
+      
+      // フィルタに応じてデータを取得
+      let period: 'today' | 'week' | 'month' | 'all' = 'all';
+      switch (filter) {
+        case '今週':
+          period = 'week';
+          break;
+        case '今月':
+          period = 'month';
+          break;
+        case '全期間':
+          period = 'all';
+          break;
+      }
+      
+      const vitalData = await vitalDataService.getVitalDataByPeriod(title, period);
+      const formattedData = vitalDataService.convertToLegacyFormat(vitalData);
+      setData(formattedData);
+      
+      // 達成率を計算
+      const rate = await vitalDataService.calculateAchievementRate(title);
+      setAchievementRate(rate);
+      
+    } catch (error) {
+      console.error('Error loading data:', error);
+      Alert.alert('エラー', 'データの読み込みに失敗しました。');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const [data, setData] = useState(getDummyData());
-
-  const getAchievementRate = () => {
-    if (!data.length || !(title in targets)) {
-      return null;
-    }
-    const latestValueStr = data[0].value;
-    const latestValue = parseFloat(latestValueStr.replace(/[^0-9.]/g, ''));
-    const targetValue = targets[title as keyof typeof targets];
-
-    if (isNaN(latestValue) || !targetValue) {
-      return null;
-    }
-
-    // 体重の場合は目標値に近いほど達成率が高くなるように計算
-    if (title === '体重') {
-      const initialDiff = Math.abs(
-        parseFloat(getDummyData()[getDummyData().length - 1].value.replace(/[^0-9.]/g, '')) - targetValue
-      );
-      if (initialDiff === 0) return 100;
-      const currentDiff = Math.abs(latestValue - targetValue);
-      return Math.max(0, (1 - currentDiff / initialDiff) * 100);
-    }
-
-    return (latestValue / targetValue) * 100;
-  };
-
-  const achievementRate = getAchievementRate();
+  // 初回読み込みとフィルタ変更時の処理
+  useEffect(() => {
+    loadData();
+  }, [title, filter]);
 
   const handleDelete = (id: string) => {
     Alert.alert('削除', 'この項目を削除しますか？', [
       {text: 'キャンセル', style: 'cancel'},
       {
         text: '削除',
-        onPress: () => {
-          setData(prevData => prevData.filter(item => item.id !== id));
+        onPress: async () => {
+          try {
+            await vitalDataService.deleteVitalData(parseInt(id));
+            await loadData(); // データを再読み込み
+            Alert.alert('成功', 'データを削除しました。');
+          } catch (error) {
+            console.error('Error deleting data:', error);
+            Alert.alert('エラー', 'データの削除に失敗しました。');
+          }
         },
         style: 'destructive',
       },
@@ -120,34 +115,61 @@ const VitalDataScreen = ({route}: Props) => {
     setModalVisible(true);
   };
 
-  const handleSave = (newValue: string) => {
+  const handleSave = async (newValue: string) => {
     if (!selectedItem) return;
 
-    // 歩数のバリデーションチェック
-    if (title === '歩数') {
-      const originalValue = parseInt(
-        selectedItem.value.replace(/[^0-9.]/g, ''),
-        10,
-      );
-      const updatedValue = parseInt(newValue.replace(/[^0-9.]/g, ''), 10);
-      if (isNaN(updatedValue) || updatedValue <= originalValue) {
-        Alert.alert(
-          'エラー',
-          '歩数は現在の値より大きい半角数字で入力してください。',
-        );
+    try {
+      const numericValue = parseFloat(newValue.replace(/[^0-9.]/g, ''));
+      
+      if (isNaN(numericValue)) {
+        Alert.alert('エラー', '有効な数値を入力してください。');
         return;
       }
-    }
 
-    setData(prevData =>
-      prevData.map(d =>
-        d.id === selectedItem.id
-          ? {...d, value: `${newValue} ${getUnit(title)}`.trim()}
-          : d,
-      ),
-    );
-    setModalVisible(false);
-    setSelectedItem(null);
+      // 歩数のバリデーションチェック
+      if (title === '歩数') {
+        const originalValue = parseInt(
+          selectedItem.value.replace(/[^0-9.]/g, ''),
+          10,
+        );
+        if (numericValue <= originalValue) {
+          Alert.alert(
+            'エラー',
+            '歩数は現在の値より大きい半角数字で入力してください。',
+          );
+          return;
+        }
+      }
+
+      // 血圧の場合の処理
+      let systolic, diastolic;
+      if (title === '血圧') {
+        const parts = newValue.split('/');
+        if (parts.length === 2) {
+          systolic = parseInt(parts[0]);
+          diastolic = parseInt(parts[1]);
+        } else {
+          systolic = numericValue;
+          diastolic = 80; // デフォルト値
+        }
+      }
+
+      await vitalDataService.updateVitalData(
+        parseInt(selectedItem.id),
+        numericValue,
+        systolic,
+        diastolic
+      );
+      
+      await loadData(); // データを再読み込み
+      setModalVisible(false);
+      setSelectedItem(null);
+      Alert.alert('成功', 'データを更新しました。');
+      
+    } catch (error) {
+      console.error('Error updating data:', error);
+      Alert.alert('エラー', 'データの更新に失敗しました。');
+    }
   };
 
   const getUnit = (vitalTitle: string) => {
@@ -254,6 +276,14 @@ const VitalDataScreen = ({route}: Props) => {
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text>データを読み込み中...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title} 一覧</Text>
@@ -300,7 +330,11 @@ const VitalDataScreen = ({route}: Props) => {
         data={data}
         renderItem={renderItem}
         keyExtractor={item => item.id}
-        ListEmptyComponent={<Text>データがありません。</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>データがありません。</Text>
+          </View>
+        }
       />
       {selectedItem && (
         <VitalInputDialog
@@ -528,6 +562,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
     fontStyle: 'italic',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
   },
 });
 
