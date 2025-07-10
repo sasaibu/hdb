@@ -1,0 +1,36 @@
+分類	バッチ名	タスク	概要	対象プラットフォーム	優先度	工数(人月)
+バイタル管理	HealthKit連携バッチ	バッチ	HealthKitから歩数、バイタルデータの取得とサーバ送信	HDBアプリ（iOS）	A	1.5
+バイタル管理	HealthKit連携バッチ	HealthKitデータ取得	HealthKitからバイタルデータ取得処理の実装	HDBアプリ（iOS）	A	
+バイタル管理	HealthKit連携バッチ	データ変換	取得データの変換処理の実装	HDBアプリ（iOS）	A	
+バイタル管理	HealthKit連携バッチ	サーバAPI送信	変換済みデータのサーバ送信処理の実装	HDBアプリ（iOS）	A	
+バイタル管理	歩数センサー連携バッチ（Android）	バッチ	AndroidのSensorManagerもしくはRecording APIから歩数データ取得とサーバ送信	HDBアプリ（Android）	A	1
+バイタル管理	歩数センサー連携バッチ（Android）	センサーデータ取得	SensorManager/Recording APIからデータ取得処理の実装	HDBアプリ（Android）	A	
+バイタル管理	歩数センサー連携バッチ（Android）	データ変換	取得データの変換処理の実装	HDBアプリ（Android）	A	
+バイタル管理	歩数センサー連携バッチ（Android）	サーバAPI送信	変換済みデータのサーバ送信処理の実装	HDBアプリ（Android）	A	
+バイタル管理	Googlefitヘルスコネクト連携バッチ	バッチ	Googlefitヘルスコネクトからバイタルデータの取得、登録、サーバ送信	HDBアプリ（Android）	A	1
+バイタル管理	Googlefitヘルスコネクト連携バッチ	ヘルスコネクトデータ取得	Googlefitヘルスコネクトからデータ取得処理の実装	HDBアプリ（Android）	A	
+バイタル管理	Googlefitヘルスコネクト連携バッチ	データ変換	取得データの変換処理の実装	HDBアプリ（Android）	A	
+バイタル管理	Googlefitヘルスコネクト連携バッチ	サーバAPI送信	変換済みデータのサーバ送信処理の実装	HDBアプリ（Android）	A	
+バイタル管理	Healthデータのアプリ内DB登録バッチ	バッチ	Health Connect/HealthKit/端末内歩数情報からアプリ内DBにバイタルデータ登録	HDBアプリ（iOS、Android）	A	2
+バイタル管理	Healthデータのアプリ内DB登録バッチ	データ取得	各種ヘルスデータソースからの取得処理の実装	HDBアプリ（iOS、Android）	A	
+バイタル管理	Healthデータのアプリ内DB登録バッチ	DB登録処理	アプリ内DBへの登録処理の実装	HDBアプリ（iOS、Android）	A	
+バイタル管理	Healthデータのアプリ内DB登録バッチ	エラーハンドリング	データ取得・登録時のエラーハンドリングの実装	HDBアプリ（iOS、Android）	A	
+バイタル管理	Healthデータのアップロードバッチ	バッチ	アプリ内DBのバイタルデータをバイタルAWSにAPI登録	HDBアプリ（iOS、Android）	A	0
+バイタル管理	Healthデータのアップロードバッチ	DB読み込み	アプリ内DBからのデータ読み込み処理の実装	HDBアプリ（iOS、Android）	A	
+バイタル管理	Healthデータのアップロードバッチ	API送信	バイタルAWSへのAPI送信処理の実装	HDBアプリ（iOS、Android）	A	
+バイタル管理	Healthデータのアップロードバッチ	送信状態管理	データ送信状態管理機能の実装	HDBアプリ（iOS、Android）	A	
+通知	Push通知バッチ	バッチ	ユーザへの通知機能	HDBアプリ（iOS、Android）	A	0.5
+通知	Push通知バッチ	通知トークン管理	Push通知トークン管理機能の実装	HDBアプリ（iOS、Android）	A	
+通知	Push通知バッチ	通知送信処理	Push通知送信処理の実装	HDBアプリ（iOS、Android）	A	
+通知	通知機能拡充バッチ	バッチ	未閲覧の健診、アンケート通知のプッシュ通知	HDBアプリ（iOS、Android）、HDB（スタッフ、個人）	A	1.5
+通知	通知機能拡充バッチ	未読データ検索	未閲覧データの検索処理の実装	HDBアプリ（iOS、Android）、HDB（スタッフ、個人）	A	
+通知	通知機能拡充バッチ	通知作成	通知メッセージ作成処理の実装	HDBアプリ（iOS、Android）、HDB（スタッフ、個人）	A	
+通知	通知機能拡充バッチ	プッシュ送信	プッシュ通知送信処理の実装	HDBアプリ（iOS、Android）、HDB（スタッフ、個人）	A	
+全般	初期化処理バッチ	バッチ	Firebase Remote Config取得、デバイス情報登録・更新	HDBアプリ（iOS、Android）	A	0.5
+全般	初期化処理バッチ	Firebase設定取得	Firebase Remote Config取得処理の実装	HDBアプリ（iOS、Android）	A	
+全般	初期化処理バッチ	デバイス情報収集	デバイス情報収集処理の実装	HDBアプリ（iOS、Android）	A	
+全般	初期化処理バッチ	サーバ登録	デバイス情報のサーバ登録処理の実装	HDBアプリ（iOS、Android）	A	
+全般	アプリ内データバックアップバッチ	バッチ	Google One、iCloudへのアプリ内データバックアップ	HDBアプリ（iOS、Android）	A	1
+全般	アプリ内データバックアップバッチ	データ収集	バックアップ対象データの収集処理の実装	HDBアプリ（iOS、Android）	A	
+全般	アプリ内データバックアップバッチ	暗号化	データ暗号化処理の実装	HDBアプリ（iOS、Android）	A	
+全般	アプリ内データバックアップバッチ	クラウドアップロード	Google One/iCloudへのアップロード処理の実装	HDBアプリ（iOS、Android）	A	
