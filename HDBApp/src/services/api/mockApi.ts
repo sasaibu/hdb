@@ -45,8 +45,12 @@ export class MockApiService {
   async login(username: string, password: string): Promise<ApiResponse<any>> {
     await delay(1000);
 
+    console.log('MockAPI login - username:', username);
+    console.log('MockAPI login - available users:', Object.keys(mockUsers));
+
     const user = mockUsers[username];
     if (!user || password.length < 4) {
+      console.log('MockAPI login - Login failed. User exists:', !!user, 'Password length:', password.length);
       return {
         success: false,
         error: 'Invalid credentials',
@@ -54,6 +58,7 @@ export class MockApiService {
       };
     }
 
+    console.log('MockAPI login - Saving user:', user);
     await AsyncStorage.setItem(TOKEN_KEY, MOCK_TOKEN);
     await AsyncStorage.setItem('current_user', JSON.stringify(user));
 
@@ -77,7 +82,11 @@ export class MockApiService {
     const token = await AsyncStorage.getItem(TOKEN_KEY);
     const userStr = await AsyncStorage.getItem('current_user');
 
+    console.log('MockAPI verifyToken - token:', token);
+    console.log('MockAPI verifyToken - userStr:', userStr);
+
     if (!token || !userStr) {
+      console.log('MockAPI verifyToken - Missing token or user');
       return {
         success: false,
         error: 'Unauthorized',
@@ -99,16 +108,22 @@ export class MockApiService {
     await delay(500);
     const userStr = await AsyncStorage.getItem('current_user');
     
+    console.log('MockAPI getProfile - userStr:', userStr);
+    
     if (!userStr) {
+      console.log('MockAPI getProfile - No user found in AsyncStorage');
       return {
         success: false,
         error: 'Unauthorized',
       };
     }
 
+    const userData = JSON.parse(userStr);
+    console.log('MockAPI getProfile - userData:', userData);
+
     return {
       success: true,
-      data: JSON.parse(userStr),
+      data: userData,
     };
   }
 
