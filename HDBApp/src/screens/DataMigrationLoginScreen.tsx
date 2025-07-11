@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
+import {apiClient} from '../services/api/apiClient';
 
 type DataMigrationLoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -44,15 +45,33 @@ export default function DataMigrationLoginScreen({navigation}: Props) {
 
     setIsLoading(true);
     try {
-      // データ移行用の簡易的な認証ロジック
-      // 実際のアプリケーションでは、データ移行専用のAPI認証などが必要になります
-      if (userId === 'migrationUser' && password === 'migrationPass') {
-        Alert.alert('成功', 'データ移行ログインに成功しました');
-        navigation.replace('DataMigration'); // データ移行画面へ遷移
+      const response = await apiClient.migrationAuth(userId, password);
+      
+      if (response.success && response.data) {
+        if (response.data.userData.hasData) {
+          Alert.alert(
+            '成功',
+            `データ移行ログインに成功しました。\n移行可能なデータ: ${response.data.userData.vitalsCount}件`,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  navigation.replace('DataMigration', {
+                    migrationToken: response.data.migrationToken,
+                    sourceSystem: 'legacy-hdb',
+                  });
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert('確認', '移行可能なデータがありません');
+        }
       } else {
-        Alert.alert('エラー', 'ユーザーIDまたはパスワードが異なります');
+        Alert.alert('エラー', response.message || 'ユーザーIDまたはパスワードが異なります');
       }
     } catch (error) {
+      console.error('Migration login error:', error);
       Alert.alert('エラー', 'ログイン中にエラーが発生しました');
     } finally {
       setIsLoading(false);

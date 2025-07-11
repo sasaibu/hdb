@@ -7,21 +7,35 @@ import {
   TouchableOpacity,
   SafeAreaView,
   RefreshControl,
+  Alert,
 } from 'react-native';
-import NotificationService, {NotificationData} from '../services/NotificationService';
+import {apiClient} from '../services/api/apiClient';
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
 
 const NotificationHistoryScreen: React.FC = () => {
-  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-
-  const notificationService = NotificationService.getInstance();
+  const [loading, setLoading] = useState(true);
 
   const loadNotifications = async () => {
     try {
-      const history = await notificationService.getNotificationHistory();
-      setNotifications(history);
+      const response = await apiClient.getNotifications();
+      if (response.success && response.data) {
+        setNotifications(response.data);
+      }
     } catch (error) {
       console.error('通知履歴の読み込みに失敗しました:', error);
+      Alert.alert('エラー', '通知履歴の読み込みに失敗しました');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,13 +45,33 @@ const NotificationHistoryScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const clearHistory = async () => {
+  const markAsRead = async (notificationId: string) => {
     try {
-      await notificationService.clearNotificationHistory();
-      setNotifications([]);
+      await apiClient.markNotificationAsRead(notificationId);
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? {...n, read: true} : n)
+      );
     } catch (error) {
-      console.error('通知履歴のクリアに失敗しました:', error);
+      console.error('既読処理に失敗しました:', error);
     }
+  };
+
+  const clearHistory = async () => {
+    Alert.alert(
+      '確認',
+      'すべての通知履歴を削除しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: () => {
+            // ローカルのみクリア（APIにクリアエンドポイントがないため）
+            setNotifications([]);
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
@@ -46,6 +80,12 @@ const NotificationHistoryScreen: React.FC = () => {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
+      case 'achievement':
+        return '🏆';
+      case 'reminder':
+        return '⏰';
+      case 'system':
+        return '📢';
       case 'vital':
         return '❤️';
       case 'medication':
@@ -53,11 +93,12 @@ const NotificationHistoryScreen: React.FC = () => {
       case 'appointment':
         return '📅';
       default:
-        return '📢';
+        return '🔔';
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleString('ja-JP', {
       month: 'short',
       day: 'numeric',
@@ -81,24 +122,43 @@ const NotificationHistoryScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {notifications.length === 0 ? (
+        {loading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>読み込み中...</Text>
+          </View>
+        ) : notifications.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>通知履歴がありません</Text>
           </View>
         ) : (
           notifications.map((notification) => (
-            <View key={notification.id} style={styles.notificationCard}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.typeIcon}>
-                  {getTypeIcon(notification.type)}
-                </Text>
-                <Text style={styles.title}>{notification.title}</Text>
-                <Text style={styles.time}>
-                  {notification.scheduledTime && formatTime(notification.scheduledTime)}
-                </Text>
+            <TouchableOpacity
+              key={notification.id}
+              onPress={() => !notification.read && markAsRead(notification.id)}
+              activeOpacity={notification.read ? 1 : 0.7}
+            >
+              <View style={[
+                styles.notificationCard,
+                !notification.read && styles.unreadCard
+              ]}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.typeIcon}>
+                    {getTypeIcon(notification.type)}
+                  </Text>
+                  <Text style={[
+                    styles.title,
+                    !notification.read && styles.unreadTitle
+                  ]}>{notification.title}</Text>
+                  <Text style={styles.time}>
+                    {formatTime(notification.createdAt)}
+                  </Text>
+                </View>
+                <Text style={styles.body}>{notification.body}</Text>
+                {!notification.read && (
+                  <View style={styles.unreadIndicator} />
+                )}
               </View>
-              <Text style={styles.body}>{notification.body}</Text>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -187,6 +247,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  unreadCard: {
+    borderColor: '#007AFF',
+    borderWidth: 1,
+  },
+  unreadTitle: {
+    fontWeight: 'bold',
+  },
+  unreadIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#007AFF',
   },
 });
 

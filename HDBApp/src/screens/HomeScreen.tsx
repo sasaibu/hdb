@@ -17,6 +17,7 @@ import {
   MainDrawerParamList,
   RootStackParamList,
 } from '../navigation/AppNavigator';
+import {apiClient} from '../services/api/apiClient';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<MainDrawerParamList, 'Home'>,
@@ -56,51 +57,43 @@ function DashboardCard({title, value, unit, onPress}: DashboardCardProps) {
 export default function HomeScreen({navigation}: Props) {
   const [rankingData, setRankingData] = useState<RankingData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [vitalSummary, setVitalSummary] = useState<any>(null);
 
   useEffect(() => {
-    const fetchRankingData = () => {
-      // --- API呼び出しシミュレーション ---
+    const fetchData = async () => {
       setLoading(true);
-      setTimeout(() => {
-        const dummyData: RankingData[] = [
-          {
-            rank: 1,
-            name: '田中 太郎',
-            avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
-            steps: 12345,
-          },
-          {
-            rank: 2,
-            name: '鈴木 花子',
-            avatar: 'https://randomuser.me/api/portraits/women/2.jpg',
-            steps: 11987,
-          },
-          {
-            rank: 3,
-            name: '佐藤 次郎',
-            avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
-            steps: 10567,
-          },
-          {
-            rank: 4,
-            name: '伊藤 三郎',
-            avatar: 'https://randomuser.me/api/portraits/men/4.jpg',
-            steps: 9876,
-          },
-          {
-            rank: 5,
-            name: '渡辺 久美子',
-            avatar: 'https://randomuser.me/api/portraits/women/5.jpg',
-            steps: 8765,
-          },
-        ];
-        setRankingData(dummyData);
+      try {
+        // ランキングデータとバイタルサマリーを並行で取得
+        const [rankingResponse, summaryResponse] = await Promise.all([
+          apiClient.getRankings('steps'),
+          apiClient.getVitalSummary(),
+        ]);
+
+        // ランキングデータの処理
+        if (rankingResponse.success && rankingResponse.data) {
+          const formattedData: RankingData[] = rankingResponse.data.map((item: any) => ({
+            rank: item.rank,
+            name: item.displayName,
+            avatar: `https://randomuser.me/api/portraits/${
+              item.rank % 2 === 0 ? 'women' : 'men'
+            }/${item.rank}.jpg`,
+            steps: item.steps,
+          }));
+          setRankingData(formattedData);
+        }
+
+        // バイタルサマリーの処理
+        if (summaryResponse.success && summaryResponse.data) {
+          setVitalSummary(summaryResponse.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
         setLoading(false);
-      }, 2000);
-      // --- ここまで ---
+      }
     };
 
-    fetchRankingData();
+    fetchData();
   }, []);
 
   const handleCardPress = (type: string) => {
@@ -138,25 +131,29 @@ export default function HomeScreen({navigation}: Props) {
       <View style={styles.dashboardGrid}>
         <DashboardCard
           title="歩数"
-          value="8,456"
+          value={vitalSummary?.steps?.today?.toLocaleString() || '---'}
           unit="歩"
           onPress={() => handleCardPress('歩数')}
         />
         <DashboardCard
           title="体重"
-          value="65.2"
+          value={vitalSummary?.weight?.latest?.toFixed(1) || '---'}
           unit="kg"
           onPress={() => handleCardPress('体重')}
         />
         <DashboardCard
           title="体温"
-          value="36.5"
+          value={vitalSummary?.temperature?.latest?.toFixed(1) || '---'}
           unit="℃"
           onPress={() => handleCardPress('体温')}
         />
         <DashboardCard
           title="血圧"
-          value="120/80"
+          value={
+            vitalSummary?.bloodPressure?.latestSystolic
+              ? `${vitalSummary.bloodPressure.latestSystolic}/${vitalSummary.bloodPressure.latestDiastolic}`
+              : '---'
+          }
           unit="mmHg"
           onPress={() => handleCardPress('血圧')}
         />

@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
 import {User, LoginRequest} from '../types';
+import {apiClient} from '../services/api/apiClient';
 
 interface AuthState {
   user: User | null;
@@ -15,20 +16,26 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    // TODO: AsyncStorageから認証状態を復元
     checkAuthStatus();
   }, []);
 
   const checkAuthStatus = async () => {
     try {
-      // TODO: トークンの有効性チェック
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiClient.verifyToken();
       
-      setAuthState({
-        user: null,
-        isLoading: false,
-        isAuthenticated: false,
-      });
+      if (response.success && response.data?.user) {
+        setAuthState({
+          user: response.data.user,
+          isLoading: false,
+          isAuthenticated: true,
+        });
+      } else {
+        setAuthState({
+          user: null,
+          isLoading: false,
+          isAuthenticated: false,
+        });
+      }
     } catch (error) {
       setAuthState({
         user: null,
@@ -42,22 +49,23 @@ export function useAuth() {
     try {
       setAuthState(prev => ({...prev, isLoading: true}));
       
-      // TODO: 実際のログインAPI呼び出し
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiClient.login(credentials.username, credentials.password);
       
-      const mockUser: User = {
-        id: '1',
-        username: credentials.username,
-        email: `${credentials.username}@example.com`,
-      };
-
-      setAuthState({
-        user: mockUser,
-        isLoading: false,
-        isAuthenticated: true,
-      });
-      
-      return true;
+      if (response.success && response.data) {
+        setAuthState({
+          user: response.data.user,
+          isLoading: false,
+          isAuthenticated: true,
+        });
+        return true;
+      } else {
+        setAuthState(prev => ({
+          ...prev,
+          isLoading: false,
+          isAuthenticated: false,
+        }));
+        return false;
+      }
     } catch (error) {
       setAuthState(prev => ({
         ...prev,
@@ -70,7 +78,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      // TODO: ログアウトAPI呼び出し、トークン削除
+      await apiClient.logout();
       setAuthState({
         user: null,
         isLoading: false,
@@ -78,6 +86,12 @@ export function useAuth() {
       });
     } catch (error) {
       console.error('Logout error:', error);
+      // エラーがあってもローカルの状態はクリア
+      setAuthState({
+        user: null,
+        isLoading: false,
+        isAuthenticated: false,
+      });
     }
   };
 

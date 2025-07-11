@@ -6,43 +6,70 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import {apiClient} from '../services/api/apiClient';
 
 const BackupScreen = () => {
   const [loading, setLoading] = useState(false);
   const [backupInfo, setBackupInfo] = useState<{
-    password?: string;
-    expiry?: string;
+    backupId?: string;
+    size?: number;
+    createdAt?: string;
   } | null>(null);
 
-  const handleBackup = () => {
-    setLoading(true);
-    setBackupInfo(null);
+  const handleBackup = async () => {
+    Alert.alert(
+      '確認',
+      'バックアップを開始しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '開始',
+          onPress: async () => {
+            setLoading(true);
+            setBackupInfo(null);
 
-    // Simulate a network request or a long-running task
-    setTimeout(() => {
-      const generatePassword = () => {
-        return Math.random().toString(36).slice(-8);
-      };
+            try {
+              const response = await apiClient.createBackup();
+              
+              if (response.success && response.data) {
+                setBackupInfo({
+                  backupId: response.data.backupId,
+                  size: response.data.size,
+                  createdAt: response.data.createdAt,
+                });
+                Alert.alert('成功', response.message || 'バックアップが完了しました');
+              } else {
+                Alert.alert('エラー', 'バックアップに失敗しました');
+              }
+            } catch (error) {
+              console.error('Backup failed:', error);
+              Alert.alert('エラー', 'バックアップ中にエラーが発生しました');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
-      const getExpiryDate = () => {
-        const date = new Date();
-        date.setDate(date.getDate() + 7); // 7 days from now
-        return date.toLocaleDateString('ja-JP', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      };
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return Math.round(bytes / 1024) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
 
-      setBackupInfo({
-        password: generatePassword(),
-        expiry: getExpiryDate(),
-      });
-      setLoading(false);
-    }, 2000); // 2-second delay
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -55,19 +82,31 @@ const BackupScreen = () => {
           <Text style={styles.buttonText}>バックアップの実行</Text>
         </TouchableOpacity>
 
-        {loading && <ActivityIndicator size="large" color="#0000ff" />}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+            <Text style={styles.loadingText}>バックアップ中...</Text>
+          </View>
+        )}
 
         {backupInfo && (
           <View style={styles.infoContainer}>
-            <Text style={styles.infoTitle}>バックアップが完了しました</Text>
+            <Text style={styles.infoTitle}>バックアップ情報</Text>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>パスワード:</Text>
-              <Text style={styles.infoValue}>{backupInfo.password}</Text>
+              <Text style={styles.infoLabel}>バックアップID:</Text>
+              <Text style={styles.infoValue}>{backupInfo.backupId}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>有効期限:</Text>
-              <Text style={styles.infoValue}>{backupInfo.expiry}</Text>
+              <Text style={styles.infoLabel}>サイズ:</Text>
+              <Text style={styles.infoValue}>{formatFileSize(backupInfo.size || 0)}</Text>
             </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>作成日時:</Text>
+              <Text style={styles.infoValue}>{formatDate(backupInfo.createdAt || '')}</Text>
+            </View>
+            <Text style={styles.notice}>
+              ※ このバックアップIDを安全に保管してください
+            </Text>
           </View>
         )}
       </View>
@@ -131,6 +170,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  notice: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

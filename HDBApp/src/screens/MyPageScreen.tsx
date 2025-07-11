@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -7,18 +7,40 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import ProfileEditModal from '../components/ProfileEditModal';
+import {apiClient} from '../services/api/apiClient';
 
 const MyPageScreen = () => {
-  const [user, setUser] = useState({
-    id: 'user_12345',
-    nickname: 'テストユーザー',
-    icon: 'https://via.placeholder.com/150',
-  });
+  const [user, setUser] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSaveProfile = (data: {nickname: string}) => {
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const response = await apiClient.getProfile();
+      if (response.success && response.data) {
+        setUser({
+          id: response.data.id,
+          nickname: response.data.displayName || response.data.username,
+          icon: response.data.avatar || 'https://via.placeholder.com/150',
+          email: response.data.email,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+      Alert.alert('エラー', 'プロフィールの読み込みに失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async (data: {nickname: string}) => {
     // バリデーション
     if (!data.nickname || data.nickname.trim() === '') {
       Alert.alert('エラー', 'ニックネームは空にできません。');
@@ -29,16 +51,48 @@ const MyPageScreen = () => {
       return;
     }
 
-    setUser(prevUser => ({...prevUser, nickname: data.nickname}));
-    setModalVisible(false);
+    try {
+      const response = await apiClient.updateProfile({
+        displayName: data.nickname,
+      });
+      
+      if (response.success && response.data) {
+        setUser(prevUser => ({...prevUser, nickname: data.nickname}));
+        setModalVisible(false);
+        Alert.alert('成功', 'プロフィールを更新しました');
+      } else {
+        Alert.alert('エラー', 'プロフィールの更新に失敗しました');
+      }
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      Alert.alert('エラー', 'プロフィールの更新に失敗しました');
+    }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>読み込み中...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return (
+      <SafeAreaView style={[styles.container, styles.loadingContainer]}>
+        <Text style={styles.errorText}>ユーザー情報を取得できませんでした</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.profileContainer}>
         <Image source={{uri: user.icon}} style={styles.avatar} />
         <Text style={styles.nickname}>{user.nickname}</Text>
-        <Text style={styles.userId}>@{user.id}</Text>
+        <Text style={styles.userId}>ID: {user.id}</Text>
+        {user.email && <Text style={styles.email}>{user.email}</Text>}
         <TouchableOpacity
           style={styles.editButton}
           onPress={() => setModalVisible(true)}>
@@ -99,6 +153,24 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  email: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
   },
 });
 
