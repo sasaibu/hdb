@@ -8,6 +8,7 @@ jest.mock('react-native', () => ({
   AppState: {
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
+    currentState: 'active',
   },
 }));
 
@@ -16,15 +17,25 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(),
 }));
 
+// VitalDataServiceのモック
+const mockInitializeService = jest.fn().mockResolvedValue(undefined);
+const mockUploadToVitalAWS = jest.fn().mockResolvedValue(undefined);
+
 jest.mock('../../src/services/VitalDataService', () => ({
   VitalDataService: jest.fn().mockImplementation(() => ({
-    initializeService: jest.fn().mockResolvedValue(undefined),
-    uploadToVitalAWS: jest.fn().mockResolvedValue(undefined),
+    initializeService: mockInitializeService,
+    uploadToVitalAWS: mockUploadToVitalAWS,
   })),
 }));
 
 // タイマーのモック
 jest.useFakeTimers();
+
+// グローバル関数のモック
+const mockSetInterval = jest.fn();
+const mockClearInterval = jest.fn();
+global.setInterval = mockSetInterval;
+global.clearInterval = mockClearInterval;
 
 describe('SyncService', () => {
   let syncService: SyncService;
@@ -87,12 +98,10 @@ describe('SyncService', () => {
 
   describe('performSync', () => {
     it('should perform sync successfully', async () => {
-      const mockVitalDataService = new VitalDataService();
-      
       await syncService.performSync();
 
-      expect(mockVitalDataService.initializeService).toHaveBeenCalled();
-      expect(mockVitalDataService.uploadToVitalAWS).toHaveBeenCalled();
+      expect(mockInitializeService).toHaveBeenCalled();
+      expect(mockUploadToVitalAWS).toHaveBeenCalled();
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         'last_sync_time',
         expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
@@ -100,10 +109,7 @@ describe('SyncService', () => {
     });
 
     it('should handle sync errors', async () => {
-      const mockVitalDataService = new VitalDataService();
-      (mockVitalDataService.uploadToVitalAWS as jest.Mock).mockRejectedValue(
-        new Error('Network error')
-      );
+      mockUploadToVitalAWS.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(syncService.performSync()).rejects.toThrow('Network error');
     });
@@ -138,23 +144,19 @@ describe('SyncService', () => {
 
   describe('manualSync', () => {
     it('should trigger sync manually', async () => {
-      const mockVitalDataService = new VitalDataService();
-      
       await syncService.manualSync();
 
-      expect(mockVitalDataService.initializeService).toHaveBeenCalled();
-      expect(mockVitalDataService.uploadToVitalAWS).toHaveBeenCalled();
+      expect(mockInitializeService).toHaveBeenCalled();
+      expect(mockUploadToVitalAWS).toHaveBeenCalled();
     });
   });
 
   describe('auto sync interval', () => {
     it('should sync every hour when enabled', async () => {
-      const mockVitalDataService = new VitalDataService();
-      
       await syncService.setAutoSyncEnabled(true);
       
       // 初回同期
-      expect(mockVitalDataService.uploadToVitalAWS).toHaveBeenCalledTimes(1);
+      expect(mockUploadToVitalAWS).toHaveBeenCalledTimes(1);
       
       // 1時間後
       jest.advanceTimersByTime(60 * 60 * 1000);
@@ -163,22 +165,20 @@ describe('SyncService', () => {
       await Promise.resolve();
       
       // 2回目の同期が実行されることを確認
-      expect(mockVitalDataService.uploadToVitalAWS).toHaveBeenCalledTimes(2);
+      expect(mockUploadToVitalAWS).toHaveBeenCalledTimes(2);
     });
 
     it('should not sync when less than 1 hour has passed', async () => {
-      const mockVitalDataService = new VitalDataService();
-      
       await syncService.setAutoSyncEnabled(true);
       
       // 初回同期
-      expect(mockVitalDataService.uploadToVitalAWS).toHaveBeenCalledTimes(1);
+      expect(mockUploadToVitalAWS).toHaveBeenCalledTimes(1);
       
       // 30分後
       jest.advanceTimersByTime(30 * 60 * 1000);
       
       // まだ同期されないことを確認
-      expect(mockVitalDataService.uploadToVitalAWS).toHaveBeenCalledTimes(1);
+      expect(mockUploadToVitalAWS).toHaveBeenCalledTimes(1);
     });
   });
 
