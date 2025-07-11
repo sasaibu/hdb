@@ -40,6 +40,9 @@ interface IApiClient {
   // データ同期
   createBackup(): Promise<any>;
   restoreBackup(backupId: string): Promise<any>;
+  
+  // バイタルデータ一括アップロード
+  uploadVitalsBatch(vitals: any[]): Promise<any>;
 
   // データ移行
   migrationAuth(username: string, password: string): Promise<any>;
@@ -193,6 +196,13 @@ class RealApiClient implements IApiClient {
     return this.request('/api/sync/restore', {
       method: 'POST',
       body: JSON.stringify({ backupId }),
+    });
+  }
+
+  async uploadVitalsBatch(vitals: any[]): Promise<any> {
+    return this.request('/api/vitals/batch', {
+      method: 'POST',
+      body: JSON.stringify({ vitals }),
     });
   }
 

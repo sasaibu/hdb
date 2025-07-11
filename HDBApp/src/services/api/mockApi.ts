@@ -464,6 +464,51 @@ export class MockApiService {
     };
   }
 
+  // バイタルデータ一括アップロード（バイタルAWSへの登録）
+  async uploadVitalsBatch(vitals: any[]): Promise<ApiResponse<any>> {
+    await delay(1500); // バッチ処理をシミュレート
+
+    const userStr = await AsyncStorage.getItem('current_user');
+    if (!userStr) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+      };
+    }
+
+    const user = JSON.parse(userStr);
+    const timestamp = new Date().toISOString();
+    
+    // アップロードされたデータを処理
+    const processedVitals = vitals.map((vital, index) => {
+      const newVital = {
+        id: `vital-${Date.now()}-${index}`,
+        userId: user.id,
+        ...vital,
+        syncedAt: timestamp,
+        syncStatus: 'synced',
+      };
+      
+      // モックデータに追加（実際のAWSでは永続化される）
+      this.vitals.push(newVital);
+      
+      return newVital;
+    });
+
+    console.log(`MockAPI: Uploaded ${vitals.length} vital records to バイタルAWS`);
+
+    return {
+      success: true,
+      data: {
+        uploadedCount: vitals.length,
+        failedCount: 0,
+        syncedAt: timestamp,
+        processedIds: processedVitals.map(v => v.id),
+      },
+      message: `${vitals.length}件のバイタルデータをアップロードしました`,
+    };
+  }
+
   // デモデータ生成（開発用）
   async generateDemoData(type: string): Promise<ApiResponse<any>> {
     await delay(300);

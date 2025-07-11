@@ -1,12 +1,22 @@
 import { VitalDataService } from '../../src/services/VitalDataService';
 import { DatabaseService } from '../../src/services/DatabaseService';
+import { MockHealthPlatformService } from '../../src/services/mockHealthPlatform';
+import { apiClient } from '../../src/services/api/apiClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// DatabaseServiceのモック
+// モック
 jest.mock('../../src/services/DatabaseService');
+jest.mock('../../src/services/mockHealthPlatform');
+jest.mock('../../src/services/api/apiClient');
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+}));
 
 describe('VitalDataService', () => {
   let vitalDataService: VitalDataService;
   let mockDatabaseService: jest.Mocked<DatabaseService>;
+  let mockHealthPlatformService: jest.Mocked<MockHealthPlatformService>;
 
   beforeEach(() => {
     // DatabaseServiceのモックを作成
@@ -15,14 +25,27 @@ describe('VitalDataService', () => {
       initializeDefaultTargets: jest.fn(),
       insertVitalData: jest.fn(),
       getVitalDataByType: jest.fn(),
+      getVitalDataByTypeAndDate: jest.fn(),
       updateVitalData: jest.fn(),
       deleteVitalData: jest.fn(),
-      setTarget: jest.fn(),
+      insertOrUpdateTarget: jest.fn(),
       getTarget: jest.fn(),
+      executeSql: jest.fn(),
+    } as any;
+
+    // MockHealthPlatformServiceのモックを作成
+    mockHealthPlatformService = {
+      initialize: jest.fn(),
+      fetchRecentHealthData: jest.fn(),
+      setHealthKitEnabled: jest.fn(),
+      setGoogleFitEnabled: jest.fn(),
     } as any;
 
     // DatabaseService.getInstanceのモック
     (DatabaseService.getInstance as jest.Mock).mockReturnValue(mockDatabaseService);
+    
+    // MockHealthPlatformService.getInstanceのモック
+    (MockHealthPlatformService.getInstance as jest.Mock).mockReturnValue(mockHealthPlatformService);
 
     vitalDataService = new VitalDataService();
   });
@@ -300,6 +323,197 @@ describe('VitalDataService', () => {
       expect(service.getUnitByType('体温')).toBe('℃');
       expect(service.getUnitByType('血圧')).toBe('mmHg');
       expect(service.getUnitByType('不明')).toBe('');
+    });
+  });
+
+  describe('ヘルスプラットフォーム連携', () => {
+    test('syncHealthPlatformDataが正しくデータを同期する', async () => {
+      const mockHealthData = [
+        {
+          id: 'health-1',
+          type: 'steps',
+          value: 10000,
+          unit: '歩',
+          measuredAt: '2025-07-11T09:00:00Z',
+          source: 'healthkit',
+        },
+        {
+          id: 'health-2',
+          type: 'weight',
+          value: 65.5,
+          unit: 'kg',
+          measuredAt: '2025-07-11T07:00:00Z',
+          source: 'healthkit',
+        },
+      ];
+
+      mockHealthPlatformService.fetchRecentHealthData.mockResolvedValue(mockHealthData);
+      mockDatabaseService.getVitalDataByTypeAndDate.mockResolvedValue([]);
+      mockDatabaseService.insertVitalData.mockResolvedValue(1);
+
+      await vitalDataService.syncHealthPlatformData();
+
+      expect(mockHealthPlatformService.fetchRecentHealthData).toHaveBeenCalledWith(7);
+      expect(mockDatabaseService.insertVitalData).toHaveBeenCalledTimes(2);
+      expect(mockDatabaseService.insertVitalData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: '歩数',
+          value: 10000,
+          source: 'healthkit',
+        })
+      );
+    });
+
+    test('既存データがある場合は重複を避ける', async () => {
+      const mockHealthData = [
+        {
+          id: 'health-1',
+          type: 'steps',
+          value: 10000,
+          unit: '歩',
+          measuredAt: '2025-07-11T09:00:00Z',
+          source: 'healthkit',
+        },
+      ];
+
+      mockHealthPlatformService.fetchRecentHealthData.mockResolvedValue(mockHealthData);
+      // 既存データあり
+      mockDatabaseService.getVitalDataByTypeAndDate.mockResolvedValue([
+        { id: 1, type: '歩数', value: 10000, recorded_date: '2025-07-11' },
+      ]);
+
+      await vitalDataService.syncHealthPlatformData();
+
+      expect(mockDatabaseService.insertVitalData).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('バイタルAWSへのアップロード', () => {
+    test('uploadToVitalAWSが未同期データをアップロードする', async () => {
+      const unsyncedData = [
+        {
+          id: 1,
+          type: '歩数',
+          value: 8000,
+          unit: '歩',
+          recorded_date: '2025-07-11',
+          sync_status: 'pending',
+        },
+        {
+          id: 2,
+          type: '体重',
+          value: 65.5,
+          unit: 'kg',
+          recorded_date: '2025-07-11',
+          sync_status: 'pending',
+        },
+      ];
+
+      mockDatabaseService.executeSql.mockImplementation((sql: string) => {
+        if (sql.includes('SELECT')) {
+          return Promise.resolve({
+            rows: {
+              length: unsyncedData.length,
+              item: (index: number) => unsyncedData[index],
+            },
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      (apiClient.uploadVitalsBatch as jest.Mock).mockResolvedValue({
+        success: true,
+        data: {
+          uploadedCount: 2,
+          failedCount: 0,
+          syncedAt: '2025-07-11T10:00:00Z',
+          processedIds: ['vital-1', 'vital-2'],
+        },
+      });
+
+      await vitalDataService.uploadToVitalAWS();
+
+      expect(apiClient.uploadVitalsBatch).toHaveBeenCalledWith([
+        expect.objectContaining({
+          type: 'steps',
+          value: 8000,
+          localId: 1,
+        }),
+        expect.objectContaining({
+          type: 'weight',
+          value: 65.5,
+          localId: 2,
+        }),
+      ]);
+
+      // sync_statusの更新を確認
+      expect(mockDatabaseService.executeSql).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE vital_data'),
+        [1]
+      );
+      expect(mockDatabaseService.executeSql).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE vital_data'),
+        [2]
+      );
+    });
+
+    test('未同期データがない場合は何もしない', async () => {
+      mockDatabaseService.executeSql.mockResolvedValue({
+        rows: { length: 0, item: jest.fn() },
+      });
+
+      await vitalDataService.uploadToVitalAWS();
+
+      expect(apiClient.uploadVitalsBatch).not.toHaveBeenCalled();
+    });
+
+    test('アップロード失敗時はエラーをスローする', async () => {
+      const unsyncedData = [
+        {
+          id: 1,
+          type: '歩数',
+          value: 8000,
+          unit: '歩',
+          recorded_date: '2025-07-11',
+          sync_status: 'pending',
+        },
+      ];
+
+      mockDatabaseService.executeSql.mockImplementation((sql: string) => {
+        if (sql.includes('SELECT')) {
+          return Promise.resolve({
+            rows: {
+              length: unsyncedData.length,
+              item: (index: number) => unsyncedData[index],
+            },
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      (apiClient.uploadVitalsBatch as jest.Mock).mockResolvedValue({
+        success: false,
+        error: 'Network error',
+      });
+
+      await expect(vitalDataService.uploadToVitalAWS()).rejects.toThrow('Network error');
+    });
+  });
+
+  describe('ヘルスプラットフォーム状態管理', () => {
+    test('getHealthPlatformStatusが設定を正しく取得する', async () => {
+      (AsyncStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+        if (key === 'healthkit_enabled') return Promise.resolve('true');
+        if (key === 'googlefit_enabled') return Promise.resolve('false');
+        return Promise.resolve(null);
+      });
+
+      const status = await vitalDataService.getHealthPlatformStatus();
+
+      expect(status).toEqual({
+        healthKitEnabled: true,
+        googleFitEnabled: false,
+      });
     });
   });
 });

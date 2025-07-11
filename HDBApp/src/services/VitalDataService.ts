@@ -1,16 +1,22 @@
 import { DatabaseService, VitalDataRecord } from './DatabaseService';
+import { MockHealthPlatformService } from './mockHealthPlatform';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiClient } from './api/apiClient';
 
 export class VitalDataService {
   private dbService: DatabaseService;
+  private healthPlatformService: MockHealthPlatformService;
 
   constructor() {
     this.dbService = DatabaseService.getInstance();
+    this.healthPlatformService = MockHealthPlatformService.getInstance();
   }
 
   async initializeService(): Promise<void> {
     try {
       await this.dbService.initDatabase();
       await this.dbService.initializeDefaultTargets();
+      await this.healthPlatformService.initialize();
       console.log('VitalDataService initialized successfully');
     } catch (error) {
       console.error('VitalDataService initialization failed:', error);
@@ -19,7 +25,7 @@ export class VitalDataService {
   }
 
   // バイタルデータの追加
-  async addVitalData(type: string, value: number, date?: string, systolic?: number, diastolic?: number): Promise<number> {
+  async addVitalData(type: string, value: number, date?: string, systolic?: number, diastolic?: number, source: string = 'manual'): Promise<number> {
     const unit = this.getUnitByType(type);
     const recordedDate = date || new Date().toISOString().split('T')[0];
 
@@ -30,6 +36,7 @@ export class VitalDataService {
       systolic,
       diastolic,
       recorded_date: recordedDate,
+      source,
     };
 
     return await this.dbService.insertVitalData(data);
@@ -71,6 +78,11 @@ export class VitalDataService {
       }
 
       const latestValue = data[0].value;
+      const targetValue = target.target_value;
+
+      if (!targetValue || targetValue === 0) {
+        return null;
+      }
 
       // 体重の場合は目標値に近いほど達成率が高くなるように計算
       if (type === '体重') {
@@ -78,15 +90,17 @@ export class VitalDataService {
         if (allData.length < 2) return 100;
 
         const initialValue = allData[allData.length - 1].value;
-        const initialDiff = Math.abs(initialValue - target);
+        const initialDiff = Math.abs(initialValue - targetValue);
         if (initialDiff === 0) return 100;
 
-        const currentDiff = Math.abs(latestValue - target);
-        return Math.max(0, Math.min(100, (1 - currentDiff / initialDiff) * 100));
+        const currentDiff = Math.abs(latestValue - targetValue);
+        const achievementRate = Math.max(0, Math.min(100, (1 - currentDiff / initialDiff) * 100));
+        return Math.round(achievementRate);
       }
 
       // その他の場合は目標値に対する割合
-      return Math.min(100, (latestValue / target) * 100);
+      const achievementRate = Math.min(100, (latestValue / targetValue) * 100);
+      return Math.round(achievementRate);
     } catch (error) {
       console.error('Error calculating achievement rate:', error);
       return null;
@@ -186,6 +200,170 @@ export class VitalDataService {
     }
   }
 
+  // ヘルスプラットフォームからデータを同期
+  async syncHealthPlatformData(): Promise<void> {
+    try {
+      console.log('Starting health platform data sync...');
+      
+      // 過去7日間のデータを取得
+      const healthData = await this.healthPlatformService.fetchRecentHealthData(7);
+      
+      if (healthData.length === 0) {
+        console.log('No health platform data to sync');
+        return;
+      }
+
+      console.log(`Syncing ${healthData.length} health records...`);
+      
+      // データを変換してデータベースに保存
+      for (const item of healthData) {
+        const typeMap: Record<string, string> = {
+          steps: '歩数',
+          weight: '体重',
+          temperature: '体温',
+          bloodPressure: '血圧',
+          heartRate: '心拍数',
+        };
+
+        const type = typeMap[item.type];
+        if (!type) continue;
+
+        // 既存のデータをチェック（重複を避ける）
+        const existingData = await this.dbService.getVitalDataByTypeAndDate(
+          type,
+          item.measuredAt.split('T')[0]
+        );
+
+        if (existingData.length === 0) {
+          await this.addVitalData(
+            type,
+            item.value,
+            item.measuredAt.split('T')[0],
+            item.value2, // systolic for blood pressure
+            item.type === 'bloodPressure' ? item.value : undefined, // diastolic
+            item.source
+          );
+        }
+      }
+
+      console.log('Health platform sync completed');
+    } catch (error) {
+      console.error('Error syncing health platform data:', error);
+      throw error;
+    }
+  }
+
+  // ヘルスプラットフォームの連携状態を取得
+  async getHealthPlatformStatus(): Promise<{
+    healthKitEnabled: boolean;
+    googleFitEnabled: boolean;
+  }> {
+    const healthKitEnabled = await AsyncStorage.getItem('healthkit_enabled') === 'true';
+    const googleFitEnabled = await AsyncStorage.getItem('googlefit_enabled') === 'true';
+    
+    return {
+      healthKitEnabled,
+      googleFitEnabled,
+    };
+  }
+
+  // バイタルAWSへのデータアップロード（同期）
+  async uploadToVitalAWS(): Promise<void> {
+    try {
+      console.log('Starting sync to バイタルAWS...');
+      
+      // 未同期のデータを取得
+      const unsyncedData = await this.getUnsyncedVitalData();
+      
+      if (unsyncedData.length === 0) {
+        console.log('No unsynced data to upload');
+        return;
+      }
+
+      console.log(`Found ${unsyncedData.length} unsynced records`);
+      
+      // データをAPI形式に変換
+      const vitalsToUpload = unsyncedData.map(record => ({
+        type: this.convertTypeToApiFormat(record.type),
+        value: record.value,
+        value2: record.diastolic, // 血圧の下の値
+        unit: record.unit,
+        measuredAt: `${record.recorded_date}T00:00:00Z`,
+        source: record.source || 'manual',
+        localId: record.id,
+      }));
+
+      // バッチアップロード
+      const response = await apiClient.uploadVitalsBatch(vitalsToUpload);
+      
+      if (response.success) {
+        console.log(`Successfully uploaded ${response.data.uploadedCount} records to バイタルAWS`);
+        
+        // 同期済みフラグを更新
+        for (const record of unsyncedData) {
+          if (record.id) {
+            await this.markAsSynced(record.id);
+          }
+        }
+        
+        console.log('Sync status updated for all uploaded records');
+      } else {
+        console.error('Failed to upload to バイタルAWS:', response.error);
+        throw new Error(response.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading to バイタルAWS:', error);
+      throw error;
+    }
+  }
+
+  // 未同期データの取得
+  private async getUnsyncedVitalData(): Promise<VitalDataRecord[]> {
+    const sql = `
+      SELECT * FROM vital_data 
+      WHERE sync_status IS NULL OR sync_status = 'pending'
+      ORDER BY recorded_date DESC
+    `;
+    
+    try {
+      const result = await this.dbService.executeSql(sql);
+      const data: VitalDataRecord[] = [];
+      
+      for (let i = 0; i < result.rows.length; i++) {
+        data.push(result.rows.item(i));
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error getting unsynced data:', error);
+      return [];
+    }
+  }
+
+  // 同期済みフラグの更新
+  private async markAsSynced(id: number): Promise<void> {
+    const sql = `
+      UPDATE vital_data 
+      SET sync_status = 'synced', synced_at = datetime('now')
+      WHERE id = ?
+    `;
+    
+    await this.dbService.executeSql(sql, [id]);
+  }
+
+  // 型の変換（日本語→API形式）
+  private convertTypeToApiFormat(type: string): string {
+    const typeMap: Record<string, string> = {
+      '歩数': 'steps',
+      '体重': 'weight',
+      '体温': 'temperature',
+      '血圧': 'bloodPressure',
+      '心拍数': 'heartRate',
+    };
+    
+    return typeMap[type] || type;
+  }
+
   // タイプに応じた単位を取得
   private getUnitByType(type: string): string {
     switch (type) {
@@ -197,6 +375,8 @@ export class VitalDataService {
         return '℃';
       case '血圧':
         return 'mmHg';
+      case '心拍数':
+        return 'bpm';
       default:
         return '';
     }

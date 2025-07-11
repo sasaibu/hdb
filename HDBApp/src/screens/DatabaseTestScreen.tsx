@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import { DatabaseDebugger } from '../utils/DatabaseDebugger';
 import { VitalDataService } from '../services/VitalDataService';
+import { SyncService } from '../services/SyncService';
 
 const DatabaseTestScreen: React.FC = () => {
   const [debuggerInstance] = useState(() => new DatabaseDebugger());
   const [vitalDataService] = useState(() => new VitalDataService());
+  const [syncService] = useState(() => SyncService.getInstance());
   const [testResults, setTestResults] = useState<string[]>([]);
   const [dbStatus, setDbStatus] = useState<any>(null);
   const [allData, setAllData] = useState<any>({});
@@ -70,6 +72,64 @@ const DatabaseTestScreen: React.FC = () => {
       await checkDatabaseStatus();
     } catch (error) {
       addLog(`❌ データ挿入エラー: ${error}`);
+    }
+  };
+
+  const syncHealthData = async () => {
+    try {
+      addLog('🔄 ヘルスデータ同期開始...');
+      
+      await vitalDataService.syncHealthPlatformData();
+      addLog('✅ ヘルスデータ同期完了');
+      
+      // 今週のデータを確認
+      const types = ['歩数', '体重', '体温', '血圧'];
+      for (const type of types) {
+        const weekData = await vitalDataService.getVitalDataByPeriod(type, 'week');
+        addLog(`${type} - 今週のデータ数: ${weekData.length}`);
+      }
+      
+      await checkDatabaseStatus();
+    } catch (error) {
+      addLog(`❌ 同期エラー: ${error}`);
+    }
+  };
+
+  const testVitalAWSSync = async () => {
+    try {
+      addLog('🔄 バイタルAWSへの同期テスト開始...');
+      
+      await vitalDataService.uploadToVitalAWS();
+      addLog('✅ バイタルAWSへの同期完了');
+      
+      await checkDatabaseStatus();
+    } catch (error) {
+      addLog(`❌ 同期エラー: ${error}`);
+    }
+  };
+
+  const testAutoSync = async () => {
+    try {
+      addLog('🔄 自動同期設定を確認中...');
+      
+      const status = await syncService.getSyncStatus();
+      addLog(`自動同期: ${status.enabled ? '有効' : '無効'}`);
+      
+      if (status.lastSyncTime) {
+        addLog(`最終同期: ${status.lastSyncTime.toLocaleString()}`);
+      }
+      
+      if (status.nextSyncTime) {
+        addLog(`次回同期: ${status.nextSyncTime.toLocaleString()}`);
+      }
+      
+      // 自動同期を有効化
+      if (!status.enabled) {
+        await syncService.setAutoSyncEnabled(true);
+        addLog('✅ 自動同期を有効化しました');
+      }
+    } catch (error) {
+      addLog(`❌ エラー: ${error}`);
     }
   };
 
@@ -153,6 +213,18 @@ const DatabaseTestScreen: React.FC = () => {
         
         <TouchableOpacity style={[styles.button, styles.successButton]} onPress={testDataPersistence}>
           <Text style={styles.buttonText}>データ永続化テスト</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[styles.button, styles.warningButton]} onPress={syncHealthData}>
+          <Text style={styles.buttonText}>ヘルスデータ同期</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[styles.button, styles.successButton]} onPress={testVitalAWSSync}>
+          <Text style={styles.buttonText}>バイタルAWS同期</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[styles.button, styles.successButton]} onPress={testAutoSync}>
+          <Text style={styles.buttonText}>自動同期設定</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={[styles.button, styles.warningButton]} onPress={simulateAppRestart}>
