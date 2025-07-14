@@ -224,6 +224,75 @@ cd ios
 arch -x86_64 pod install
 ```
 
+#### 3. pod --versionで実行してもパスが出ない
+##### ステップ1：Ruby のバージョンを Homebrew で更新する
+
+Mac に標準でインストールされている Ruby は古いことが多く、これが CocoaPods のインストールを妨げることがあります。Homebrew を使って新しい Ruby をインストールし、システムに影響を与えずにバージョンを管理しましょう。
+1. Homebrew のインストール（インストール済みならスキップ） まだ Homebrew をインストールしていない場合は、以下のコマンドをターミナルに貼り付けて実行します。  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"    指示に従ってパスワードを入力したり、Enter キーを押したりしてください。
+インストール後、ターミナルに表示される指示に従って Homebrew のパスを設定し、ターミナルを再起動してください。
+
+2. 新しい Ruby のインストール Homebrew を使って Ruby の最新安定版をインストールします。
+```Bash
+brew install ruby
+```
+
+3. シェルが新しい Ruby を参照するように設定 インストールした Ruby をシェル（zsh）が優先的に使うように、設定ファイル (~/.zshrc) を編集します。 
+```bash
+nano ~/.zshrc
+```
+ファイルが開いたら、一番下に以下の行を追加してください。
+
+```
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+export LDFLAGS="-L/opt/homebrew/opt/ruby/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/ruby/include"
+```
+
+   * 重要： brew --prefix コマンドを実行して /opt/homebrew 以外（例: /usr/local）と表示された場合は、上記パスの /opt/homebrew の部分をそのパスに置き換えてください。
+   * 保存方法: Control + O を押して Enter で保存し、Control + X を押して閉じます。
+
+4. 設定の適用と Ruby バージョンの確認 ターミナルを完全に終了し、新しいウィンドウを開いてください。これが最も確実です。 その後、Ruby のバージョンが更新されたか確認します。
+```
+ruby -v
+```
+ruby 3.x.x のように、3.1.0 以上のバージョンが表示されれば成功です。
+
+##### ステップ2：CocoaPods をインストールし、パスを設定する
+
+Ruby のバージョンが最新になったら、CocoaPods をインストールし、pod コマンドが認識されるようにパスを設定します。
+1. CocoaPods のインストール
+```
+sudo gem install cocoapods
+``` 
+   パスワードの入力が求められたら入力します。34 gems installed のような成功メッセージが表示されるはずです。
+
+2. pod コマンドのパスを確認 CocoaPods の実行ファイル pod がどこにインストールされたかを確認します。  
+```
+gem environment gemdir
+```
+
+出力例：/opt/homebrew/lib/ruby/gems/3.4.0 このパスの下の 
+bin ディレクトリ（例：/opt/homebrew/lib/ruby/gems/3.4.0/bin）に pod コマンドがあります。
+
+3. ~/.zshrcに pod コマンドのパスを追加 再度 ~/.zshrc ファイルを開きます。
+
+```
+nano ~/.zshrc
+```
+
+ファイルを開いたら、一番下に以下の行を追加してください。 重要： [YOUR_GEM_BIN_PATH] の部分は、ステップ2-2で確認した 
+bin ディレクトリのパス（例：/opt/homebrew/lib/ruby/gems/3.4.0/bin）に置き換えてください。
+
+  CocoaPods (gem) の実行パスをPATHに追加   export PATH="[YOUR_GEM_BIN_PATH]:$PATH"
+    * 保存方法: Control + O を押して Enter で保存し、Control + X を押して閉じます。
+
+4. 設定の適用と pod コマンドの確認 ターミナルを完全に終了し、新しいウィンドウを開いてください。 その後、pod コマンドが認識されるか確認します。  pod --version  これで CocoaPods のバージョン番号が表示されれば成功です！
+```
+pod --version
+```
+
+---
+
 ### Xcode関連エラー
 
 #### 1. 「No suitable simulator found」エラー
@@ -257,6 +326,8 @@ use_flipper!({'Flipper' => '0.164.0'}) if !ENV['CI']
 ```bash
 npx react-native run-ios --configuration Release
 ```
+
+
 
 ---
 
