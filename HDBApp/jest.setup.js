@@ -1,5 +1,17 @@
 import 'react-native-gesture-handler/jestSetup';
 
+// Mock AsyncStorage
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(() => Promise.resolve(null)),
+  setItem: jest.fn(() => Promise.resolve()),
+  removeItem: jest.fn(() => Promise.resolve()),
+  clear: jest.fn(() => Promise.resolve()),
+  getAllKeys: jest.fn(() => Promise.resolve([])),
+  multiGet: jest.fn(() => Promise.resolve([])),
+  multiSet: jest.fn(() => Promise.resolve()),
+  multiRemove: jest.fn(() => Promise.resolve()),
+}));
+
 // Mock react-navigation
 jest.mock('@react-navigation/native', () => {
   const actualNav = jest.requireActual('@react-navigation/native');
@@ -26,6 +38,43 @@ jest.mock('react-native-safe-area-context', () => {
     SafeAreaConsumer: ({children}) => children(inset),
     useSafeAreaInsets: () => inset,
     useSafeAreaFrame: () => ({x: 0, y: 0, width: 390, height: 844}),
+  };
+});
+
+// Mock WebView
+jest.mock('react-native-webview', () => {
+  const React = require('react');
+  return {
+    WebView: React.forwardRef((props, ref) => {
+      const MockWebView = require('react-native').View;
+      React.useEffect(() => {
+        if (props.onLoadStart) {
+          props.onLoadStart({nativeEvent: {url: props.source?.uri || 'https://example.com'}});
+        }
+        setTimeout(() => {
+          if (props.onLoadEnd) {
+            props.onLoadEnd({nativeEvent: {url: props.source?.uri || 'https://example.com'}});
+          }
+        }, 100);
+      }, []);
+      return React.createElement(MockWebView, {ref, testID: props.testID});
+    }),
+  };
+});
+
+// Mock React Native components
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  
+  // Mock RefreshControl to avoid the missing mock error
+  RN.RefreshControl = jest.fn().mockImplementation(() => null);
+  
+  return {
+    ...RN,
+    Alert: {
+      alert: jest.fn(),
+    },
+    RefreshControl: jest.fn().mockImplementation(() => null),
   };
 });
 
