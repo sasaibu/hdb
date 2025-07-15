@@ -64,17 +64,23 @@ jest.mock('react-native-webview', () => {
 
 // Mock React Native components
 jest.mock('react-native', () => {
+  const React = require('react');
   const RN = jest.requireActual('react-native');
-  
-  // Mock RefreshControl to avoid the missing mock error
-  RN.RefreshControl = jest.fn().mockImplementation(() => null);
   
   return {
     ...RN,
     Alert: {
       alert: jest.fn(),
     },
-    RefreshControl: jest.fn().mockImplementation(() => null),
+    RefreshControl: React.forwardRef((props, ref) => {
+      return React.createElement('RefreshControl', {ref, ...props});
+    }),
+    FlatList: React.forwardRef((props, ref) => {
+      return React.createElement('FlatList', {ref, ...props});
+    }),
+    ScrollView: React.forwardRef((props, ref) => {
+      return React.createElement('ScrollView', {ref, ...props});
+    }),
   };
 });
 
