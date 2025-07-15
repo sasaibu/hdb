@@ -17,12 +17,22 @@ sequenceDiagram
     participant App as HDBアプリ
     participant Firebase as Firebase Remote Config
     participant AWS as バイタルAWS
+    participant Storage as AsyncStorage
     
     App->>Firebase: Firebase設定取得
     Firebase-->>App: アプリ設定情報
     App->>AWS: デバイス情報登録・更新API
     Note over App,AWS: デバイスID、FCMトークン等
     AWS-->>App: ログイン状態、利用権限、ミッション情報
+    
+    Note over App,AWS: 移行データ確認
+    App->>Storage: 移行完了フラグ確認
+    alt 移行未完了
+        Note over AWS: レスポンスに移行データ情報含む
+        alt 移行データあり
+            App->>App: 転籍データ移行画面へ遷移
+        end
+    end
 ```
 
 ## 2. ログイン画面
@@ -40,7 +50,7 @@ sequenceDiagram
     HDB-->>AWS: 認証結果
     AWS-->>App: 認可コード、ステート
     App->>AWS: トークン取得API
-    AWS-->>App: アクセストークン、リフレッシュトークン
+    AWS-->>App: アクセストークン、リフレッシュトークン、ユーザーID、利用権限、ミッション情報
     App->>Keychain: トークン保存
 ```
 
@@ -55,8 +65,9 @@ sequenceDiagram
     
     App->>DB: バイタルデータ取得（ローカル）
     DB-->>App: 歩数、体重等の最新データ
-    App->>AWS: 歩数ランキング取得API（不足）
-    AWS-->>App: ランキングデータ
+    Note over App,AWS: ランキングはHDB側で処理
+    App->>AWS: Single Sign On API
+    AWS-->>App: ランキング画面URL
     App->>DB: ランキングキャッシュ保存
     
     Note over App,HDB: WebView表示時
@@ -123,8 +134,8 @@ sequenceDiagram
     App->>DB: user_profileテーブル更新
     
     Note over App,AWS: 更新時
-    App->>AWS: マイデータ登録API（既存）
-    Note over App,AWS: ニックネーム、アイコン、目標設定
+    App->>AWS: マイデータ登録API（新規）
+    Note over App,AWS: ニックネーム、アイコン、目標設定、目標達成状況
     AWS-->>App: 更新結果
 ```
 
@@ -234,24 +245,43 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant App as HDBアプリ
+    participant WebView as 転籍用WebView
     participant AWS as バイタルAWS
     participant HDB as HDB
     participant DB as SQLite
+    participant Storage as AsyncStorage
     
-    Note over App,AWS: 転籍ログイン
-    App->>AWS: 転籍用ログインAPI（既存）
-    AWS->>HDB: ログイン認証API（転籍用）
-    HDB-->>AWS: 認証結果
-    AWS-->>App: 転籍前ユーザーID
+    Note over App,WebView: 転籍画面表示
+    App->>AWS: Single Sign On API（転籍用）
+    AWS-->>App: 転籍用WebView URL
+    App->>WebView: 転籍画面表示
     
-    Note over App,AWS: データ移行
-    App->>AWS: 移行データ取得API（既存）
-    AWS-->>App: 移行データ（CSV形式）
-    App->>DB: データ保存
+    Note over WebView,HDB: 転籍前IDでログイン
+    WebView->>HDB: ログイン認証（転籍前ID）
+    HDB-->>WebView: 認証成功
     
-    Note over App,AWS: 進捗確認
-    App->>AWS: 移行進捗確認API（不足）
-    AWS-->>App: 移行状態
+    Note over HDB,AWS: サーバー側処理
+    HDB->>HDB: 転籍前データのUserID更新
+    Note over HDB: 転籍前ID → 転籍後IDに更新
+    HDB->>AWS: 転籍完了通知
+    AWS-->>HDB: 通知受領
+    
+    Note over WebView,App: リダイレクト処理
+    WebView->>App: リダイレクト（ディープリンク）
+    Note over App: hdbapp://transfer-complete?oldUserId=XXX&newUserId=YYY
+    
+    Note over App,DB: 端末側データ移行
+    App->>DB: トランザクション開始
+    App->>DB: 転籍前ユーザーIDのデータ検索
+    DB-->>App: 該当データ一覧
+    App->>DB: 全テーブルのuser_idを転籍後IDに更新
+    Note over App,DB: users, vital_data, missions等全テーブル
+    App->>DB: トランザクションコミット
+    
+    Note over App,Storage: 移行完了処理
+    App->>Storage: 移行完了フラグ保存
+    App->>App: ホーム画面へ遷移
+    App->>App: 転籍完了メッセージ表示
 ```
 
 ## 13. Push通知受信フロー
@@ -271,7 +301,7 @@ sequenceDiagram
     App->>App: 通知表示
 ```
 
-## API通信の特徴
+## API関連のポイント
 
 1. **バイタルデータ**
    - 取得：HealthKit/ヘルスコネクト → アプリ内DB
@@ -291,6 +321,37 @@ sequenceDiagram
    - 通知設定はAsyncStorageに保存
 
 5. **不足しているAPI**
-   - 各種取得系API（マイページ、ミッション、通知設定、お知らせ、ランキング）
+   - 各種取得系API（マイページ、ミッション詳細、通知設定、お知らせ）
    - 更新系API（ミッション進捗、通知設定、お知らせ既読）
-   - 状態確認API（認証状態、移行進捗）
+   - 移行完了通知API（転籍処理）
+
+## 転籍処理の重要ポイント
+
+### 処理フロー
+1. **転籍用WebView表示**
+   - アプリからSingle Sign On APIで転籍用URLを取得
+   - WebView内で転籍前のIDでログイン
+
+2. **サーバー側処理**
+   - HDBサーバーで転籍前データのUserIDを転籍後UserIDに更新
+   - 更新完了後、転籍完了通知をバイタルAWSへ送信
+
+3. **端末側処理**
+   - WebViewからのリダイレクト（ディープリンク）でアプリ側に通知
+   - リダイレクトURL例：`hdbapp://transfer-complete?oldUserId=XXX&newUserId=YYY`
+   - アプリ内DBの全テーブルのuser_idを一括更新（トランザクション処理）
+
+### 実装上の注意点
+- **ディープリンク設定**：iOS/Androidでのカスタムスキーム（hdbapp://）の設定が必要
+- **トランザクション処理**：データ整合性を保つため、全テーブルの更新は単一トランザクション内で実行
+- **エラーハンドリング**：転籍処理中のエラーに対する適切なリカバリー処理
+- **状態管理**：転籍完了フラグをAsyncStorageに保存し、重複処理を防止
+
+### 更新対象テーブル
+- users
+- vital_data
+- missions
+- events
+- notifications
+- linked_services
+- その他user_idカラムを持つ全テーブル

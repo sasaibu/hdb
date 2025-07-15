@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the Health Data Bank (HDB) mobile application project, built with React Native for iOS and Android platforms. The project includes a fully functional React Native app in the `HDBApp/` directory with TypeScript, navigation, authentication, and health data management features.
 
+**Default Test Credentials**: testuser / password123
+
 ## Development Commands
 
 ### Setup
@@ -27,6 +29,9 @@ npm run android             # Run on Android emulator
 ```bash
 cd HDBApp
 npm test                    # Run Jest tests
+npm run test:watch         # Run tests in watch mode
+npm run test:coverage      # Generate test coverage report
+npm run test:simple        # Run simple test file
 npm run lint               # Run ESLint
 ```
 
@@ -45,8 +50,14 @@ npx react-native run-android --variant=release
 ### Core Structure
 - `App.tsx` - Main app entry point with error boundary and navigation setup
 - `src/navigation/AppNavigator.tsx` - Navigation structure with Stack and Drawer navigators
-- `src/screens/` - Screen components (Home, Login, Splash, WebView)
-- `src/components/` - Reusable UI components (Button, Card, Input)
+- `src/screens/` - Screen components (Home, Login, Splash, WebView, VitalData, Settings)
+- `src/components/` - Reusable UI components (Button, Card, Input, VitalInputDialog)
+- `src/services/` - Business logic and data services:
+  - `DatabaseService` - SQLite database operations
+  - `VitalDataService` - Vital data management
+  - `NotificationService` - Push notifications
+  - `SyncService` - Data synchronization
+  - `api/` - API client and mock implementations
 - `src/hooks/` - Custom React hooks (useAuth for authentication)
 - `src/types/` - TypeScript type definitions for the entire app
 - `src/utils/` - Utility functions and error handling
@@ -118,3 +129,29 @@ npx react-native run-android --variant=release
 - Google Fit/Health Connect integration pending (Android)
 - WebView for existing HDB system integration
 - Data synchronization architecture planned
+
+## Database Schema
+
+The app uses SQLite with the following main tables:
+- `users` - User authentication and profile data
+- `vital_data` - Health measurements (steps, weight, temperature, blood pressure, heart rate)
+- `missions` - Health goals and achievements
+- `events` - Health-related events and appointments
+- `notifications` - Push notification history
+- `linked_services` - External service integrations
+- `migration_history` - Database version tracking
+
+## Key Libraries
+
+### Core Dependencies
+- `react-native-sqlite-2` - Local SQLite database
+- `@react-native-async-storage/async-storage` - Persistent storage
+- `react-native-keychain` - Secure credential storage (planned)
+- `react-native-webview` - External system integration
+- `react-native-push-notification` - Local notifications
+- `react-native-share` - Data export functionality
+
+### Testing Infrastructure  
+- Full test coverage for components, screens, services, and hooks
+- Mock implementations for all external dependencies
+- Test files located in `__tests__/` directory alongside source files
