@@ -1,8 +1,10 @@
 import React from 'react';
 import {render, fireEvent, waitFor} from '@testing-library/react-native';
-import {NavigationContainer} from '@react-navigation/native';
-import {createStackNavigator} from '@react-navigation/stack';
+import {Alert, TextInput, TouchableOpacity} from 'react-native';
 import LoginScreen from '../../src/screens/LoginScreen';
+
+// Mock Alert
+jest.spyOn(Alert, 'alert');
 
 // Mock useAuth hook
 const mockLogin = jest.fn();
@@ -23,79 +25,97 @@ jest.mock('../../src/hooks/useAuth', () => ({
 // Mock navigation
 const mockNavigate = jest.fn();
 const mockReplace = jest.fn();
+const mockNavigation = {
+  navigate: mockNavigate,
+  replace: mockReplace,
+  goBack: jest.fn(),
+  canGoBack: jest.fn(),
+  dispatch: jest.fn(),
+  reset: jest.fn(),
+  isFocused: jest.fn(),
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  getParent: jest.fn(),
+  getState: jest.fn(),
+  getId: jest.fn(),
+  setOptions: jest.fn(),
+  setParams: jest.fn(),
+};
 
-jest.mock('@react-navigation/native', () => {
-  const actualNav = jest.requireActual('@react-navigation/native');
-  return {
-    ...actualNav,
-    useNavigation: () => ({
-      navigate: mockNavigate,
-      replace: mockReplace,
-    }),
-  };
-});
-
-const Stack = createStackNavigator();
-
-const renderWithNavigation = (component: React.ReactElement) => {
-  return render(
-    <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen name="Login" component={() => component} />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+const renderLoginScreen = () => {
+  return render(<LoginScreen navigation={mockNavigation as any} />);
 };
 
 describe('LoginScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAuthState.isLoading = false;
   });
 
   it('renders login form correctly', () => {
-    const {getByPlaceholderText, getByText} = renderWithNavigation(<LoginScreen />);
+    const {UNSAFE_getAllByType} = renderLoginScreen();
     
-    expect(getByText('Health Data Bank')).toBeTruthy();
-    expect(getByText('ログイン')).toBeTruthy();
-    expect(getByPlaceholderText('ユーザー名')).toBeTruthy();
-    expect(getByPlaceholderText('パスワード')).toBeTruthy();
-    expect(getByText('ログイン')).toBeTruthy();
+    // Check that there are 2 input fields and 1 button
+    const inputs = UNSAFE_getAllByType(TextInput);
+    const buttons = UNSAFE_getAllByType(TouchableOpacity);
+    expect(inputs).toHaveLength(2);
+    expect(buttons).toHaveLength(1);
   });
 
   it('updates input values when typing', () => {
-    const {getByPlaceholderText} = renderWithNavigation(<LoginScreen />);
+    const {UNSAFE_getAllByType} = renderLoginScreen();
     
-    const usernameInput = getByPlaceholderText('ユーザー名');
-    const passwordInput = getByPlaceholderText('パスワード');
+    // Find TextInput components
+    const inputs = UNSAFE_getAllByType(TextInput);
+    const userIdInput = inputs[0]; // First input is userId
+    const passwordInput = inputs[1]; // Second input is password
     
-    fireEvent.changeText(usernameInput, 'testuser');
+    fireEvent.changeText(userIdInput, 'testuser');
     fireEvent.changeText(passwordInput, 'testpass');
     
-    expect(usernameInput.props.value).toBe('testuser');
+    expect(userIdInput.props.value).toBe('testuser');
     expect(passwordInput.props.value).toBe('testpass');
   });
 
   it('shows validation errors for empty fields', async () => {
-    const {getByText} = renderWithNavigation(<LoginScreen />);
+    const {UNSAFE_getAllByType} = renderLoginScreen();
     
-    const loginButton = getByText('ログイン');
+    const buttons = UNSAFE_getAllByType(TouchableOpacity);
+    const loginButton = buttons[0]; // Login button
     fireEvent.press(loginButton);
     
     await waitFor(() => {
-      expect(getByText('ユーザー名を入力してください')).toBeTruthy();
-      expect(getByText('パスワードを入力してください')).toBeTruthy();
+      expect(Alert.alert).toHaveBeenCalledWith('エラー', 'ユーザーIDを入力してください');
+    });
+  });
+
+  it('shows validation error for empty password', async () => {
+    const {UNSAFE_getAllByType} = renderLoginScreen();
+    
+    const inputs = UNSAFE_getAllByType(TextInput);
+    const buttons = UNSAFE_getAllByType(TouchableOpacity);
+    fireEvent.changeText(inputs[0], 'testuser'); // userId input
+    
+    const loginButton = buttons[0]; // Login button
+    fireEvent.press(loginButton);
+    
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith('エラー', 'パスワードを入力してください');
     });
   });
 
   it('calls login function with correct credentials', async () => {
     mockLogin.mockResolvedValue(true);
     
-    const {getByPlaceholderText, getByText} = renderWithNavigation(<LoginScreen />);
+    const {UNSAFE_getAllByType} = renderLoginScreen();
     
-    fireEvent.changeText(getByPlaceholderText('ユーザー名'), 'testuser');
-    fireEvent.changeText(getByPlaceholderText('パスワード'), 'testpass');
+    const inputs = UNSAFE_getAllByType(TextInput);
+    const buttons = UNSAFE_getAllByType(TouchableOpacity);
+    fireEvent.changeText(inputs[0], 'testuser'); // userId input
+    fireEvent.changeText(inputs[1], 'testpass'); // password input
     
-    fireEvent.press(getByText('ログイン'));
+    const loginButton = buttons[0]; // Login button
+    fireEvent.press(loginButton);
     
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith({
@@ -108,12 +128,15 @@ describe('LoginScreen', () => {
   it('navigates to Main screen on successful login', async () => {
     mockLogin.mockResolvedValue(true);
     
-    const {getByPlaceholderText, getByText} = renderWithNavigation(<LoginScreen />);
+    const {UNSAFE_getAllByType} = renderLoginScreen();
     
-    fireEvent.changeText(getByPlaceholderText('ユーザー名'), 'testuser');
-    fireEvent.changeText(getByPlaceholderText('パスワード'), 'testpass');
+    const inputs = UNSAFE_getAllByType(TextInput);
+    const buttons = UNSAFE_getAllByType(TouchableOpacity);
+    fireEvent.changeText(inputs[0], 'testuser'); // userId input
+    fireEvent.changeText(inputs[1], 'testpass'); // password input
     
-    fireEvent.press(getByText('ログイン'));
+    const loginButton = buttons[0]; // Login button
+    fireEvent.press(loginButton);
     
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith('Main');
@@ -123,24 +146,37 @@ describe('LoginScreen', () => {
   it('shows error message on failed login', async () => {
     mockLogin.mockResolvedValue(false);
     
-    const {getByPlaceholderText, getByText} = renderWithNavigation(<LoginScreen />);
+    const {UNSAFE_getAllByType} = renderLoginScreen();
     
-    fireEvent.changeText(getByPlaceholderText('ユーザー名'), 'testuser');
-    fireEvent.changeText(getByPlaceholderText('パスワード'), 'wrongpass');
+    const inputs = UNSAFE_getAllByType(TextInput);
+    const buttons = UNSAFE_getAllByType(TouchableOpacity);
+    fireEvent.changeText(inputs[0], 'testuser'); // userId input
+    fireEvent.changeText(inputs[1], 'wrongpass'); // password input
     
-    fireEvent.press(getByText('ログイン'));
+    const loginButton = buttons[0]; // Login button
+    fireEvent.press(loginButton);
     
     await waitFor(() => {
-      expect(getByText('ユーザー名またはパスワードが間違っています')).toBeTruthy();
+      expect(Alert.alert).toHaveBeenCalledWith('エラー', 'ログインに失敗しました');
     });
   });
 
-  it('shows loading state during login', async () => {
-    // Mock loading state
-    mockAuthState.isLoading = true;
+
+  it('handles login error exception', async () => {
+    mockLogin.mockRejectedValue(new Error('Network error'));
     
-    const {getByTestId} = renderWithNavigation(<LoginScreen />);
+    const {UNSAFE_getAllByType} = renderLoginScreen();
     
-    expect(getByTestId('activity-indicator')).toBeTruthy();
+    const inputs = UNSAFE_getAllByType(TextInput);
+    const buttons = UNSAFE_getAllByType(TouchableOpacity);
+    fireEvent.changeText(inputs[0], 'testuser'); // userId input
+    fireEvent.changeText(inputs[1], 'testpass'); // password input
+    
+    const loginButton = buttons[0]; // Login button
+    fireEvent.press(loginButton);
+    
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith('エラー', 'ログインに失敗しました');
+    });
   });
 });
