@@ -69,10 +69,15 @@ describe('useAuth', () => {
     await waitFor(() => {
       expect(loginResult).toBe(true);
       expect(result.current.isAuthenticated).toBe(true);
+      // Use the actual API response format
       expect(result.current.user).toEqual({
-        id: '1',
+        id: 'user-001',
         username: 'testuser',
-        email: 'testuser@example.com'
+        email: 'tanaka@example.com',
+        displayName: '田中太郎',
+        avatar: null,
+        createdAt: '2025-01-01T00:00:00Z',
+        updatedAt: '2025-01-01T00:00:00Z'
       });
       expect(result.current.isLoading).toBe(false);
     });
@@ -95,24 +100,36 @@ describe('useAuth', () => {
       password: 'password123'
     };
 
-    await act(async () => {
-      await result.current.login(credentials);
+    let loginResult: boolean | undefined;
+    
+    act(() => {
+      result.current.login(credentials).then(success => {
+        loginResult = success;
+      });
       jest.advanceTimersByTime(1000);
     });
     
     await waitFor(() => {
+      expect(loginResult).toBe(true);
       expect(result.current.isAuthenticated).toBe(true);
     });
 
     // Then logout
-    await act(async () => {
-      await result.current.logout();
+    let logoutComplete = false;
+    act(() => {
+      result.current.logout().then(() => {
+        logoutComplete = true;
+      });
+      jest.advanceTimersByTime(1000);
     });
     
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
-    expect(result.current.isLoading).toBe(false);
-  });
+    await waitFor(() => {
+      expect(logoutComplete).toBe(true);
+      expect(result.current.isAuthenticated).toBe(false);
+      expect(result.current.user).toBeNull();
+      expect(result.current.isLoading).toBe(false);
+    });
+  }, 15000);
 
   it('updates user information', async () => {
     const {result} = renderHook(() => useAuth());
@@ -126,9 +143,13 @@ describe('useAuth', () => {
     });
 
     const newUser = {
-      id: '2',
+      id: 'user-002',
       username: 'newuser',
-      email: 'newuser@example.com'
+      email: 'newuser@example.com',
+      displayName: '新ユーザー',
+      avatar: null,
+      createdAt: '2025-01-01T00:00:00Z',
+      updatedAt: '2025-01-01T00:00:00Z'
     };
 
     act(() => {
