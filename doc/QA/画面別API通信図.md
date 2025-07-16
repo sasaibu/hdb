@@ -9,6 +9,9 @@
 - **Keychain/Keystore**: セキュアなトークン保存
 - **AsyncStorage**: アプリ設定の永続化
 - **iCloud/Google Drive**: バックアップデータ保存
+- **App Store/Google Play**: アプリアップデート
+- **iTunes Search API**: App Storeの最新バージョン情報取得（iOS）
+- **Google Play In-app updates API / Developer API**: Play Storeの最新バージョン情報取得（Android）
 
 ## 1. スプラッシュ画面
 
@@ -18,11 +21,23 @@ sequenceDiagram
     participant Firebase as Firebase Remote Config
     participant AWS as バイタルAWS
     participant Storage as AsyncStorage
+    participant Store as App Store/Google Play
     
     App->>Firebase: Firebase設定取得
-    Firebase-->>App: アプリ設定情報
+    Firebase-->>App: アプリ設定情報（最新バージョン含む）
+    
+    Note over App: バージョンチェック
+    alt アプリバージョン < 最新バージョン
+        App->>App: アップデート推奨ダイアログ表示
+        alt ユーザーが「今すぐ更新」選択
+            App->>Store: ストアへ遷移
+        else ユーザーが「後で」選択
+            App->>App: 処理続行
+        end
+    end
+    
     App->>AWS: デバイス情報登録・更新API
-    Note over App,AWS: デバイスID、FCMトークン等
+    Note over App,AWS: デバイスID、FCMトークン、アプリバージョン等
     AWS-->>App: ログイン状態、利用権限、ミッション情報
     
     Note over App,AWS: 移行データ確認
@@ -301,6 +316,105 @@ sequenceDiagram
     App->>App: 通知表示
 ```
 
+## 14. アプリバージョンチェックフロー
+
+### 14.1 ストアから直接バージョン情報を取得する方式
+
+#### 実装詳細
+- **iOS**: iTunes Search API
+  ```
+  GET https://itunes.apple.com/lookup?bundleId=com.hdb.app
+  レスポンス: { results: [{ version: "1.2.3", releaseNotes: "..." }] }
+  ```
+- **Android**: Google Play In-app updates API（Play Core Library）
+  ```typescript
+  // React Nativeでは react-native-in-app-update ライブラリを使用
+  const updateInfo = await InAppUpdate.checkUpdate();
+  // updateInfo.updateAvailability でアップデート可否を確認
+  // updateInfo.availableVersionCode で最新バージョンを取得
+  ```
+
+### 14.2 ストアから直接バージョン情報を取得する方式（シーケンス図）
+
+```mermaid
+sequenceDiagram
+    participant App as HDBアプリ
+    participant Store as App Store/Google Play API
+    participant AWS as バイタルAWS
+    participant StoreApp as App Store/Google Play
+    participant User as ユーザー
+    
+    Note over App,Store: アプリ起動時
+    alt iOS
+        App->>Store: iTunes Search API
+        Note over App,Store: https://itunes.apple.com/lookup?bundleId=com.hdb.app
+        Store-->>App: アプリ情報（version, releaseNotes等）
+    else Android
+        App->>Store: Google Play Developer API
+        Note over App,Store: または In-app updates API
+        Store-->>App: 最新バージョン情報
+    end
+    
+    App->>App: 現在のバージョンと比較
+    
+    alt 現在のバージョン < 最新バージョン
+        App->>User: アップデート推奨ダイアログ表示
+        Note over App,User: 「新しいバージョンが利用可能です」
+        Note over App,User: 「今すぐ更新」「後で」ボタン
+        alt ユーザーが「今すぐ更新」選択
+            User->>App: 今すぐ更新押下
+            App->>StoreApp: ストアアプリを開く
+        else ユーザーが「後で」選択
+            User->>App: 後で押下
+            App->>App: 通常処理続行
+        end
+    else 現在のバージョン = 最新バージョン
+        App->>App: 通常処理続行
+    end
+    
+    Note over App,AWS: バージョン情報をサーバーに送信
+    App->>AWS: デバイス情報登録・更新API
+    Note over App,AWS: app_version、os_version含む
+```
+
+### 14.3 Firebase Remote Config経由の方式（既存）
+
+```mermaid
+sequenceDiagram
+    participant App as HDBアプリ
+    participant Firebase as Firebase Remote Config
+    participant AWS as バイタルAWS
+    participant Store as App Store/Google Play
+    participant User as ユーザー
+    
+    Note over App,Firebase: アプリ起動時
+    App->>Firebase: アプリ設定取得要求
+    Firebase-->>App: 設定情報
+    Note over Firebase,App: latest_version（最新バージョン）
+    Note over Firebase,App: update_message（更新メッセージ）
+    
+    App->>App: 現在のバージョンと比較
+    
+    alt 現在のバージョン < 最新バージョン
+        App->>User: アップデート推奨ダイアログ表示
+        Note over App,User: 「新しいバージョンが利用可能です」
+        Note over App,User: 「今すぐ更新」「後で」ボタン
+        alt ユーザーが「今すぐ更新」選択
+            User->>App: 今すぐ更新押下
+            App->>Store: ストアアプリを開く
+        else ユーザーが「後で」選択
+            User->>App: 後で押下
+            App->>App: 通常処理続行
+        end
+    else 現在のバージョン = 最新バージョン
+        App->>App: 通常処理続行
+    end
+    
+    Note over App,AWS: バージョン情報をサーバーに送信
+    App->>AWS: デバイス情報登録・更新API
+    Note over App,AWS: app_version、os_version含む
+```
+
 ## API関連のポイント
 
 1. **バイタルデータ**
@@ -320,7 +434,22 @@ sequenceDiagram
    - ランキングデータはローカルキャッシュ
    - 通知設定はAsyncStorageに保存
 
-5. **不足しているAPI**
+5. **バージョン管理**
+   - **方式1: ストアから直接取得**
+     - iOS: iTunes Search APIを使用（https://itunes.apple.com/lookup?bundleId=）
+     - Android: 
+       - Google Play In-app updates API（推奨）: Play Core Libraryを使用してアプリ内で更新情報を取得
+       - Google Play Developer API: サーバー経由でアプリのリリース情報を取得（要認証）
+     - メリット: 常に最新の情報、管理の手間なし
+     - デメリット: ストアAPIの可用性に依存
+   - **方式2: Firebase Remote Config経由**
+     - Firebase Remote Configで最新バージョンを管理
+     - メリット: 柔軟な制御、カスタムメッセージ設定可能
+     - デメリット: 手動更新が必要
+   - アップデート推奨：最新バージョン未満の場合、更新を推奨（スキップ可能）
+   - 常に最新バージョンを保つように促す
+
+6. **不足しているAPI**
    - 各種取得系API（マイページ、ミッション詳細、通知設定、お知らせ）
    - 更新系API（ミッション進捗、通知設定、お知らせ既読）
    - 移行完了通知API（転籍処理）
