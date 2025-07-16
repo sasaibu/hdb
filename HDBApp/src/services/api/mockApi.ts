@@ -48,7 +48,7 @@ export class MockApiService {
     console.log('MockAPI login - username:', username);
     console.log('MockAPI login - available users:', Object.keys(mockUsers));
 
-    const user = mockUsers[username];
+    const user = (mockUsers as any)[username];
     if (!user || password.length < 4) {
       console.log('MockAPI login - Login failed. User exists:', !!user, 'Password length:', password.length);
       return {
@@ -94,12 +94,118 @@ export class MockApiService {
       };
     }
 
+    const user = JSON.parse(userStr);
     return {
       success: true,
       data: {
+        isValid: true,
         token,
-        user: JSON.parse(userStr),
+        user,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24時間後
       },
+    };
+  }
+
+  // リフレッシュトークンAPI（新規追加）
+  async refreshToken(): Promise<ApiResponse<any>> {
+    await delay(500);
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    const userStr = await AsyncStorage.getItem('current_user');
+
+    if (!token || !userStr) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+        message: 'リフレッシュトークンが無効です',
+      };
+    }
+
+    const newToken = `mock-jwt-token-${Date.now()}`;
+    await AsyncStorage.setItem(TOKEN_KEY, newToken);
+
+    return {
+      success: true,
+      data: {
+        accessToken: newToken,
+        refreshToken: `refresh-${Date.now()}`,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      },
+    };
+  }
+
+  // 初期データ取得API（新規追加）
+  async getInitialData(): Promise<ApiResponse<any>> {
+    await delay(800);
+    
+    const userStr = await AsyncStorage.getItem('current_user');
+    const isFirstLaunch = !(await AsyncStorage.getItem('app_initialized'));
+
+    const initialData = {
+      appSettings: {
+        theme: 'light',
+        language: 'ja',
+        notificationsEnabled: true,
+        syncInterval: 3600, // 1時間
+      },
+      serverConfig: {
+        apiVersion: '1.0.0',
+        maintenanceMode: false,
+        features: {
+          healthKitSync: true,
+          googleFitSync: true,
+          pushNotifications: true,
+        },
+      },
+      isFirstLaunch,
+      hasUser: !!userStr,
+    };
+
+    // 初回起動フラグを設定
+    if (isFirstLaunch) {
+      await AsyncStorage.setItem('app_initialized', 'true');
+    }
+
+    return {
+      success: true,
+      data: initialData,
+    };
+  }
+
+  // デバイス初期化API（拡張）
+  async initializeDevice(): Promise<ApiResponse<any>> {
+    await delay(1200);
+
+    const deviceInfo = {
+      platform: 'ios', // または 'android'
+      version: '1.0.0',
+      buildNumber: '1',
+      deviceModel: 'iPhone 15',
+      osVersion: '17.0',
+      uniqueId: `device-${Date.now()}`,
+    };
+
+    const userStr = await AsyncStorage.getItem('current_user');
+    const userId = userStr ? JSON.parse(userStr).id : null;
+
+    const device = {
+      id: `device-${Date.now()}`,
+      userId,
+      ...deviceInfo,
+      isActive: true,
+      pushToken: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.devices.push(device);
+
+    // デバイス情報をローカルに保存
+    await AsyncStorage.setItem('device_info', JSON.stringify(device));
+
+    return {
+      success: true,
+      data: device,
+      message: 'デバイスを初期化しました',
     };
   }
 
