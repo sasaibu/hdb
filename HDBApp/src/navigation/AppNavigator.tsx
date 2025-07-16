@@ -1,4 +1,5 @@
 import React from 'react';
+import {View, Text, TouchableOpacity} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {createDrawerNavigator} from '@react-navigation/drawer';
@@ -16,6 +17,7 @@ import DataMigrationScreen from '../screens/DataMigrationScreen';
 import DataMigrationLoginScreen from '../screens/DataMigrationLoginScreen'; // 追加
 import LinkedServicesSettingsScreen from '../screens/LinkedServicesSettingsScreen'; // 追加
 import NotificationHistoryScreen from '../screens/NotificationHistoryScreen'; // 追加
+import NoticeScreen from '../screens/NoticeScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -39,6 +41,7 @@ export type MainDrawerParamList = {
   Restore: undefined;
   DataMigrationLogin: undefined; // 追加
   LinkedServicesSettings: undefined; // 追加
+  Notice: undefined; // 追加
   // DataMigration: undefined; // 削除
 };
 
@@ -51,6 +54,14 @@ function MainDrawer() {
       initialRouteName="Home"
       screenOptions={{
         headerShown: true,
+        headerStyle: {
+          backgroundColor: '#a8c5ff',
+        },
+        headerTintColor: '#FFFFFF',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        headerTitleAlign: 'center', // タイトルを中央揃え
         drawerStyle: {
           backgroundColor: '#f5f5f5',
         },
@@ -94,6 +105,27 @@ function MainDrawer() {
         name="LinkedServicesSettings" // 追加
         component={LinkedServicesSettingsScreen}
         options={{title: '連携サービス設定'}}
+      />
+      <Drawer.Screen
+        name="お知らせ"
+        component={NoticeScreen}
+        options={({navigation}) => ({
+          headerTitle: () => (
+            <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+              <Text style={{color: '#FFFFFF', fontSize: 18, fontWeight: 'bold'}}>
+                お知らせ
+              </Text>
+            </View>
+          ),
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.openDrawer()}
+              style={{paddingLeft: 15}}>
+              <Text style={{color: '#FFFFFF', fontSize: 24}}>☰</Text>
+            </TouchableOpacity>
+          ),
+          headerRight: () => <View style={{width: 50}} />,
+        })}
       />
     </Drawer.Navigator>
   );
