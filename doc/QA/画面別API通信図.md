@@ -132,17 +132,16 @@ sequenceDiagram
     participant App as HDBアプリ
     participant DB as SQLite
     participant AWS as バイタルAWS
-    participant Storage as AsyncStorage
     
-    Note over App,AWS: 画面表示時
-    App->>AWS: マイページ情報取得API（不足）
-    AWS-->>App: ニックネーム、アイコン
-    App->>DB: user_profileテーブル更新
+    Note over App,DB: 画面表示時
+    App->>DB: user_profileテーブル取得（ローカル）
+    DB-->>App: ニックネーム、アイコン
     
     Note over App,AWS: 更新時
     App->>AWS: マイデータ登録API（新規）
     Note over App,AWS: ニックネーム、アイコン
     AWS-->>App: 更新結果
+    App->>DB: user_profileテーブル更新
 ```
 
 ## 7. 目標設定画面
@@ -176,15 +175,15 @@ sequenceDiagram
     participant Storage as AsyncStorage
     participant AWS as バイタルAWS
     
-    Note over App,AWS: 画面表示時
-    App->>AWS: 通知設定取得API（不足）
-    AWS-->>App: 通知設定情報
-    App->>Storage: ローカル保存
+    Note over App,Storage: 画面表示時
+    App->>Storage: 通知設定取得（ローカル）
+    Storage-->>App: 通知設定情報
     
     Note over App,AWS: 設定変更時
-    App->>AWS: 通知設定更新API（不足）
-    AWS-->>App: 更新結果
     App->>Storage: ローカル更新
+    App->>AWS: マイデータ登録API
+    Note over App,AWS: 通知設定情報を含む
+    AWS-->>App: 更新結果
 ```
 
 ## 9. 連携サービス画面
@@ -212,17 +211,17 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant App as HDBアプリ
-    participant DB as SQLite
+    participant WebView as WebView
     participant AWS as バイタルAWS
+    participant HDB as HDB
     
-    App->>AWS: お知らせ一覧取得API（不足）
-    AWS-->>App: お知らせリスト
-    App->>DB: announcementsテーブル保存
+    Note over App,AWS: お知らせ画面表示
+    App->>AWS: Single Sign On API
+    AWS-->>App: お知らせ画面URL
+    App->>WebView: WebView表示
+    WebView->>HDB: お知らせ一覧表示
     
-    Note over App,AWS: 既読更新時
-    App->>AWS: お知らせ既読更新API（不足）
-    AWS-->>App: 更新結果
-    App->>DB: read_at更新
+    Note over WebView,HDB: 既読管理はHDB側で処理
 ```
 
 ## 11. DBバックアップ・リストア画面
@@ -442,8 +441,7 @@ sequenceDiagram
    - 常に最新バージョンを保つように促す
 
 6. **不足しているAPI**
-   - 各種取得系API（マイページ、ミッション詳細、通知設定、お知らせ）
-   - 更新系API（ミッション進捗、通知設定、お知らせ既読）
+   - 更新系API（目標設定）
    - 移行完了通知API（転籍処理）
 
 ## 転籍処理の重要ポイント
