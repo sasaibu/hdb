@@ -18,6 +18,7 @@ import DataMigrationLoginScreen from '../screens/DataMigrationLoginScreen'; // �
 import LinkedServicesSettingsScreen from '../screens/LinkedServicesSettingsScreen'; // 追加
 import NotificationHistoryScreen from '../screens/NotificationHistoryScreen'; // 追加
 import NoticeScreen from '../screens/NoticeScreen'; // 追加
+import TermsScreen from '../screens/TermsScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -42,6 +43,7 @@ export type MainDrawerParamList = {
   DataMigrationLogin: undefined; // 追加
   LinkedServicesSettings: undefined; // 追加
   Notice: undefined; // 追加
+  Terms: undefined; // 追加
   // DataMigration: undefined; // 削除
 };
 
@@ -126,6 +128,11 @@ function MainDrawer() {
           ),
           headerRight: () => <View style={{width: 50}} />,
         })}
+      />
+      <Drawer.Screen
+        name="Terms"
+        component={TermsScreen}
+        options={{title: '利用規約'}}
       />
     </Drawer.Navigator>
   );
