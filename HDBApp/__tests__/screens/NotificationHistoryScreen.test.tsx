@@ -1,10 +1,98 @@
 import React from 'react';
 import {render, fireEvent, waitFor} from '@testing-library/react-native';
-import NotificationHistoryScreen from '../../src/screens/NotificationHistoryScreen';
-import {Alert} from 'react-native';
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
+// Mock React Native components completely
+jest.mock('react-native', () => {
+  const React = require('react');
+  
+  const mockComponent = (name: string) => React.forwardRef((props: any, ref: any) => {
+    return React.createElement('View', {
+      ...props,
+      ref,
+      testID: props.testID || name,
+      'data-component': name
+    });
+  });
+
+  // Special Text component that preserves children
+  const MockText = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('Text', {
+      ...props,
+      ref,
+      testID: props.testID || 'Text',
+      'data-component': 'Text'
+    }, props.children);
+  });
+
+  // Special TouchableOpacity that handles onPress
+  const MockTouchableOpacity = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('TouchableOpacity', {
+      ...props,
+      ref,
+      testID: props.testID || 'TouchableOpacity',
+      'data-component': 'TouchableOpacity',
+      onPress: props.onPress
+    }, props.children);
+  });
+
+  // Special FlatList that renders items
+  const MockFlatList = React.forwardRef((props: any, ref: any) => {
+    const items = props.data || [];
+    const ListEmptyComponent = props.ListEmptyComponent;
+    
+    if (items.length === 0 && ListEmptyComponent) {
+      return React.createElement('View', {
+        ref,
+        testID: 'FlatList-empty',
+        'data-component': 'FlatList'
+      }, React.createElement(ListEmptyComponent));
+    }
+    
+    return React.createElement('View', {
+      ...props,
+      ref,
+      testID: 'FlatList',
+      'data-component': 'FlatList'
+    }, items.map((item: any, index: number) => 
+      React.createElement('View', {
+        key: props.keyExtractor ? props.keyExtractor(item) : index,
+        testID: `FlatList-item-${index}`
+      }, props.renderItem ? props.renderItem({item, index}) : null)
+    ));
+  });
+
+  return {
+    // Basic components
+    View: mockComponent('View'),
+    Text: MockText,
+    TouchableOpacity: MockTouchableOpacity,
+    FlatList: MockFlatList,
+    SafeAreaView: mockComponent('SafeAreaView'),
+    
+    // Alert
+    Alert: {
+      alert: jest.fn(),
+    },
+    
+    // StyleSheet
+    StyleSheet: {
+      create: jest.fn((styles) => styles),
+      flatten: jest.fn((style) => style),
+    },
+  };
+});
+
+// Mock apiClient
+const mockApiClient = {
+  getNotifications: jest.fn(),
+  markNotificationAsRead: jest.fn(),
+};
+
+jest.mock('../../src/services/api/apiClient', () => ({
+  apiClient: mockApiClient,
+}));
+
+import NotificationHistoryScreen from '../../src/screens/NotificationHistoryScreen';
 
 describe('NotificationHistoryScreen', () => {
   beforeEach(() => {
@@ -82,7 +170,7 @@ describe('NotificationHistoryScreen', () => {
     const clearButton = getByText('クリア');
     fireEvent.press(clearButton);
 
-    expect(Alert.alert).toHaveBeenCalledWith(
+    expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
       '確認',
       'すべての通知履歴を削除しますか？',
       expect.any(Array)
@@ -102,7 +190,7 @@ describe('NotificationHistoryScreen', () => {
     fireEvent.press(clearButton);
 
     // Get the confirm button from Alert
-    const alertButtons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const alertButtons = (require('react-native').Alert.alert as jest.Mock).mock.calls[0][2];
     const confirmButton = alertButtons.find((btn: any) => btn.text === '削除');
     confirmButton.onPress();
 
@@ -126,7 +214,7 @@ describe('NotificationHistoryScreen', () => {
     const clearButton = getByText('クリア');
     fireEvent.press(clearButton);
 
-    const alertButtons = (Alert.alert as jest.Mock).mock.calls[0][2];
+    const alertButtons = (require('react-native').Alert.alert as jest.Mock).mock.calls[0][2];
     const confirmButton = alertButtons.find((btn: any) => btn.text === '削除');
     confirmButton.onPress();
 

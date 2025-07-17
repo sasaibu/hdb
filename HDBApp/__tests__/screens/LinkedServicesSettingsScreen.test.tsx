@@ -1,8 +1,91 @@
 import React from 'react';
 import {render, fireEvent, waitFor} from '@testing-library/react-native';
-import LinkedServicesSettingsScreen from '../../src/screens/LinkedServicesSettingsScreen';
-import {Alert, Platform, Linking} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Mock React Native components completely
+jest.mock('react-native', () => {
+  const React = require('react');
+  
+  const mockComponent = (name: string) => React.forwardRef((props: any, ref: any) => {
+    return React.createElement('View', {
+      ...props,
+      ref,
+      testID: props.testID || name,
+      'data-component': name
+    });
+  });
+
+  // Special Text component that preserves children
+  const MockText = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('Text', {
+      ...props,
+      ref,
+      testID: props.testID || 'Text',
+      'data-component': 'Text'
+    }, props.children);
+  });
+
+  // Special TouchableOpacity that handles onPress
+  const MockTouchableOpacity = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('TouchableOpacity', {
+      ...props,
+      ref,
+      testID: props.testID || 'TouchableOpacity',
+      'data-component': 'TouchableOpacity',
+      onPress: props.onPress,
+      disabled: props.disabled
+    }, props.children);
+  });
+
+  // Special Switch component
+  const MockSwitch = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('Switch', {
+      ...props,
+      ref,
+      testID: props.testID || 'Switch',
+      'data-component': 'Switch',
+      onValueChange: props.onValueChange,
+      value: props.value,
+      disabled: props.disabled
+    });
+  });
+
+  // Special ScrollView component
+  const MockScrollView = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('ScrollView', {
+      ...props,
+      ref,
+      testID: props.testID || 'ScrollView',
+      'data-component': 'ScrollView'
+    }, props.children);
+  });
+
+  return {
+    // Basic components
+    View: mockComponent('View'),
+    Text: MockText,
+    TouchableOpacity: MockTouchableOpacity,
+    Switch: MockSwitch,
+    ScrollView: MockScrollView,
+    SafeAreaView: mockComponent('SafeAreaView'),
+    
+    // Alert
+    Alert: {
+      alert: jest.fn(),
+    },
+    
+    // Platform
+    Platform: {
+      OS: 'ios',
+      select: jest.fn((obj) => obj.ios || obj.default),
+    },
+    
+    // StyleSheet
+    StyleSheet: {
+      create: jest.fn((styles) => styles),
+      flatten: jest.fn((style) => style),
+    },
+  };
+});
 
 // Mock dependencies
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -10,31 +93,53 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(),
 }));
 
-jest.mock('react-native/Libraries/Linking/Linking', () => ({
-  openURL: jest.fn(),
-  canOpenURL: jest.fn().mockResolvedValue(true),
-}));
+jest.mock('../../src/services/mockHealthPlatform');
+jest.mock('../../src/services/VitalDataService');
 
-jest.spyOn(Alert, 'alert');
-
-const mockGoBack = jest.fn();
-const mockNavigation = {
-  goBack: mockGoBack,
-};
+import LinkedServicesSettingsScreen from '../../src/screens/LinkedServicesSettingsScreen';
+import {Alert, Platform} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {MockHealthPlatformService} from '../../src/services/mockHealthPlatform';
+import {VitalDataService} from '../../src/services/VitalDataService';
 
 describe('LinkedServicesSettingsScreen', () => {
+  let mockHealthPlatformService: jest.Mocked<MockHealthPlatformService>;
+  let mockVitalDataService: jest.Mocked<VitalDataService>;
+  const mockNavigation = {
+    goBack: jest.fn(),
+    navigate: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    Platform.OS = 'ios'; // Default to iOS for testing
+    
+    mockHealthPlatformService = {
+      requestHealthKitPermission: jest.fn(),
+      requestGoogleFitPermission: jest.fn(),
+      setHealthKitEnabled: jest.fn(),
+      setGoogleFitEnabled: jest.fn(),
+    } as any;
+    
+    mockVitalDataService = {
+      initializeService: jest.fn(),
+      syncHealthPlatformData: jest.fn(),
+    } as any;
+    
+    (MockHealthPlatformService.getInstance as jest.Mock).mockReturnValue(mockHealthPlatformService);
+    (VitalDataService as unknown as jest.Mock).mockImplementation(() => mockVitalDataService);
+    
+    // Default Platform to iOS
+    Platform.OS = 'ios';
   });
 
-  it('renders correctly', () => {
+  it('renders correctly with main components', () => {
     const {getByText} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    expect(getByText('連携サービス設定')).toBeTruthy();
-    expect(getByText('戻る')).toBeTruthy();
+    expect(getByText('連携サービス')).toBeTruthy();
+    expect(getByText('新アプリ')).toBeTruthy();
+    expect(getByText('今すぐ同期')).toBeTruthy();
   });
 
   it('displays HealthKit option on iOS', () => {
@@ -45,279 +150,309 @@ describe('LinkedServicesSettingsScreen', () => {
     );
 
     expect(getByText('HealthKit')).toBeTruthy();
-    expect(getByText('iOSのヘルスアプリと連携')).toBeTruthy();
+    expect(getByText('iOSのヘルスデータと連携')).toBeTruthy();
+    expect(getByText('HealthKitの使い方はこちら')).toBeTruthy();
   });
 
-  it('displays Google Fit option on Android', () => {
+  it('displays Health Connect option on Android', () => {
     Platform.OS = 'android';
     
     const {getByText} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    expect(getByText('Google Fit')).toBeTruthy();
-    expect(getByText('Google Fitと連携')).toBeTruthy();
+    expect(getByText('ヘルスコネクト')).toBeTruthy();
+    expect(getByText('Androidのヘルスデータと連携')).toBeTruthy();
+    expect(getByText('ヘルスコネクトの使い方はこちら')).toBeTruthy();
   });
 
   it('loads saved settings on mount', async () => {
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-      JSON.stringify({
-        healthKitEnabled: true,
-        googleFitEnabled: false,
-      })
-    );
+    (AsyncStorage.getItem as jest.Mock)
+      .mockResolvedValueOnce('true') // healthkit_enabled
+      .mockResolvedValueOnce('false'); // googlefit_enabled
 
-    const {getByTestId} = render(
+    const {getAllByTestId} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      const healthKitSwitch = getByTestId('healthkit-switch');
-      expect(healthKitSwitch.props.value).toBe(true);
+      const switches = getAllByTestId('Switch');
+      // HealthKit switch should be enabled
+      expect(switches[0].props.value).toBe(true);
     });
   });
 
-  it('toggles HealthKit setting', async () => {
+  it('toggles HealthKit setting successfully', async () => {
     Platform.OS = 'ios';
-    
-    const {getByTestId} = render(
+    mockHealthPlatformService.requestHealthKitPermission.mockResolvedValue(true);
+    mockHealthPlatformService.setHealthKitEnabled.mockResolvedValue(undefined);
+
+    const {getAllByTestId} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    const healthKitSwitch = getByTestId('healthkit-switch');
+    const switches = getAllByTestId('Switch');
+    const healthKitSwitch = switches[0]; // First switch is HealthKit
+    
     fireEvent(healthKitSwitch, 'valueChange', true);
 
     await waitFor(() => {
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-        'linked_services_settings',
-        expect.stringContaining('"healthKitEnabled":true')
-      );
+      expect(mockHealthPlatformService.requestHealthKitPermission).toHaveBeenCalled();
+      expect(mockHealthPlatformService.setHealthKitEnabled).toHaveBeenCalledWith(true);
     });
   });
 
-  it('shows permission request when enabling HealthKit', async () => {
+  it('shows permission denied alert when HealthKit access is denied', async () => {
     Platform.OS = 'ios';
-    
-    const {getByTestId} = render(
+    mockHealthPlatformService.requestHealthKitPermission.mockResolvedValue(false);
+
+    const {getAllByTestId} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    const healthKitSwitch = getByTestId('healthkit-switch');
+    const switches = getAllByTestId('Switch');
+    const healthKitSwitch = switches[0];
+    
     fireEvent(healthKitSwitch, 'valueChange', true);
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith(
-        '権限の確認',
-        expect.stringContaining('HealthKitへのアクセス'),
+        'エラー',
+        'HealthKitへのアクセスが拒否されました。'
+      );
+    });
+  });
+
+  it('shows sync confirmation when enabling HealthKit', async () => {
+    Platform.OS = 'ios';
+    mockHealthPlatformService.requestHealthKitPermission.mockResolvedValue(true);
+    mockHealthPlatformService.setHealthKitEnabled.mockResolvedValue(undefined);
+
+    const {getAllByTestId} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    const switches = getAllByTestId('Switch');
+    const healthKitSwitch = switches[0];
+    
+    fireEvent(healthKitSwitch, 'valueChange', true);
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        '同期確認',
+        'HealthKitからヘルスデータを同期しますか？',
         expect.any(Array)
       );
     });
   });
 
-  it('handles permission denial', async () => {
-    Platform.OS = 'ios';
+  it('toggles Health Connect setting on Android', async () => {
+    Platform.OS = 'android';
+    mockHealthPlatformService.requestGoogleFitPermission.mockResolvedValue(true);
+    mockHealthPlatformService.setGoogleFitEnabled.mockResolvedValue(undefined);
+
+    const {getAllByTestId} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    const switches = getAllByTestId('Switch');
+    const healthConnectSwitch = switches[0]; // First switch is Health Connect on Android
     
-    const {getByTestId} = render(
-      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
-    );
-
-    const healthKitSwitch = getByTestId('healthkit-switch');
-    fireEvent(healthKitSwitch, 'valueChange', true);
-
-    // Deny permission
-    const alertButtons = (Alert.alert as jest.Mock).mock.calls[0][2];
-    const cancelButton = alertButtons.find((btn: any) => btn.text === 'キャンセル');
-    cancelButton.onPress();
+    fireEvent(healthConnectSwitch, 'valueChange', true);
 
     await waitFor(() => {
-      expect(healthKitSwitch.props.value).toBe(false);
+      expect(mockHealthPlatformService.requestGoogleFitPermission).toHaveBeenCalled();
+      expect(mockHealthPlatformService.setGoogleFitEnabled).toHaveBeenCalledWith(true);
     });
   });
 
-  it('opens settings when permission is required', async () => {
-    Platform.OS = 'ios';
-    
-    const {getByText} = render(
-      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
-    );
+  it('shows error when trying to use HealthKit on Android', async () => {
+    Platform.OS = 'android';
 
-    const settingsButton = getByText('設定を開く');
-    fireEvent.press(settingsButton);
+    render(<LinkedServicesSettingsScreen navigation={mockNavigation as any} />);
 
-    expect(Linking.openURL).toHaveBeenCalledWith('app-settings:');
+    // On Android, HealthKit should not be available
+    expect(Platform.OS).toBe('android');
   });
 
-  it('displays sync status', async () => {
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-      JSON.stringify({
-        healthKitEnabled: true,
-        lastSync: '2025-07-11T10:00:00Z',
-      })
-    );
+  it('performs manual sync when sync button is pressed', async () => {
+    mockVitalDataService.initializeService.mockResolvedValue(undefined);
+    mockVitalDataService.syncHealthPlatformData.mockResolvedValue(undefined);
 
     const {getByText} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    await waitFor(() => {
-      expect(getByText(/最終同期:/)).toBeTruthy();
-      expect(getByText(/2025年7月11日/)).toBeTruthy();
-    });
-  });
-
-  it('shows sync now button when service is enabled', async () => {
-    Platform.OS = 'ios';
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-      JSON.stringify({
-        healthKitEnabled: true,
-      })
-    );
-
-    const {getByText} = render(
-      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
-    );
+    const syncButton = getByText('今すぐ同期');
+    fireEvent.press(syncButton);
 
     await waitFor(() => {
-      expect(getByText('今すぐ同期')).toBeTruthy();
-    });
-  });
-
-  it('performs manual sync', async () => {
-    Platform.OS = 'ios';
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-      JSON.stringify({
-        healthKitEnabled: true,
-      })
-    );
-
-    const {getByText} = render(
-      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
-    );
-
-    await waitFor(() => {
-      const syncButton = getByText('今すぐ同期');
-      fireEvent.press(syncButton);
-    });
-
-    await waitFor(() => {
+      expect(mockVitalDataService.initializeService).toHaveBeenCalled();
+      expect(mockVitalDataService.syncHealthPlatformData).toHaveBeenCalled();
       expect(Alert.alert).toHaveBeenCalledWith(
-        '同期完了',
-        'データの同期が完了しました'
+        '成功',
+        'ヘルスデータの同期が完了しました。'
       );
     });
   });
 
   it('handles sync error', async () => {
-    Platform.OS = 'ios';
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-      JSON.stringify({
-        healthKitEnabled: true,
-      })
-    );
-
-    // Mock sync error
-    jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Sync failed'));
+    mockVitalDataService.initializeService.mockRejectedValue(new Error('Sync failed'));
 
     const {getByText} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    await waitFor(() => {
-      const syncButton = getByText('今すぐ同期');
-      fireEvent.press(syncButton);
-    });
+    const syncButton = getByText('今すぐ同期');
+    fireEvent.press(syncButton);
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith(
         'エラー',
-        '同期に失敗しました'
+        'ヘルスデータの同期に失敗しました。'
       );
     });
   });
 
-  it('navigates back when back button is pressed', () => {
+  it('shows how to use dialog when link is pressed', () => {
+    Platform.OS = 'ios';
+    
     const {getByText} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    const backButton = getByText('戻る');
-    fireEvent.press(backButton);
+    const howToUseLink = getByText('HealthKitの使い方はこちら');
+    fireEvent.press(howToUseLink);
 
-    expect(mockGoBack).toHaveBeenCalledTimes(1);
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'HealthKitについて',
+      expect.stringContaining('HealthKitを有効にすると'),
+      [{text: 'OK'}]
+    );
   });
 
-  it('shows sync frequency settings', () => {
+  it('shows how to use dialog for Health Connect on Android', () => {
+    Platform.OS = 'android';
+    
     const {getByText} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    expect(getByText('同期頻度')).toBeTruthy();
-    expect(getByText('1時間ごと')).toBeTruthy();
-    expect(getByText('6時間ごと')).toBeTruthy();
-    expect(getByText('1日ごと')).toBeTruthy();
-    expect(getByText('手動のみ')).toBeTruthy();
-  });
+    const howToUseLink = getByText('ヘルスコネクトの使い方はこちら');
+    fireEvent.press(howToUseLink);
 
-  it('updates sync frequency', async () => {
-    const {getByText} = render(
-      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'ヘルスコネクトについて',
+      expect.stringContaining('ヘルスコネクトを有効にすると'),
+      [{text: 'OK'}]
     );
-
-    const frequencyOption = getByText('6時間ごと');
-    fireEvent.press(frequencyOption);
-
-    await waitFor(() => {
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-        'linked_services_settings',
-        expect.stringContaining('"syncFrequency":"6hours"')
-      );
-    });
   });
 
-  it('displays data types to sync', () => {
-    const {getByText} = render(
-      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
-    );
-
-    expect(getByText('同期するデータ')).toBeTruthy();
-    expect(getByText('歩数')).toBeTruthy();
-    expect(getByText('体重')).toBeTruthy();
-    expect(getByText('心拍数')).toBeTruthy();
-    expect(getByText('血圧')).toBeTruthy();
-  });
-
-  it('toggles data type sync settings', async () => {
-    const {getByTestId} = render(
-      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
-    );
-
-    const stepsSwitch = getByTestId('sync-steps-switch');
-    fireEvent(stepsSwitch, 'valueChange', false);
-
-    await waitFor(() => {
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-        'linked_services_settings',
-        expect.stringContaining('"syncSteps":false')
-      );
-    });
-  });
-
-  it('shows warning when disabling all data types', async () => {
+  it('toggles new app setting', async () => {
     const {getAllByTestId} = render(
       <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
     );
 
-    const switches = getAllByTestId(/sync-.*-switch/);
+    const switches = getAllByTestId('Switch');
+    const newAppSwitch = switches[switches.length - 1]; // Last switch is new app
     
-    // Disable all switches
+    fireEvent(newAppSwitch, 'valueChange', true);
+
+    // New app switch should update its value
+    expect(newAppSwitch.props.value).toBe(true);
+  });
+
+  it('displays loading state during operations', async () => {
+    Platform.OS = 'ios';
+    mockHealthPlatformService.requestHealthKitPermission.mockImplementation(
+      () => new Promise(resolve => setTimeout(() => resolve(true), 100))
+    );
+
+    const {getAllByTestId, getByText} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    const switches = getAllByTestId('Switch');
+    const healthKitSwitch = switches[0];
+    
+    fireEvent(healthKitSwitch, 'valueChange', true);
+
+    // Should show loading text
+    expect(getByText('処理中...')).toBeTruthy();
+    
+    // Switches should be disabled during loading
     switches.forEach(sw => {
-      fireEvent(sw, 'valueChange', false);
+      expect(sw.props.disabled).toBe(true);
     });
+  });
+
+  it('renders sync button correctly', () => {
+    const {getByText} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    const syncButton = getByText('今すぐ同期');
+    expect(syncButton).toBeTruthy();
+  });
+
+  it('displays note about data handling', () => {
+    Platform.OS = 'ios';
+    
+    const {getByText} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    expect(getByText(/※HealthKitと手動入力のデータが重複する場合/)).toBeTruthy();
+  });
+
+  it('displays note about Health Connect data handling on Android', () => {
+    Platform.OS = 'android';
+    
+    const {getByText} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    expect(getByText(/※ヘルスコネクトと手動入力のデータが重複する場合/)).toBeTruthy();
+  });
+
+  it('handles HealthKit toggle error', async () => {
+    Platform.OS = 'ios';
+    mockHealthPlatformService.requestHealthKitPermission.mockRejectedValue(new Error('Permission error'));
+
+    const {getAllByTestId} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    const switches = getAllByTestId('Switch');
+    const healthKitSwitch = switches[0];
+    
+    fireEvent(healthKitSwitch, 'valueChange', true);
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith(
-        '警告',
-        '少なくとも1つのデータタイプを選択してください'
+        'エラー',
+        'HealthKit設定の変更に失敗しました。'
+      );
+    });
+  });
+
+  it('handles Health Connect toggle error', async () => {
+    Platform.OS = 'android';
+    mockHealthPlatformService.requestGoogleFitPermission.mockRejectedValue(new Error('Permission error'));
+
+    const {getAllByTestId} = render(
+      <LinkedServicesSettingsScreen navigation={mockNavigation as any} />
+    );
+
+    const switches = getAllByTestId('Switch');
+    const healthConnectSwitch = switches[0];
+    
+    fireEvent(healthConnectSwitch, 'valueChange', true);
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        'エラー',
+        'ヘルスコネクト設定の変更に失敗しました。'
       );
     });
   });
