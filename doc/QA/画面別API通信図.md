@@ -309,67 +309,6 @@ sequenceDiagram
 
 ## 14. アプリバージョンチェックフロー
 
-### 14.1 ストアから直接バージョン情報を取得する方式
-
-#### 実装詳細
-- **iOS**: iTunes Search API
-  ```
-  GET https://itunes.apple.com/lookup?bundleId=com.hdb.app
-  レスポンス: { results: [{ version: "1.2.3", releaseNotes: "..." }] }
-  ```
-- **Android**: Google Play In-app updates API（Play Core Library）
-  ```typescript
-  // React Nativeでは react-native-in-app-update ライブラリを使用
-  const updateInfo = await InAppUpdate.checkUpdate();
-  // updateInfo.updateAvailability でアップデート可否を確認
-  // updateInfo.availableVersionCode で最新バージョンを取得
-  ```
-
-### 14.2 ストアから直接バージョン情報を取得する方式（シーケンス図）
-
-```mermaid
-sequenceDiagram
-    participant App as HDBアプリ
-    participant Store as App Store/Google Play API
-    participant AWS as バイタルAWS
-    participant StoreApp as App Store/Google Play
-    participant User as ユーザー
-    
-    Note over App,Store: アプリ起動時
-    alt iOS
-        App->>Store: iTunes Search API
-        Note over App,Store: https://itunes.apple.com/lookup?bundleId=com.hdb.app
-        Store-->>App: アプリ情報（version, releaseNotes等）
-    else Android
-        App->>Store: Google Play Developer API
-        Note over App,Store: または In-app updates API
-        Store-->>App: 最新バージョン情報
-    end
-    
-    App->>App: 現在のバージョンと比較
-    
-    alt 現在のバージョン < 最新バージョン
-        App->>User: アップデート推奨ダイアログ表示
-        Note over App,User: 「新しいバージョンが利用可能です」
-        Note over App,User: 「今すぐ更新」「後で」ボタン
-        alt ユーザーが「今すぐ更新」選択
-            User->>App: 今すぐ更新押下
-            App->>StoreApp: ストアアプリを開く
-        else ユーザーが「後で」選択
-            User->>App: 後で押下
-            App->>App: 通常処理続行
-        end
-    else 現在のバージョン = 最新バージョン
-        App->>App: 通常処理続行
-    end
-    
-    Note over App,AWS: バージョン情報をサーバーに送信
-    App->>AWS: デバイス情報登録・更新API
-    Note over App,AWS: app_version、os_version含む
-```
-
-### 14.3 Firebase Remote Config経由の方式（既存）
-
 ```mermaid
 sequenceDiagram
     participant App as HDBアプリ
@@ -426,17 +365,9 @@ sequenceDiagram
    - 通知設定はAsyncStorageに保存
 
 5. **バージョン管理**
-   - **方式1: ストアから直接取得**
-     - iOS: iTunes Search APIを使用（https://itunes.apple.com/lookup?bundleId=）
-     - Android: 
-       - Google Play In-app updates API（推奨）: Play Core Libraryを使用してアプリ内で更新情報を取得
-       - Google Play Developer API: サーバー経由でアプリのリリース情報を取得（要認証）
-     - メリット: 常に最新の情報、管理の手間なし
-     - デメリット: ストアAPIの可用性に依存
-   - **方式2: Firebase Remote Config経由**
-     - Firebase Remote Configで最新バージョンを管理
-     - メリット: 柔軟な制御、カスタムメッセージ設定可能
-     - デメリット: 手動更新が必要
+   - Firebase Remote Config経由で最新バージョンを管理
+   - メリット: 柔軟な制御、カスタムメッセージ設定可能
+   - デメリット: 手動更新が必要
    - アップデート推奨：最新バージョン未満の場合、更新を推奨（スキップ可能）
    - 常に最新バージョンを保つように促す
 
