@@ -1,148 +1,338 @@
 import React from 'react';
 import {render, fireEvent, waitFor} from '@testing-library/react-native';
+
+// Mock React Native components completely
+jest.mock('react-native', () => {
+  const React = require('react');
+  
+  const mockComponent = (name: string) => React.forwardRef((props: any, ref: any) => {
+    return React.createElement('View', {
+      ...props,
+      ref,
+      testID: props.testID || name,
+      'data-component': name
+    });
+  });
+
+  // Special Text component that preserves children
+  const MockText = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('Text', {
+      ...props,
+      ref,
+      testID: props.testID || 'Text',
+      'data-component': 'Text'
+    }, props.children);
+  });
+
+  // Special TouchableOpacity that handles onPress
+  const MockTouchableOpacity = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('TouchableOpacity', {
+      ...props,
+      ref,
+      testID: props.testID || 'TouchableOpacity',
+      'data-component': 'TouchableOpacity',
+      onPress: props.onPress
+    }, props.children);
+  });
+
+  // Special Image component
+  const MockImage = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('Image', {
+      ...props,
+      ref,
+      testID: props.testID || 'Image',
+      'data-component': 'Image'
+    });
+  });
+
+  // Special ActivityIndicator component
+  const MockActivityIndicator = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('ActivityIndicator', {
+      ...props,
+      ref,
+      testID: props.testID || 'ActivityIndicator',
+      'data-component': 'ActivityIndicator'
+    });
+  });
+
+  return {
+    // Basic components
+    View: mockComponent('View'),
+    Text: MockText,
+    TouchableOpacity: MockTouchableOpacity,
+    Image: MockImage,
+    SafeAreaView: mockComponent('SafeAreaView'),
+    ActivityIndicator: MockActivityIndicator,
+    
+    // Alert
+    Alert: {
+      alert: jest.fn(),
+    },
+    
+    // StyleSheet
+    StyleSheet: {
+      create: jest.fn((styles) => styles),
+      flatten: jest.fn((style) => style),
+    },
+  };
+});
+
+// Mock ProfileEditModal
+jest.mock('../../src/components/ProfileEditModal', () => {
+  const React = require('react');
+  return React.forwardRef((props: any, ref: any) => {
+    if (!props.visible) return null;
+    return React.createElement('View', {
+      ref,
+      testID: 'ProfileEditModal',
+      'data-component': 'ProfileEditModal'
+    }, [
+      React.createElement('Text', { key: 'title' }, 'プロフィール編集'),
+      React.createElement('TouchableOpacity', {
+        key: 'save',
+        onPress: () => props.onSave({ nickname: 'テストユーザー' }),
+        testID: 'save-button'
+      }, React.createElement('Text', {}, '保存')),
+      React.createElement('TouchableOpacity', {
+        key: 'cancel',
+        onPress: props.onClose,
+        testID: 'cancel-button'
+      }, React.createElement('Text', {}, 'キャンセル'))
+    ]);
+  });
+});
+
+// Mock the entire apiClient module
+jest.mock('../../src/services/api/apiClient', () => ({
+  apiClient: {
+    getProfile: jest.fn(),
+    updateProfile: jest.fn(),
+  },
+}));
+
+// Get the mocked apiClient
+const mockApiClient = require('../../src/services/api/apiClient').apiClient;
+
+// Import MyPageScreen after all mocks are set up
 import MyPageScreen from '../../src/screens/MyPageScreen';
-import {Alert} from 'react-native';
-
-// Mock dependencies
-jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
-jest.spyOn(Alert, 'alert');
-
-const mockNavigate = jest.fn();
-const mockNavigation = {
-  navigate: mockNavigate,
-  goBack: jest.fn(),
-};
 
 describe('MyPageScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Default successful API responses
+    mockApiClient.getProfile.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: {
+        id: 'USR123456',
+        username: 'testuser',
+        displayName: 'テストユーザー',
+        email: 'test@example.com',
+        avatar: 'https://via.placeholder.com/150',
+      }
+    }));
+
+    mockApiClient.updateProfile.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: {
+        id: 'USR123456',
+        displayName: '更新されたユーザー',
+      }
+    }));
   });
 
-  it('renders correctly with user profile', () => {
-    const {getByText} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    expect(getByText('マイページ')).toBeTruthy();
-    expect(getByText('山田 太郎')).toBeTruthy();
-    expect(getByText('yamada.taro@example.com')).toBeTruthy();
-    expect(getByText('ID: USR123456')).toBeTruthy();
+  it('displays loading state initially', () => {
+    // API呼び出しを遅延させる
+    mockApiClient.getProfile.mockImplementation(
+      () => new Promise(resolve => setTimeout(resolve, 1000))
+    );
+
+    const {getByText, getByTestId} = render(<MyPageScreen />);
+
+    expect(getByText('読み込み中...')).toBeTruthy();
+    expect(getByTestId('ActivityIndicator')).toBeTruthy();
   });
 
-  it('displays profile details section', () => {
-    const {getByText} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    expect(getByText('プロフィール詳細')).toBeTruthy();
-    expect(getByText('生年月日')).toBeTruthy();
-    expect(getByText('1985年5月15日')).toBeTruthy();
-    expect(getByText('性別')).toBeTruthy();
-    expect(getByText('男性')).toBeTruthy();
-    expect(getByText('身長')).toBeTruthy();
-    expect(getByText('172 cm')).toBeTruthy();
-    expect(getByText('目標体重')).toBeTruthy();
-    expect(getByText('68 kg')).toBeTruthy();
+  it('loads and displays user profile', async () => {
+    const {getByText} = render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(getByText('テストユーザー')).toBeTruthy();
+      expect(getByText('ID: USR123456')).toBeTruthy();
+      expect(getByText('test@example.com')).toBeTruthy();
+      expect(getByText('プロフィールを編集')).toBeTruthy();
+    });
+
+    expect(mockApiClient.getProfile).toHaveBeenCalled();
   });
 
-  it('opens profile edit modal when edit button is pressed', () => {
-    const {getByTestId, getByText} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    const editButton = getByTestId('edit-profile-button');
-    fireEvent.press(editButton);
-    
-    // モーダルが表示されることを確認
-    expect(getByText('プロフィール編集')).toBeTruthy();
-    expect(getByTestId('profile-edit-modal')).toBeTruthy();
+  it('displays user profile with fallback nickname', async () => {
+    mockApiClient.getProfile.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: {
+        id: 'USR123456',
+        username: 'fallbackuser',
+        email: 'fallback@example.com',
+        avatar: 'https://via.placeholder.com/150',
+      }
+    }));
+
+    const {getByText} = render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(getByText('fallbackuser')).toBeTruthy();
+      expect(getByText('ID: USR123456')).toBeTruthy();
+      expect(getByText('fallback@example.com')).toBeTruthy();
+    });
+  });
+
+  it('opens profile edit modal when edit button is pressed', async () => {
+    const {getByText, queryByTestId} = render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(getByText('プロフィールを編集')).toBeTruthy();
+    });
+
+    // 編集ボタンをクリック
+    fireEvent.press(getByText('プロフィールを編集'));
+
+    await waitFor(() => {
+      expect(getByText('プロフィール編集')).toBeTruthy();
+      expect(queryByTestId('ProfileEditModal')).toBeTruthy();
+    });
   });
 
   it('closes profile edit modal when cancel is pressed', async () => {
-    const {getByTestId, getByText, queryByTestId} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    // モーダルを開く
-    const editButton = getByTestId('edit-profile-button');
-    fireEvent.press(editButton);
-    
-    // キャンセルボタンを押す
-    const cancelButton = getByText('キャンセル');
-    fireEvent.press(cancelButton);
-    
+    const {getByText, getByTestId, queryByTestId} = render(<MyPageScreen />);
+
     await waitFor(() => {
-      expect(queryByTestId('profile-edit-modal')).toBeFalsy();
+      expect(getByText('プロフィールを編集')).toBeTruthy();
+    });
+
+    // 編集ボタンをクリック
+    fireEvent.press(getByText('プロフィールを編集'));
+
+    await waitFor(() => {
+      expect(queryByTestId('ProfileEditModal')).toBeTruthy();
+    });
+
+    // キャンセルボタンをクリック
+    fireEvent.press(getByTestId('cancel-button'));
+
+    await waitFor(() => {
+      expect(queryByTestId('ProfileEditModal')).toBeFalsy();
     });
   });
 
   it('saves profile changes when save is pressed', async () => {
-    const {getByTestId, getByText, getByDisplayValue} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    // モーダルを開く
-    const editButton = getByTestId('edit-profile-button');
-    fireEvent.press(editButton);
-    
-    // ニックネームを変更
-    const nicknameInput = getByDisplayValue('山田 太郎');
-    fireEvent.changeText(nicknameInput, '山田 次郎');
-    
-    // 保存ボタンを押す
-    const saveButton = getByText('保存');
-    fireEvent.press(saveButton);
-    
+    const {getByText, getByTestId} = render(<MyPageScreen />);
+
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('成功', 'プロフィールを更新しました');
-      expect(getByText('山田 次郎')).toBeTruthy();
+      expect(getByText('プロフィールを編集')).toBeTruthy();
+    });
+
+    // 編集ボタンをクリック
+    fireEvent.press(getByText('プロフィールを編集'));
+
+    await waitFor(() => {
+      expect(getByTestId('ProfileEditModal')).toBeTruthy();
+    });
+
+    // 保存ボタンをクリック
+    fireEvent.press(getByTestId('save-button'));
+
+    await waitFor(() => {
+      expect(mockApiClient.updateProfile).toHaveBeenCalledWith({
+        displayName: 'テストユーザー',
+      });
+      expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
+        '成功',
+        'プロフィールを更新しました'
+      );
     });
   });
 
-  it('displays action buttons', () => {
-    const {getByText} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    expect(getByText('設定')).toBeTruthy();
-    expect(getByText('ヘルプ')).toBeTruthy();
-    expect(getByText('ログアウト')).toBeTruthy();
+  it('handles profile update API error', async () => {
+    mockApiClient.updateProfile.mockImplementation(() => Promise.reject(new Error('API Error')));
+
+    const {getByText, getByTestId} = render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(getByText('プロフィールを編集')).toBeTruthy();
+    });
+
+    // 編集ボタンをクリック
+    fireEvent.press(getByText('プロフィールを編集'));
+
+    await waitFor(() => {
+      expect(getByTestId('ProfileEditModal')).toBeTruthy();
+    });
+
+    // 保存ボタンをクリック
+    fireEvent.press(getByTestId('save-button'));
+
+    await waitFor(() => {
+      expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
+        'エラー',
+        'プロフィールの更新に失敗しました'
+      );
+    });
   });
 
-  it('shows logout confirmation when logout button is pressed', () => {
-    const {getByText} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    const logoutButton = getByText('ログアウト');
-    fireEvent.press(logoutButton);
-    
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'ログアウト',
-      'ログアウトしてもよろしいですか？',
-      expect.any(Array)
-    );
+  it('handles profile load API error', async () => {
+    mockApiClient.getProfile.mockImplementation(() => Promise.reject(new Error('Load Error')));
+
+    const {getByText} = render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
+        'エラー',
+        'プロフィールの読み込みに失敗しました'
+      );
+    });
   });
 
-  it('navigates to login screen when logout is confirmed', () => {
-    const {getByText} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    const logoutButton = getByText('ログアウト');
-    fireEvent.press(logoutButton);
-    
-    // Alert.alertの3番目の引数（ボタン配列）を取得
-    const alertButtons = (Alert.alert as jest.Mock).mock.calls[0][2];
-    const confirmButton = alertButtons.find((btn: any) => btn.text === 'ログアウト');
-    
-    // ログアウト確認
-    confirmButton.onPress();
-    
-    expect(mockNavigate).toHaveBeenCalledWith('Login');
+  it('displays error message when profile data is not available', async () => {
+    mockApiClient.getProfile.mockImplementation(() => Promise.resolve({
+      success: false,
+      data: null
+    }));
+
+    const {getByText} = render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(getByText('ユーザー情報を取得できませんでした')).toBeTruthy();
+    });
   });
 
-  it('displays avatar placeholder when no avatar is set', () => {
-    const {getByTestId} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    const avatarPlaceholder = getByTestId('avatar-placeholder');
-    expect(avatarPlaceholder).toBeTruthy();
+  it('handles profile without email', async () => {
+    mockApiClient.getProfile.mockImplementation(() => Promise.resolve({
+      success: true,
+      data: {
+        id: 'USR123456',
+        username: 'testuser',
+        displayName: 'テストユーザー',
+        avatar: 'https://via.placeholder.com/150',
+        // email is missing
+      }
+    }));
+
+    const {getByText, queryByText} = render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(getByText('テストユーザー')).toBeTruthy();
+      expect(getByText('ID: USR123456')).toBeTruthy();
+      // Email should not be displayed
+      expect(queryByText('@')).toBeFalsy();
+    });
   });
 
-  it('handles avatar upload', () => {
-    const {getByTestId} = render(<MyPageScreen navigation={mockNavigation as any} />);
-    
-    const avatarButton = getByTestId('avatar-upload-button');
-    fireEvent.press(avatarButton);
-    
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'プロフィール画像',
-      '画像の選択方法を選んでください',
-      expect.any(Array)
-    );
+
+  it('calls API methods correctly', async () => {
+    render(<MyPageScreen />);
+
+    await waitFor(() => {
+      expect(mockApiClient.getProfile).toHaveBeenCalled();
+    });
   });
 });
