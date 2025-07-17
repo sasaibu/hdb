@@ -171,6 +171,8 @@ const mockRoute = {
 };
 
 describe('VitalDataScreen', () => {
+  let component: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
     
@@ -185,33 +187,37 @@ describe('VitalDataScreen', () => {
     mockVitalDataService.deleteVitalData.mockResolvedValue(undefined);
   });
 
+  afterEach(() => {
+    if (component && component.unmount) {
+      component.unmount();
+    }
+  });
+
   it('displays loading state initially', () => {
     // 非同期処理を遅延させる
     mockVitalDataService.initializeService.mockImplementation(
       () => new Promise(resolve => setTimeout(resolve, 1000))
     );
 
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
-    expect(getByText('データを読み込み中...')).toBeTruthy();
+    expect(component.getByText('データを読み込み中...')).toBeTruthy();
   });
 
   it('renders correctly with title and basic elements', async () => {
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
     // 非同期処理完了を待つ
     await waitFor(() => {
-      expect(getByText('歩数 一覧')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('歩数 一覧')).toBeTruthy();
+    }, { timeout: 1000 });
 
-    await waitFor(() => {
-      expect(getByText('目標達成率')).toBeTruthy();
-      expect(getByText('80.0 %')).toBeTruthy();
-    }, { timeout: 5000 });
+    expect(component.getByText('目標達成率')).toBeTruthy();
+    expect(component.getByText('80.0 %')).toBeTruthy();
   });
 
   it('displays vital data when available', async () => {
@@ -222,28 +228,28 @@ describe('VitalDataScreen', () => {
 
     mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
 
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      expect(getByText('8,000 歩')).toBeTruthy();
-      expect(getByText('7,500 歩')).toBeTruthy();
-      expect(getByText('2025-07-08')).toBeTruthy();
-      expect(getByText('2025-07-07')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('8,000 歩')).toBeTruthy();
+      expect(component.getByText('7,500 歩')).toBeTruthy();
+      expect(component.getByText('2025-07-08')).toBeTruthy();
+      expect(component.getByText('2025-07-07')).toBeTruthy();
+    }, { timeout: 1000 });
   });
 
   it('displays empty state when no data', async () => {
     mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
 
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      expect(getByText('データがありません。')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('データがありません。')).toBeTruthy();
+    }, { timeout: 1000 });
   });
 
   it('displays chart when data is available', async () => {
@@ -254,14 +260,14 @@ describe('VitalDataScreen', () => {
 
     mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
 
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      expect(getByText('📊 推移グラフ')).toBeTruthy();
-      expect(getByText('単位: 歩')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('📊 推移グラフ')).toBeTruthy();
+      expect(component.getByText('単位: 歩')).toBeTruthy();
+    }, { timeout: 1000 });
   });
 
   it('handles delete button press', async () => {
@@ -271,16 +277,16 @@ describe('VitalDataScreen', () => {
 
     mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
 
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      expect(getByText('削除')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('削除')).toBeTruthy();
+    }, { timeout: 1000 });
 
     // 削除ボタンをタップ
-    fireEvent.press(getByText('削除'));
+    fireEvent.press(component.getByText('削除'));
 
     // Alert.alertが呼ばれることを確認
     expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
@@ -293,7 +299,7 @@ describe('VitalDataScreen', () => {
   it('handles API errors gracefully', async () => {
     mockVitalDataService.initializeService.mockRejectedValue(new Error('Database error'));
 
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
@@ -302,11 +308,11 @@ describe('VitalDataScreen', () => {
         'エラー',
         'データの読み込みに失敗しました。'
       );
-    }, { timeout: 5000 });
+    }, { timeout: 1000 });
   });
 
   it('calls all required service methods', async () => {
-    render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
@@ -316,7 +322,7 @@ describe('VitalDataScreen', () => {
       expect(mockVitalDataService.getVitalDataByPeriod).toHaveBeenCalledWith('歩数', 'week');
       expect(mockVitalDataService.calculateAchievementRate).toHaveBeenCalledWith('歩数');
       expect(mockVitalDataService.convertToLegacyFormat).toHaveBeenCalled();
-    }, { timeout: 5000 });
+    }, { timeout: 1000 });
   });
 
   it('handles different vital types correctly', async () => {
@@ -325,41 +331,41 @@ describe('VitalDataScreen', () => {
       params: { title: '体重' },
     };
 
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={weightRoute as any} navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      expect(getByText('体重 一覧')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('体重 一覧')).toBeTruthy();
+    }, { timeout: 1000 });
   });
 
   it('displays filter buttons', async () => {
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      expect(getByText('今週')).toBeTruthy();
-      expect(getByText('今月')).toBeTruthy();
-      expect(getByText('全期間')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('今週')).toBeTruthy();
+      expect(component.getByText('今月')).toBeTruthy();
+      expect(component.getByText('全期間')).toBeTruthy();
+    }, { timeout: 1000 });
   });
 
   it('handles filter button press', async () => {
-    const {getByText} = render(
+    component = render(
       <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
     );
 
     await waitFor(() => {
-      expect(getByText('今月')).toBeTruthy();
-    }, { timeout: 5000 });
+      expect(component.getByText('今月')).toBeTruthy();
+    }, { timeout: 1000 });
 
     // 今月ボタンをタップ
-    fireEvent.press(getByText('今月'));
+    fireEvent.press(component.getByText('今月'));
 
     await waitFor(() => {
       expect(mockVitalDataService.getVitalDataByPeriod).toHaveBeenCalledWith('歩数', 'month');
-    }, { timeout: 5000 });
+    }, { timeout: 1000 });
   });
 });
