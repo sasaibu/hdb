@@ -38,16 +38,8 @@ sequenceDiagram
     
     App->>AWS: デバイス情報登録・更新API
     Note over App,AWS: デバイスID、FCMトークン、アプリバージョン等
-    AWS-->>App: ログイン状態、利用権限、ミッション情報
+    AWS-->>App: ログイン状態、利用権限
     
-    Note over App,AWS: 移行データ確認
-    App->>Storage: 移行完了フラグ確認
-    alt 移行未完了
-        Note over AWS: レスポンスに移行データ情報含む
-        alt 移行データあり
-            App->>App: 転籍データ移行画面へ遷移
-        end
-    end
 ```
 
 ## 2. ログイン画面
@@ -65,11 +57,11 @@ sequenceDiagram
     HDB-->>AWS: 認証結果
     AWS-->>App: 認可コード、ステート
     App->>AWS: トークン取得API
-    AWS-->>App: アクセストークン、リフレッシュトークン、ユーザーID、利用権限、ミッション情報
+    AWS-->>App: アクセストークン、リフレッシュトークン、ユーザーID、利用権限
     App->>Keychain: トークン保存
 ```
 
-## 3. トップメニュー（ダッシュボード）
+## 3. トップメニュー（目標画面）
 
 ```mermaid
 sequenceDiagram
@@ -80,10 +72,9 @@ sequenceDiagram
     
     App->>DB: バイタルデータ取得（ローカル）
     DB-->>App: 歩数、体重等の最新データ
-    Note over App,AWS: ランキングはHDB側で処理
-    App->>AWS: Single Sign On API
-    AWS-->>App: ランキング画面URL
-    App->>DB: ランキングキャッシュ保存
+    App->>DB: 目標設定取得（ローカル）
+    DB-->>App: ユーザーが設定した目標情報
+    Note over App: 目標達成状況を計算・表示
     
     Note over App,HDB: WebView表示時
     App->>AWS: Single Sign On API
@@ -145,16 +136,16 @@ sequenceDiagram
     
     Note over App,AWS: 画面表示時
     App->>AWS: マイページ情報取得API（不足）
-    AWS-->>App: ニックネーム、アイコン、目標情報
+    AWS-->>App: ニックネーム、アイコン
     App->>DB: user_profileテーブル更新
     
     Note over App,AWS: 更新時
     App->>AWS: マイデータ登録API（新規）
-    Note over App,AWS: ニックネーム、アイコン、目標設定、目標達成状況
+    Note over App,AWS: ニックネーム、アイコン
     AWS-->>App: 更新結果
 ```
 
-## 7. ミッション画面
+## 7. 目標設定画面
 
 ```mermaid
 sequenceDiagram
@@ -162,17 +153,18 @@ sequenceDiagram
     participant DB as SQLite
     participant AWS as バイタルAWS
     
-    Note over App,AWS: 初回表示時
-    App->>AWS: デバイス情報登録・更新API
-    AWS-->>App: ミッション情報（概要）
+    Note over App,DB: 目標表示
+    App->>DB: goals テーブル取得
+    DB-->>App: ユーザーが設定した目標一覧
     
-    Note over App,AWS: 詳細表示時
-    App->>AWS: ミッション詳細取得API（不足）
-    AWS-->>App: ミッション詳細情報
-    App->>DB: missionsテーブル更新
+    Note over App,DB: 目標設定・編集
+    App->>DB: goals テーブル更新
+    Note over DB: 目標タイプ、目標値、期間を保存
+    DB-->>App: 保存結果
     
-    Note over App,AWS: 進捗更新時
-    App->>AWS: ミッション進捗更新API（不足）
+    Note over App,AWS: 目標データ同期
+    App->>AWS: 目標設定更新API（新規）
+    Note over App,AWS: 目標タイプ、目標値、期間
     AWS-->>App: 更新結果
 ```
 
