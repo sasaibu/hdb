@@ -8,6 +8,7 @@ import {
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {mockApi} from '../services/api/mockApi';
+import {deviceInfoService} from '../services/DeviceInfoService';
 
 type SplashScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -27,10 +28,37 @@ export default function SplashScreen({navigation}: Props) {
       try {
         setStatusMessage('アプリを初期化しています...');
         
-        // 1. デバイス初期化
-        await mockApi.initializeDevice();
+        // 1. デバイス情報収集（新ER図対応）
+        setStatusMessage('デバイス情報を収集しています...');
+        const deviceInfo = await deviceInfoService.collectDeviceInfo();
         
-        // 2. 初期データ取得
+        // 2. 1日1回実行制御チェック
+        const canExecute = await deviceInfoService.canExecuteToday();
+        if (canExecute) {
+          // デバイス情報登録（1日1回）
+          setStatusMessage('デバイス情報を登録しています...');
+          const registerResponse = await mockApi.registerDevice(deviceInfo);
+          
+          if (registerResponse.success) {
+            console.log('Device registered successfully:', registerResponse.data?.deviceId);
+            // 実行カウンター更新
+            await deviceInfoService.incrementExecutionCount();
+          } else {
+            console.warn('Device registration failed:', registerResponse.error);
+          }
+        } else {
+          console.log('Device registration skipped - already executed today');
+        }
+        
+        // 3. デバイストークン期限チェック（270日）
+        const isTokenExpired = await deviceInfoService.isTokenExpired();
+        if (isTokenExpired) {
+          console.warn('Device token expired - requesting new token');
+          setStatusMessage('プッシュ通知設定を更新しています...');
+          // 実際のプロジェクトでは新しいトークンを取得・更新
+        }
+        
+        // 4. 初期データ取得
         setStatusMessage('設定を読み込んでいます...');
         const initialDataResponse = await mockApi.getInitialData();
         
@@ -38,17 +66,19 @@ export default function SplashScreen({navigation}: Props) {
           console.warn('Initial data fetch failed:', initialDataResponse.error);
         }
         
-        // 3. 認証状態確認
+        // 5. 認証状態確認
         setStatusMessage('認証状態を確認しています...');
         const authResponse = await mockApi.verifyToken();
         
         if (authResponse.success && authResponse.data?.isValid) {
           // 認証済み → メイン画面へ
           console.log('User authenticated, navigating to Main');
+          setStatusMessage('ログイン済みです');
           navigation.replace('Main');
         } else {
           // 未認証 → ログイン画面へ
           console.log('User not authenticated, navigating to Login');
+          setStatusMessage('ログインが必要です');
           navigation.replace('Login');
         }
         

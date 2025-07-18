@@ -536,34 +536,91 @@ export class MockApiService {
     };
   }
 
-  // デバイス関連API
+  // デバイス関連API - 新ER図device_infoテーブル対応
   async registerDevice(deviceInfo: any): Promise<ApiResponse<any>> {
     await delay(1000);
 
-    const userStr = await AsyncStorage.getItem('current_user');
-    if (!userStr) {
+    const timestamp = new Date().toISOString();
+    
+    // 新ER図device_infoテーブル構造に対応したデバイス登録
+    const newDevice = {
+      // 新ER図対応項目
+      deviceId: deviceInfo.deviceId, // デバイスID（ユーザー単位ではない）
+      os: deviceInfo.os, // アプリ側で取得してAPIに送信
+      version: deviceInfo.version, // アプリ側で取得してAPIに送信
+      deviceTokenLastUsedAt: deviceInfo.deviceToken ? timestamp : null, // デバイストークン最終使用日時（270日無使用で期限切れ判定用）
+      
+      // 追加情報
+      deviceToken: deviceInfo.deviceToken,
+      deviceModel: deviceInfo.deviceModel,
+      buildNumber: deviceInfo.buildNumber,
+      uniqueId: deviceInfo.uniqueId,
+      
+      // 新仕様対応配列
+      recommendedGoals: deviceInfo.recommendedGoals || [],
+      migrationData: deviceInfo.migrationData || [],
+      permissions: deviceInfo.permissions || [],
+      
+      // 1日1回実行制御
+      dailyExecutionControl: deviceInfo.dailyExecutionInfo || {
+        lastExecutedDate: new Date().toISOString().split('T')[0],
+        executionCount: 1,
+        maxExecutionsPerDay: 1,
+      },
+      
+      // システム管理項目
+      isActive: true,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      
+      // デバイストークン期限管理（270日）
+      tokenExpirationDays: 270,
+      isTokenExpired: false,
+    };
+
+    // 既存デバイスの確認・更新
+    const existingDeviceIndex = this.devices.findIndex(d => d.deviceId === deviceInfo.deviceId);
+    if (existingDeviceIndex >= 0) {
+      // 既存デバイスを更新
+      this.devices[existingDeviceIndex] = {
+        ...this.devices[existingDeviceIndex],
+        ...newDevice,
+        updatedAt: timestamp,
+      };
+      
+      console.log('MockAPI: Device updated with new ER structure:', {
+        deviceId: newDevice.deviceId,
+        os: newDevice.os,
+        version: newDevice.version,
+        tokenLastUsed: newDevice.deviceTokenLastUsedAt,
+        recommendedGoalsCount: newDevice.recommendedGoals.length,
+        permissionsCount: newDevice.permissions.length,
+      });
+
       return {
-        success: false,
-        error: 'Unauthorized',
+        success: true,
+        data: this.devices[existingDeviceIndex],
+        message: 'デバイス情報を新ER図構造で更新しました',
+      };
+    } else {
+      // 新規デバイス登録
+      this.devices.push(newDevice);
+      
+      console.log('MockAPI: Device registered with new ER structure:', {
+        deviceId: newDevice.deviceId,
+        os: newDevice.os,
+        version: newDevice.version,
+        tokenLastUsed: newDevice.deviceTokenLastUsedAt,
+        recommendedGoalsCount: newDevice.recommendedGoals.length,
+        permissionsCount: newDevice.permissions.length,
+      });
+
+      return {
+        success: true,
+        data: newDevice,
+        message: 'デバイス情報を新ER図構造で登録しました',
       };
     }
-
-    const user = JSON.parse(userStr);
-    const newDevice = {
-      id: `device-${Date.now()}`,
-      userId: user.id,
-      ...deviceInfo,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.devices.push(newDevice);
-
-    return {
-      success: true,
-      data: newDevice,
-    };
   }
 
   async updateDevice(id: string, updates: any): Promise<ApiResponse<any>> {
