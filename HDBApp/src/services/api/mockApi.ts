@@ -233,7 +233,57 @@ export class MockApiService {
     };
   }
 
+  // マイデータ登録API（新仕様対応）- POST /api/v1/health/mydata
   async updateProfile(updates: any): Promise<ApiResponse<any>> {
+    await delay(800);
+    const userStr = await AsyncStorage.getItem('current_user');
+    
+    if (!userStr) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+      };
+    }
+
+    const user = JSON.parse(userStr);
+    
+    // 新仕様に基づくデータ構造変換
+    const mydataRequest = this.convertToMydataFormat(updates, user);
+    
+    console.log('MockAPI: Sending mydata request:', mydataRequest);
+    
+    // ユーザーデータ更新
+    const updatedUser = {
+      ...user,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+      // 新仕様項目の保存
+      nickname: mydataRequest.mypage?.nickname || user.nickname,
+      nicknameShowed: mydataRequest.mypage?.showed !== undefined ? mydataRequest.mypage.showed : user.nicknameShowed,
+      goals: mydataRequest.goal || user.goals || [],
+      goalAchievements: mydataRequest.goal_achievement || user.goalAchievements || [],
+      pushPermission: mydataRequest.push?.permission !== undefined ? mydataRequest.push.permission : user.pushPermission,
+    };
+
+    await AsyncStorage.setItem('current_user', JSON.stringify(updatedUser));
+
+    // 新仕様レスポンス生成
+    const response = this.generateMydataResponse(mydataRequest, updatedUser);
+
+    console.log('MockAPI: Mydata response:', response);
+
+    return {
+      success: true,
+      data: {
+        ...updatedUser,
+        ...response, // support_comment, goal_pushを含む
+      },
+      message: 'マイデータを更新しました',
+    };
+  }
+
+  // 旧updateProfile互換メソッド（既存コード互換性のため）
+  async updateProfileLegacy(updates: any): Promise<ApiResponse<any>> {
     await delay(800);
     const userStr = await AsyncStorage.getItem('current_user');
     
@@ -257,6 +307,73 @@ export class MockApiService {
       success: true,
       data: updatedUser,
     };
+  }
+
+  // 新仕様データ形式変換
+  private convertToMydataFormat(updates: any, user: any): any {
+    const mydataRequest: any = {
+      user_id: user.id,
+    };
+
+    // マイページ情報（nickname, showed）
+    if (updates.nickname !== undefined || updates.nicknameShowed !== undefined) {
+      mydataRequest.mypage = {
+        nickname: updates.nickname || user.nickname || '',
+        showed: updates.nicknameShowed !== undefined ? updates.nicknameShowed : (user.nicknameShowed || false),
+      };
+    }
+
+    // 目標設定（goal_id, unique_goal）
+    if (updates.goals || updates.goalId || updates.uniqueGoal) {
+      mydataRequest.goal = updates.goals || {
+        goal_id: updates.goalId || user.goalId || null,
+        unique_goal: updates.uniqueGoal || user.uniqueGoal || null,
+      };
+    }
+
+    // 目標達成情報（goal_id, time, status）
+    if (updates.goalAchievements || updates.goalAchievement) {
+      mydataRequest.goal_achievement = updates.goalAchievements || updates.goalAchievement || [];
+    }
+
+    // プッシュ通知設定（permission）
+    if (updates.pushPermission !== undefined || updates.pushSettings) {
+      mydataRequest.push = {
+        permission: updates.pushPermission !== undefined ? updates.pushPermission : (updates.pushSettings?.enabled || false),
+      };
+    }
+
+    return mydataRequest;
+  }
+
+  // 新仕様レスポンス生成
+  private generateMydataResponse(request: any, user: any): any {
+    const response: any = {};
+
+    // 応援コメント生成
+    if (request.goal || request.goal_achievement) {
+      const supportComments = [
+        '目標に向かって頑張りましょう！',
+        '素晴らしい進歩ですね！',
+        '継続は力なり！応援しています！',
+        '今日も一歩ずつ前進しましょう！',
+        'あなたの努力が実を結んでいます！',
+      ];
+      
+      response.support_comment = supportComments[Math.floor(Math.random() * supportComments.length)];
+    }
+
+    // 目標プッシュ通知設定
+    if (request.push?.permission) {
+      response.goal_push = {
+        enabled: true,
+        frequency: 'daily', // daily, weekly, monthly
+        time: '09:00', // 通知時刻
+        message_type: 'encouragement', // encouragement, reminder, achievement
+      };
+    }
+
+    return response;
   }
 
   // バイタルデータ関連API
