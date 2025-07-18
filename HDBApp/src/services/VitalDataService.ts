@@ -205,6 +205,13 @@ export class VitalDataService {
       { type: '脈拍', value: 74, date: '2025-07-02' },
       { type: '脈拍', value: 77, date: '2025-07-01' },
       { type: '脈拍', value: 70, date: '2025-06-30' },
+      { type: '脈拍', value: 72, date: '2025-06-29' },
+      { type: '脈拍', value: 75, date: '2025-06-28' },
+      { type: '脈拍', value: 73, date: '2025-06-27' },
+      { type: '脈拍', value: 71, date: '2025-06-26' },
+      { type: '脈拍', value: 76, date: '2025-06-25' },
+      { type: '脈拍', value: 74, date: '2025-06-24' },
+      { type: '脈拍', value: 73, date: '2025-06-23' },
     ];
 
     try {

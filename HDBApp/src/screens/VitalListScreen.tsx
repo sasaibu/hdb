@@ -45,10 +45,10 @@ interface VitalListItem {
 const VITAL_TABS: VitalTab[] = [
   {id: 'steps', title: '歩数', icon: '👟', unit: '歩'},
   {id: 'weight', title: '体重', icon: '⚖️', unit: 'kg'},
+  {id: 'temperature', title: '体温', icon: '🌡️', unit: '℃'},
   {id: 'bloodPressure', title: '血圧', icon: '🩺', unit: 'mmHg'},
   {id: 'heartRate', title: '心拍数', icon: '❤️', unit: 'bpm'},
   {id: 'pulse', title: '脈拍', icon: '💓', unit: 'bpm'},
-  {id: 'temperature', title: '体温', icon: '🌡️', unit: '℃'},
 ];
 
 const VitalListScreen = ({navigation}: Props) => {
@@ -132,6 +132,12 @@ const VitalListScreen = ({navigation}: Props) => {
     setActiveTab(index);
     setEditMode(false);
     setSelectedItems([]);
+    
+    // デバッグ: 脈拍タブの場合
+    const tab = VITAL_TABS[index];
+    if (tab.id === 'pulse') {
+      console.log('Switching to pulse tab - clearing all states');
+    }
     
     // スクロールビューを該当位置に移動
     if (scrollViewRef.current) {
@@ -248,6 +254,7 @@ const VitalListScreen = ({navigation}: Props) => {
   const renderVitalList = () => {
     const currentTab = VITAL_TABS[activeTab];
     const data = vitalData[currentTab.id] || [];
+    
 
     const renderItem = ({item}: {item: VitalListItem}) => (
       <TouchableOpacity
@@ -401,7 +408,8 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: '#ff3b30',
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginTop: 8,
+    marginBottom: 8,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -471,7 +479,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   emptyContainer: {
-    padding: 40,
+    padding: 20,
     alignItems: 'center',
   },
   emptyText: {
