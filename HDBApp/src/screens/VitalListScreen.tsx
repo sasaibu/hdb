@@ -275,7 +275,6 @@ const VitalListScreen = ({navigation}: Props) => {
         data={data}
         renderItem={renderItem}
         keyExtractor={item => item.id}
-        style={styles.list}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -321,9 +320,7 @@ const VitalListScreen = ({navigation}: Props) => {
       )}
 
       {/* データリスト */}
-      <View style={styles.listContainer}>
-        {renderVitalList()}
-      </View>
+      {renderVitalList()}
     </View>
   );
 };
@@ -364,35 +361,34 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     backgroundColor: '#fff',
-    borderBottomWidth: 0,
-    height: 32,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   tabContent: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    height: 32,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
   },
   tab: {
-    paddingHorizontal: 12,
-    paddingVertical: 0,
-    marginHorizontal: 4,
-    borderRadius: 4,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginHorizontal: 6,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    height: 32,
+    minHeight: 40,
   },
   activeTab: {
     backgroundColor: '#007AFF',
   },
   tabIcon: {
-    fontSize: 16,
-    marginRight: 4,
+    fontSize: 18,
+    marginRight: 6,
   },
   tabText: {
-    fontSize: 12,
+    fontSize: 15,
     color: '#666',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   activeTabText: {
     color: '#fff',
@@ -401,7 +397,7 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: '#ff3b30',
     marginHorizontal: 16,
-    marginVertical: 0,
+    marginVertical: 8,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -414,16 +410,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  listContainer: {
-    flex: 1,
-  },
-  list: {
-    flex: 1,
-    marginTop: 0,
-  },
   listContent: {
     paddingTop: 0,
     paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   listItem: {
     backgroundColor: '#fff',
