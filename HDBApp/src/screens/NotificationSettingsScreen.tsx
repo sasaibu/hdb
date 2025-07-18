@@ -18,6 +18,11 @@ const NotificationSettingsScreen = () => {
     medicationReminder: true,
     appointmentReminder: true,
     reminderTime: '09:00',
+    // 新仕様追加項目
+    newAnnouncementNotification: true,
+    unreadExamNotification: true,
+    pulseSurveyNotification: true,
+    stressCheckNotification: true,
   });
 
   const notificationService = NotificationService.getInstance();
@@ -117,6 +122,42 @@ const NotificationSettingsScreen = () => {
           <Switch
             onValueChange={() => toggleSwitch('appointmentReminder')}
             value={settings.appointmentReminder}
+            disabled={!settings.enabled}
+          />
+        </View>
+
+        <View style={styles.separator} />
+
+        {/* 新仕様追加項目 */}
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>新規お知らせ通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('newAnnouncementNotification')}
+            value={settings.newAnnouncementNotification}
+            disabled={!settings.enabled}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>未閲覧の検診通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('unreadExamNotification')}
+            value={settings.unreadExamNotification}
+            disabled={!settings.enabled}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>パルスサーベイ通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('pulseSurveyNotification')}
+            value={settings.pulseSurveyNotification}
+            disabled={!settings.enabled}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>ストレスチェック通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('stressCheckNotification')}
+            value={settings.stressCheckNotification}
             disabled={!settings.enabled}
           />
         </View>
