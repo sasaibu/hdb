@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   SafeAreaView,
   Alert,
@@ -28,7 +27,6 @@ const MyPageScreen = () => {
         setUser({
           id: response.data.id,
           nickname: response.data.displayName || response.data.username,
-          icon: response.data.avatar || 'https://via.placeholder.com/150',
           email: response.data.email,
         });
       }
@@ -57,7 +55,7 @@ const MyPageScreen = () => {
       });
       
       if (response.success && response.data) {
-        setUser(prevUser => ({...prevUser, nickname: data.nickname}));
+        setUser((prevUser: any) => ({...prevUser, nickname: data.nickname}));
         setModalVisible(false);
         Alert.alert('成功', 'プロフィールを更新しました');
       } else {
@@ -89,7 +87,6 @@ const MyPageScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.profileContainer}>
-        <Image source={{uri: user.icon}} style={styles.avatar} />
         <Text style={styles.nickname}>{user.nickname}</Text>
         <Text style={styles.userId}>ID: {user.id}</Text>
         {user.email && <Text style={styles.email}>{user.email}</Text>}
@@ -126,12 +123,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 16,
   },
   nickname: {
     fontSize: 22,
