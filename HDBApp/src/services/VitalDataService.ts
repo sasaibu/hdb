@@ -390,6 +390,40 @@ export class VitalDataService {
     return typeMap[type] || type;
   }
 
+  // 測定項目コード変換（新仕様対応）
+  private convertTypeToMeasurementCode(type: string): string {
+    const codeMap: Record<string, string> = {
+      '歩数': 'STEPS',
+      '体重': 'WEIGHT',
+      '体温': 'TEMPERATURE',
+      '血圧': 'BLOOD_PRESSURE',
+      '心拍数': 'HEART_RATE',
+      '脈拍': 'PULSE',
+      'steps': 'STEPS',
+      'weight': 'WEIGHT',
+      'temperature': 'TEMPERATURE',
+      'bloodPressure': 'BLOOD_PRESSURE',
+      'heartRate': 'HEART_RATE',
+      'pulse': 'PULSE',
+    };
+    
+    return codeMap[type] || 'UNKNOWN';
+  }
+
+  // 測定項目コード→表示名変換（新仕様対応）
+  private convertMeasurementCodeToDisplayName(code: string): string {
+    const nameMap: Record<string, string> = {
+      'STEPS': '歩数',
+      'WEIGHT': '体重',
+      'TEMPERATURE': '体温',
+      'BLOOD_PRESSURE': '血圧',
+      'HEART_RATE': '心拍数',
+      'PULSE': '脈拍',
+    };
+    
+    return nameMap[code] || code;
+  }
+
   // タイプに応じた単位を取得
   private getUnitByType(type: string): string {
     switch (type) {

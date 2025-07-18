@@ -570,7 +570,7 @@ export class MockApiService {
     };
   }
 
-  // バイタルデータ一括アップロード（バイタルAWSへの登録）
+  // バイタルデータ一括アップロード（バイタルAWSへの登録）- 新仕様対応
   async uploadVitalsBatch(vitals: any[]): Promise<ApiResponse<any>> {
     await delay(1500); // バッチ処理をシミュレート
 
@@ -585,12 +585,26 @@ export class MockApiService {
     const user = JSON.parse(userStr);
     const timestamp = new Date().toISOString();
     
-    // アップロードされたデータを処理
+    // 新仕様に基づくデータ変換・バリデーション
     const processedVitals = vitals.map((vital, index) => {
+      // 測定項目コード変換
+      const measurementCode = this.convertTypeToMeasurementCode(vital.type);
+      
+      // 新仕様データ構造に変換
       const newVital = {
-        id: `vital-${Date.now()}-${index}`,
+        id: vital.localId || `vital-${Date.now()}-${index}`,
         userId: user.id,
-        ...vital,
+        code: measurementCode, // 測定項目コード
+        start_time: vital.measuredAt || new Date().toISOString(),
+        end_time: vital.measuredAt || new Date().toISOString(),
+        value1: this.extractValue1(vital), // 主要値
+        value2: this.extractValue2(vital), // 副次値（血圧下など）
+        value3: this.extractValue3(vital), // 第3値（将来拡張用）
+        intraday: vital.intraday || false, // 日中データフラグ
+        source: vital.source || 'manual', // データソース
+        device: vital.device || 'smartphone', // デバイス情報
+        deleted: vital.deleted || false, // 削除フラグ
+        unit: vital.unit,
         syncedAt: timestamp,
         syncStatus: 'synced',
       };
@@ -601,7 +615,8 @@ export class MockApiService {
       return newVital;
     });
 
-    console.log(`MockAPI: Uploaded ${vitals.length} vital records to バイタルAWS`);
+    console.log(`MockAPI: Uploaded ${vitals.length} vital records to バイタルAWS with new specification`);
+    console.log('Sample processed vital:', processedVitals[0]);
 
     return {
       success: true,
@@ -610,9 +625,55 @@ export class MockApiService {
         failedCount: 0,
         syncedAt: timestamp,
         processedIds: processedVitals.map(v => v.id),
+        specification: 'v2.0', // 新仕様バージョン
       },
-      message: `${vitals.length}件のバイタルデータをアップロードしました`,
+      message: `${vitals.length}件のバイタルデータを新仕様でアップロードしました`,
     };
+  }
+
+  // 測定項目コード変換（新仕様対応）
+  private convertTypeToMeasurementCode(type: string): string {
+    const codeMap: Record<string, string> = {
+      '歩数': 'STEPS',
+      '体重': 'WEIGHT',
+      '体温': 'TEMPERATURE',
+      '血圧': 'BLOOD_PRESSURE',
+      '心拍数': 'HEART_RATE',
+      '脈拍': 'PULSE',
+      'steps': 'STEPS',
+      'weight': 'WEIGHT',
+      'temperature': 'TEMPERATURE',
+      'bloodPressure': 'BLOOD_PRESSURE',
+      'heartRate': 'HEART_RATE',
+      'pulse': 'PULSE',
+    };
+    
+    return codeMap[type] || 'UNKNOWN';
+  }
+
+  // value1抽出（主要値）
+  private extractValue1(vital: any): number {
+    // 血圧の場合は収縮期血圧
+    if (vital.type === '血圧' || vital.type === 'bloodPressure') {
+      return vital.systolic || vital.value || 0;
+    }
+    
+    return vital.value || 0;
+  }
+
+  // value2抽出（副次値）
+  private extractValue2(vital: any): number | null {
+    // 血圧の場合は拡張期血圧
+    if (vital.type === '血圧' || vital.type === 'bloodPressure') {
+      return vital.diastolic || vital.value2 || null;
+    }
+    
+    return vital.value2 || null;
+  }
+
+  // value3抽出（第3値）
+  private extractValue3(vital: any): number | null {
+    return vital.value3 || null;
   }
 
   // デモデータ生成（開発用）
