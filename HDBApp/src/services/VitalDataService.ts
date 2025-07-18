@@ -390,38 +390,96 @@ export class VitalDataService {
     return typeMap[type] || type;
   }
 
-  // 測定項目コード変換（新仕様対応）
-  private convertTypeToMeasurementCode(type: string): string {
+  // 測定項目コード変換（新ER図対応）
+  convertTypeToMeasurementCode(type: string, isManual: boolean = false): string {
     const codeMap: Record<string, string> = {
-      '歩数': 'STEPS',
-      '体重': 'WEIGHT',
-      '体温': 'TEMPERATURE',
-      '血圧': 'BLOOD_PRESSURE',
-      '心拍数': 'HEART_RATE',
-      '脈拍': 'PULSE',
-      'steps': 'STEPS',
-      'weight': 'WEIGHT',
-      'temperature': 'TEMPERATURE',
-      'bloodPressure': 'BLOOD_PRESSURE',
-      'heartRate': 'HEART_RATE',
-      'pulse': 'PULSE',
+      // 新ER図対応コード
+      '歩数': isManual ? '1001' : '1000', // 歩数（手入力）: 1001, 歩数（概算）: 1000
+      '体重': '1100',
+      '体脂肪率': '1101', // 体重と別コード
+      '血圧': '1200',
+      '心拍数': '1210',
+      '体温': '1400',
+      '脈拍': '1210', // 心拍数と同じコード（新ER図では別項目だが測定項目コードは同じ）
+      
+      // 英語名対応
+      'steps': isManual ? '1001' : '1000',
+      'weight': '1100',
+      'bodyFat': '1101',
+      'bloodPressure': '1200',
+      'heartRate': '1210',
+      'temperature': '1400',
+      'pulse': '1210',
     };
     
-    return codeMap[type] || 'UNKNOWN';
+    return codeMap[type] || '9999'; // 不明な項目は9999
   }
 
-  // 測定項目コード→表示名変換（新仕様対応）
-  private convertMeasurementCodeToDisplayName(code: string): string {
+  // 測定項目コード→表示名変換（新ER図対応）
+  convertMeasurementCodeToDisplayName(code: string): string {
     const nameMap: Record<string, string> = {
-      'STEPS': '歩数',
-      'WEIGHT': '体重',
-      'TEMPERATURE': '体温',
-      'BLOOD_PRESSURE': '血圧',
-      'HEART_RATE': '心拍数',
-      'PULSE': '脈拍',
+      '1000': '歩数（概算）',
+      '1001': '歩数（手入力）',
+      '1100': '体重',
+      '1101': '体脂肪率',
+      '1200': '血圧',
+      '1210': '心拍数',
+      '1400': '体温',
+      '9999': '不明',
     };
     
     return nameMap[code] || code;
+  }
+
+  // 新ER図対応: 手入力フラグ判定
+  isManualInput(source: string): boolean {
+    return source === 'manual' || source === 'user_input';
+  }
+
+  // 新ER図対応: API送信時のコード変換
+  convertForApiUpload(record: VitalDataRecord): {
+    code: string;
+    value1: number;
+    value2: number | null;
+    value3: number | null;
+    intraday: boolean;
+    source: string;
+    device: string;
+    deleted: boolean;
+  } {
+    const isManual = this.isManualInput(record.source || 'manual');
+    const code = this.convertTypeToMeasurementCode(record.type, isManual);
+    
+    // value1/value2/value3構造に変換
+    let value1 = record.value;
+    let value2: number | null = null;
+    let value3: number | null = null;
+    
+    // 血圧の場合は収縮期・拡張期を分離
+    if (record.type === '血圧') {
+      value1 = record.systolic || record.value;
+      value2 = record.diastolic || null;
+    }
+    
+    return {
+      code,
+      value1,
+      value2,
+      value3,
+      intraday: false, // 日中データフラグ（将来拡張用）
+      source: record.source || 'manual',
+      device: 'smartphone', // デバイス情報
+      deleted: false, // 削除フラグ
+    };
+  }
+
+  // 新ER図対応: 表示時のコード→名称変換
+  getDisplayNameWithCode(record: VitalDataRecord): string {
+    const isManual = this.isManualInput(record.source || 'manual');
+    const code = this.convertTypeToMeasurementCode(record.type, isManual);
+    const displayName = this.convertMeasurementCodeToDisplayName(code);
+    
+    return `${displayName} (${code})`;
   }
 
   // タイプに応じた単位を取得

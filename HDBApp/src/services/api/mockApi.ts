@@ -759,21 +759,24 @@ export class MockApiService {
     const user = JSON.parse(userStr);
     const timestamp = new Date().toISOString();
     
-    // 新仕様に基づくデータ変換・バリデーション
+    // 新ER図に基づくデータ変換・バリデーション
     const processedVitals = vitals.map((vital, index) => {
-      // 測定項目コード変換
-      const measurementCode = this.convertTypeToMeasurementCode(vital.type);
+      // 手入力フラグ判定
+      const isManual = vital.source === 'manual' || vital.source === 'user_input';
       
-      // 新仕様データ構造に変換
+      // 新ER図測定項目コード変換
+      const measurementCode = this.convertTypeToMeasurementCode(vital.type, isManual);
+      
+      // 新ER図データ構造に変換
       const newVital = {
         id: vital.localId || `vital-${Date.now()}-${index}`,
         userId: user.id,
-        code: measurementCode, // 測定項目コード
+        code: measurementCode, // 新ER図測定項目コード（1000-1400番台）
         start_time: vital.measuredAt || new Date().toISOString(),
         end_time: vital.measuredAt || new Date().toISOString(),
-        value1: this.extractValue1(vital), // 主要値
-        value2: this.extractValue2(vital), // 副次値（血圧下など）
-        value3: this.extractValue3(vital), // 第3値（将来拡張用）
+        value1: this.extractValue1(vital), // 測定値1
+        value2: this.extractValue2(vital), // 測定値2（血圧拡張期など）
+        value3: this.extractValue3(vital), // 測定値3（将来拡張用）
         intraday: vital.intraday || false, // 日中データフラグ
         source: vital.source || 'manual', // データソース
         device: vital.device || 'smartphone', // デバイス情報
@@ -781,6 +784,9 @@ export class MockApiService {
         unit: vital.unit,
         syncedAt: timestamp,
         syncStatus: 'synced',
+        // 新ER図対応項目
+        手入力フラグ: isManual,
+        送信済フラグ: true,
       };
       
       // モックデータに追加（実際のAWSでは永続化される）
@@ -805,24 +811,29 @@ export class MockApiService {
     };
   }
 
-  // 測定項目コード変換（新仕様対応）
-  private convertTypeToMeasurementCode(type: string): string {
+  // 測定項目コード変換（新ER図対応）
+  private convertTypeToMeasurementCode(type: string, isManual: boolean = false): string {
     const codeMap: Record<string, string> = {
-      '歩数': 'STEPS',
-      '体重': 'WEIGHT',
-      '体温': 'TEMPERATURE',
-      '血圧': 'BLOOD_PRESSURE',
-      '心拍数': 'HEART_RATE',
-      '脈拍': 'PULSE',
-      'steps': 'STEPS',
-      'weight': 'WEIGHT',
-      'temperature': 'TEMPERATURE',
-      'bloodPressure': 'BLOOD_PRESSURE',
-      'heartRate': 'HEART_RATE',
-      'pulse': 'PULSE',
+      // 新ER図対応コード
+      '歩数': isManual ? '1001' : '1000', // 歩数（手入力）: 1001, 歩数（概算）: 1000
+      '体重': '1100',
+      '体脂肪率': '1101', // 体重と別コード
+      '血圧': '1200',
+      '心拍数': '1210',
+      '体温': '1400',
+      '脈拍': '1210', // 心拍数と同じコード
+      
+      // 英語名対応
+      'steps': isManual ? '1001' : '1000',
+      'weight': '1100',
+      'bodyFat': '1101',
+      'bloodPressure': '1200',
+      'heartRate': '1210',
+      'temperature': '1400',
+      'pulse': '1210',
     };
     
-    return codeMap[type] || 'UNKNOWN';
+    return codeMap[type] || '9999'; // 不明な項目は9999
   }
 
   // value1抽出（主要値）
