@@ -19,6 +19,8 @@ import LinkedServicesSettingsScreen from '../screens/LinkedServicesSettingsScree
 import NotificationHistoryScreen from '../screens/NotificationHistoryScreen'; // 追加
 import NoticeScreen from '../screens/NoticeScreen'; // 追加
 import TermsScreen from '../screens/TermsScreen'; // 追加
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen'; // 追加
+import OpenSourceLicensesScreen from '../screens/OpenSourceLicensesScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -30,6 +32,7 @@ export type RootStackParamList = {
   DataMigration: undefined; // 追加
   LinkedServicesSettings: undefined; // 追加
   NotificationHistory: undefined; // 追加
+  OpenSourceLicenses: undefined; // 追加
 };
 
 export type MainDrawerParamList = {
@@ -44,6 +47,8 @@ export type MainDrawerParamList = {
   LinkedServicesSettings: undefined; // 追加
   Notice: undefined; // 追加
   Terms: undefined; // 追加
+  PrivacyPolicy: undefined; // 追加
+  OpenSourceLicenses: undefined; // 追加
   // DataMigration: undefined; // 削除
 };
 
@@ -134,6 +139,16 @@ function MainDrawer() {
         component={TermsScreen}
         options={{title: '利用規約'}}
       />
+      <Drawer.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{title: 'プライバシーポリシー'}}
+      />
+      <Drawer.Screen
+        name="OpenSourceLicenses"
+        component={OpenSourceLicensesScreen}
+        options={{title: 'オープンソースライセンス'}}
+      />
     </Drawer.Navigator>
   );
 }
@@ -179,6 +194,11 @@ export default function AppNavigator() {
           name="NotificationHistory" // 追加
           component={NotificationHistoryScreen}
           options={{headerShown: true, title: '通知履歴'}}
+        />
+        <Stack.Screen
+          name="OpenSourceLicenses" // 追加
+          component={OpenSourceLicensesScreen}
+          options={{headerShown: true, title: 'オープンソースライセンス'}}
         />
       </Stack.Navigator>
     </NavigationContainer>
