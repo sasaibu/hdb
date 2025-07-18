@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
 import WebViewScreen from '../screens/WebViewScreen';
 import VitalDataScreen from '../screens/VitalDataScreen';
+import VitalListScreen from '../screens/VitalListScreen'; // 追加
 import MyPageScreen from '../screens/MyPageScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import BackupScreen from '../screens/BackupScreen';
@@ -67,8 +68,8 @@ function MainDrawer() {
       />
       <Drawer.Screen
         name="Settings"
-        component={HomeScreen}
-        options={{title: '設定'}}
+        component={VitalListScreen}
+        options={{title: 'バイタル一覧'}}
       />
       <Drawer.Screen
         name="Notifications"
