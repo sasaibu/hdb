@@ -11,9 +11,10 @@ import {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave: (value: string) => void;
+  onSave: (value: string, value2?: string) => void;
   title: string;
   initialValue: string;
+  initialValue2?: string;
 }
 
 const VitalInputDialog = ({
@@ -22,15 +23,60 @@ const VitalInputDialog = ({
   onSave,
   title,
   initialValue,
+  initialValue2,
 }: Props) => {
   const [value, setValue] = React.useState(initialValue);
+  const [value2, setValue2] = React.useState(initialValue2 || '');
 
   React.useEffect(() => {
     setValue(initialValue);
-  }, [initialValue]);
+    setValue2(initialValue2 || '');
+  }, [initialValue, initialValue2]);
+
+  const isBloodPressure = title === '血圧';
+
+  const validateInput = () => {
+    if (!value.trim()) {
+      return false;
+    }
+
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      return false;
+    }
+
+    if (isBloodPressure) {
+      if (!value2.trim()) {
+        return false;
+      }
+      const numValue2 = parseFloat(value2);
+      if (isNaN(numValue2)) {
+        return false;
+      }
+      if (numValue < 50 || numValue > 250) {
+        return false;
+      }
+      if (numValue2 < 30 || numValue2 > 150) {
+        return false;
+      }
+      if (numValue <= numValue2) {
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   const handleSave = () => {
-    onSave(value);
+    if (!validateInput()) {
+      return;
+    }
+    
+    if (isBloodPressure) {
+      onSave(value, value2);
+    } else {
+      onSave(value);
+    }
     onClose();
   };
 
@@ -59,14 +105,30 @@ const VitalInputDialog = ({
           </View>
 
           <View style={styles.inputRow}>
-            <Text style={styles.label}>値</Text>
+            <Text style={styles.label}>{isBloodPressure ? '収縮期' : '値'}</Text>
             <TextInput
               style={styles.input}
               onChangeText={setValue}
               value={value}
               keyboardType="numeric"
+              placeholder={isBloodPressure ? '例: 120' : ''}
             />
+            {isBloodPressure && <Text style={styles.unit}>mmHg</Text>}
           </View>
+
+          {isBloodPressure && (
+            <View style={styles.inputRow}>
+              <Text style={styles.label}>拡張期</Text>
+              <TextInput
+                style={styles.input}
+                onChangeText={setValue2}
+                value={value2}
+                keyboardType="numeric"
+                placeholder="例: 80"
+              />
+              <Text style={styles.unit}>mmHg</Text>
+            </View>
+          )}
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -165,6 +227,12 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  unit: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#666',
+    width: 50,
   },
 });
 

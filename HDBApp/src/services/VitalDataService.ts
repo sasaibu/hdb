@@ -195,6 +195,16 @@ export class VitalDataService {
       { type: '血圧', value: 120, date: '2025-07-02', systolic: 120, diastolic: 80 },
       { type: '血圧', value: 122, date: '2025-07-01', systolic: 122, diastolic: 81 },
       { type: '血圧', value: 118, date: '2025-06-30', systolic: 118, diastolic: 79 },
+      
+      // 心拍数データ
+      { type: '心拍数', value: 72, date: '2025-07-02' },
+      { type: '心拍数', value: 75, date: '2025-07-01' },
+      { type: '心拍数', value: 68, date: '2025-06-30' },
+      
+      // 脈拍データ
+      { type: '脈拍', value: 74, date: '2025-07-02' },
+      { type: '脈拍', value: 77, date: '2025-07-01' },
+      { type: '脈拍', value: 70, date: '2025-06-30' },
     ];
 
     try {
@@ -367,6 +377,7 @@ export class VitalDataService {
       '体温': 'temperature',
       '血圧': 'bloodPressure',
       '心拍数': 'heartRate',
+      '脈拍': 'pulse',
     };
     
     return typeMap[type] || type;
@@ -384,6 +395,8 @@ export class VitalDataService {
       case '血圧':
         return 'mmHg';
       case '心拍数':
+        return 'bpm';
+      case '脈拍':
         return 'bpm';
       default:
         return '';

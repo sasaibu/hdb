@@ -47,6 +47,7 @@ const VITAL_TABS: VitalTab[] = [
   {id: 'weight', title: '体重', icon: '⚖️', unit: 'kg'},
   {id: 'bloodPressure', title: '血圧', icon: '🩺', unit: 'mmHg'},
   {id: 'heartRate', title: '心拍数', icon: '❤️', unit: 'bpm'},
+  {id: 'pulse', title: '脈拍', icon: '💓', unit: 'bpm'},
   {id: 'temperature', title: '体温', icon: '🌡️', unit: '℃'},
 ];
 
@@ -103,6 +104,7 @@ const VitalListScreen = ({navigation}: Props) => {
       weight: '体重',
       bloodPressure: '血圧',
       heartRate: '心拍数',
+      pulse: '脈拍',
       temperature: '体温',
     };
     return typeMap[id] || id;
@@ -115,6 +117,7 @@ const VitalListScreen = ({navigation}: Props) => {
       weight: 'weight',
       bloodPressure: 'bloodPressure',
       heartRate: 'heartRate',
+      pulse: 'pulse',
       temperature: 'temperature',
     };
     return apiTypeMap[id] || id;
@@ -361,22 +364,23 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomWidth: 0,
+    height: 32,
   },
   tabContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    height: 32,
   },
   tab: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    marginHorizontal: 6,
-    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    marginHorizontal: 4,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    minHeight: 40,
+    height: 32,
   },
   activeTab: {
     backgroundColor: '#007AFF',
@@ -406,9 +410,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  content: {
-    flex: 1,
   },
   listContent: {
     paddingTop: 0,
