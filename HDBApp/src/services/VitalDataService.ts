@@ -39,7 +39,14 @@ export class VitalDataService {
       source,
     };
 
-    return await this.dbService.insertVitalData(data);
+    const insertId = await this.dbService.insertVitalData(data);
+
+    // 新仕様対応: 心拍数データの場合は1日集計処理を実行
+    if (type === '心拍数') {
+      await this.updateDailyHeartRateAggregation(recordedDate);
+    }
+
+    return insertId;
   }
 
   // タイプ別データ取得
@@ -59,11 +66,12 @@ export class VitalDataService {
 
   // 目標値設定
   async setTarget(type: string, targetValue: number): Promise<void> {
-    return await this.dbService.setTarget(type, targetValue);
+    const unit = this.getUnitByType(type);
+    return await this.dbService.insertOrUpdateTarget(type, targetValue, unit);
   }
 
   // 目標値取得
-  async getTarget(type: string): Promise<number | null> {
+  async getTarget(type: string): Promise<any> {
     return await this.dbService.getTarget(type);
   }
 
@@ -406,5 +414,43 @@ export class VitalDataService {
       date: record.recorded_date,
       value: this.formatValueForDisplay(record),
     }));
+  }
+
+  // 新仕様対応: 1日の心拍数集計処理
+  private async updateDailyHeartRateAggregation(date: string): Promise<void> {
+    try {
+      // 指定日の心拍数データを全て取得
+      const heartRateData = await this.dbService.getVitalDataByTypeAndDate('心拍数', date);
+      
+      if (heartRateData.length === 0) {
+        console.log(`No heart rate data found for date: ${date}`);
+        return;
+      }
+
+      // 最小値・最大値を計算
+      const values = heartRateData.map(record => record.value);
+      const minValue = Math.min(...values);
+      const maxValue = Math.max(...values);
+
+      console.log(`Heart rate aggregation for ${date}: min=${minValue}, max=${maxValue}`);
+
+      // 1日の心拍データテーブルに保存/更新
+      await this.dbService.insertOrUpdateDailyHeartRate(date, minValue, maxValue);
+      
+      console.log(`Daily heart rate aggregation updated for ${date}`);
+    } catch (error) {
+      console.error('Error updating daily heart rate aggregation:', error);
+      throw error;
+    }
+  }
+
+  // 新仕様対応: 1日の心拍データ取得
+  async getDailyHeartRate(date: string): Promise<any> {
+    return await this.dbService.getDailyHeartRate(date);
+  }
+
+  // 新仕様対応: 期間別1日心拍データ取得
+  async getDailyHeartRateByDateRange(startDate: string, endDate: string): Promise<any[]> {
+    return await this.dbService.getDailyHeartRateByDateRange(startDate, endDate);
   }
 }

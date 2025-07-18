@@ -157,6 +157,12 @@ export default function HomeScreen({navigation}: Props) {
           unit="mmHg"
           onPress={() => handleCardPress('血圧')}
         />
+        <DashboardCard
+          title="心拍数"
+          value={vitalSummary?.heartRate?.latest?.toString() || '---'}
+          unit="bpm"
+          onPress={() => handleCardPress('心拍数')}
+        />
       </View>
 
       <View style={styles.section}>
