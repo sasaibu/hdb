@@ -1,0 +1,164 @@
+{
+  "extractionInfo": {
+    "timestamp": "2025-07-17T12:39:21.667312",
+    "deviceId": "emulator-5556",
+    "extractionMethod": "ADB_CONTENT_PROVIDER",
+    "dataTypes": [
+      "Steps",
+      "HeartRate",
+      "BloodPressure",
+      "Weight",
+      "Height",
+      "BodyFat",
+      "SleepSession",
+      "ExerciseSession",
+      "Distance",
+      "TotalCaloriesBurned",
+      "ActiveCaloriesBurned",
+      "RestingHeartRate",
+      "BloodGlucose",
+      "OxygenSaturation",
+      "BodyTemperature"
+    ],
+    "totalRecords": 0
+  },
+  "statistics": {
+    "Steps": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "HeartRate": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "BloodPressure": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "Weight": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "Height": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "BodyFat": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "SleepSession": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "ExerciseSession": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "Distance": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "TotalCaloriesBurned": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "ActiveCaloriesBurned": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "RestingHeartRate": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "BloodGlucose": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "OxygenSaturation": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    },
+    "BodyTemperature": {
+      "count": 0,
+      "hasData": false,
+      "dateRange": {
+        "earliest": null,
+        "latest": null
+      }
+    }
+  },
+  "rawData": {
+    "Steps": [],
+    "HeartRate": [],
+    "BloodPressure": [],
+    "Weight": [],
+    "Height": [],
+    "BodyFat": [],
+    "SleepSession": [],
+    "ExerciseSession": [],
+    "Distance": [],
+    "TotalCaloriesBurned": [],
+    "ActiveCaloriesBurned": [],
+    "RestingHeartRate": [],
+    "BloodGlucose": [],
+    "OxygenSaturation": [],
+    "BodyTemperature": []
+  }
+}
