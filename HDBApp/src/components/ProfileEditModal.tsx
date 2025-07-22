@@ -11,10 +11,25 @@ import {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: {nickname: string}) => void;
+  onSave: (data: {
+    nickname: string;
+    showNickname?: boolean;
+    goals?: Goal[];
+  }) => void;
   user: {
     nickname: string;
+    showNickname?: boolean;
+    goals?: Goal[];
   };
+}
+
+interface Goal {
+  id: string;
+  type: 'steps' | 'weight' | 'exercise';
+  target: number;
+  current: number;
+  unit: string;
+  achieved: boolean;
 }
 
 const ProfileEditModal = ({visible, onClose, onSave, user}: Props) => {
