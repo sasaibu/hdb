@@ -16,7 +16,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 
 const { height: screenHeight } = Dimensions.get('window');
-const HEADER_MAX_HEIGHT = screenHeight * 0.6;
+const HEADER_MAX_HEIGHT = screenHeight * 0.50;
 const HEADER_MIN_HEIGHT = 100;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
@@ -177,20 +177,27 @@ const PrivacyPolicyScreen: React.FC = () => {
           {/* ロゴ */}
           <View style={styles.logoContainer}>
             <View style={styles.logoPlaceholder}>
-              <Text style={styles.logoText}>HDB</Text>
+              <Text style={styles.logoText}>LOGO</Text>
             </View>
           </View>
 
           {/* アイコンコンテナ */}
-          <View style={styles.iconsContainer}>
-            <TouchableOpacity style={styles.iconButton} onPress={handleSearch}>
-              <Text style={styles.iconText}>🔍</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={handleMail}>
-              <Text style={styles.iconText}>✉️</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={handleMenu}>
-              <Text style={styles.iconText}>☰</Text>
+          <View style={styles.iconsWrapper}>
+            <View style={styles.iconsContainer}>
+              <TouchableOpacity style={styles.iconButton} onPress={handleSearch}>
+                <Text style={styles.iconText}>🔍</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton} onPress={handleMail}>
+                <Text style={styles.iconText}>✉️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton} onPress={handleMenu}>
+                <Text style={styles.iconText}>☰</Text>
+              </TouchableOpacity>
+            </View>
+            {/* 共有ボタン */}
+            <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+              <Text style={styles.shareIcon}>📤</Text>
+              <Text style={styles.shareText}>Share</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -382,19 +389,20 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 20,
     position: 'absolute',
-    top: 50,
+    top: 15,
     left: 20,
     right: 20,
   },
   logoContainer: {
     flex: 1,
+    marginTop: 10,
   },
   logoPlaceholder: {
-    width: 80,
-    height: 45,
+    width: 160,
+    height: 30,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     justifyContent: 'center',
@@ -404,6 +412,9 @@ const styles = StyleSheet.create({
     color: '#040d26',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  iconsWrapper: {
+    alignItems: 'flex-end',
   },
   iconsContainer: {
     flexDirection: 'row',
@@ -417,9 +428,25 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 24,
   },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingRight: 8,
+  },
+  shareIcon: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    marginRight: 4,
+  },
+  shareText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   shareMenu: {
     position: 'absolute',
-    top: 110,
+    top: 90,
     right: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
