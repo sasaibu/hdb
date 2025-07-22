@@ -40,11 +40,15 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
 
   const loadSettings = async () => {
     try {
+      // 新ER図対応: AsyncStorage項目追加
+      const newAppEnabled = await AsyncStorage.getItem('new_app_enabled');
       const healthKit = await AsyncStorage.getItem('healthkit_enabled');
       const googleFit = await AsyncStorage.getItem('googlefit_enabled');
+      const healthConnect = await AsyncStorage.getItem('health_connect_enabled');
       
+      setNewAppEnabled(newAppEnabled === 'true');
       setHealthKitEnabled(healthKit === 'true');
-      setHealthConnectEnabled(googleFit === 'true');
+      setHealthConnectEnabled(healthConnect === 'true' || googleFit === 'true');
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -112,6 +116,7 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
       }
 
       await healthPlatformService.setGoogleFitEnabled(value);
+      await AsyncStorage.setItem('health_connect_enabled', value.toString());
       setHealthConnectEnabled(value);
       
       if (value) {
@@ -133,6 +138,25 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
     } catch (error) {
       console.error('Error toggling Health Connect:', error);
       Alert.alert('エラー', 'ヘルスコネクト設定の変更に失敗しました。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewAppToggle = async (value: boolean) => {
+    setIsLoading(true);
+    try {
+      await AsyncStorage.setItem('new_app_enabled', value.toString());
+      setNewAppEnabled(value);
+      
+      if (value) {
+        Alert.alert('成功', '新アプリ連携が有効になりました。');
+      } else {
+        Alert.alert('確認', '新アプリ連携が無効になりました。');
+      }
+    } catch (error) {
+      console.error('Error toggling new app:', error);
+      Alert.alert('エラー', '新アプリ連携設定の変更に失敗しました。');
     } finally {
       setIsLoading(false);
     }
@@ -198,9 +222,12 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
         )}
 
         <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>新アプリ</Text>
+          <View>
+            <Text style={styles.settingLabel}>新アプリ連携</Text>
+            <Text style={styles.settingDescription}>新アプリとの連携を有効にする</Text>
+          </View>
           <Switch
-            onValueChange={setNewAppEnabled}
+            onValueChange={handleNewAppToggle}
             value={newAppEnabled}
             disabled={isLoading}
           />
