@@ -204,7 +204,7 @@ const PrivacyPolicyScreen: React.FC = () => {
 
 
         <Animated.Text style={[styles.breadcrumb, { opacity: breadcrumbOpacity }]}>
-          ホーム＞インフォメーション
+          ホーム　>　インフォメーション
         </Animated.Text>
         <Animated.Text style={[styles.title, { opacity: titleOpacity }]}>
           プライバシーポリシー
