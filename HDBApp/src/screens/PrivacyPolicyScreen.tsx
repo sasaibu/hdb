@@ -9,11 +9,14 @@ import {
   Animated,
   Dimensions,
   PanResponder,
+  Image,
+  Alert,
+  Share,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 const { height: screenHeight } = Dimensions.get('window');
-const HEADER_MAX_HEIGHT = screenHeight * 0.6;
+const HEADER_MAX_HEIGHT = screenHeight * 0.50;
 const HEADER_MIN_HEIGHT = 100;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 
@@ -24,6 +27,7 @@ const PrivacyPolicyScreen: React.FC = () => {
   const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const currentScrollValue = useRef(0);
   const isAnimating = useRef(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
 
   // scrollYの値を追跡
   scrollY.addListener(({ value }) => {
@@ -35,10 +39,14 @@ const PrivacyPolicyScreen: React.FC = () => {
     React.useCallback(() => {
       // 画面に入った時に初期状態にリセット
       setHeaderCollapsed(false);
+      setShowShareMenu(false);
       scrollY.setValue(0);
+      fixedScrollY.setValue(HEADER_SCROLL_DISTANCE);
+      currentScrollValue.current = 0;
+      isAnimating.current = false;
       // ScrollViewを最上部にスクロール
       scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-    }, [scrollY])
+    }, [scrollY, fixedScrollY])
   );
 
   // アニメーション値を選択（ヘッダーが縮小している場合は固定値を使用）
@@ -104,8 +112,10 @@ const PrivacyPolicyScreen: React.FC = () => {
         // スワイプを離した時の処理
         scrollY.flattenOffset();
         const currentValue = currentScrollValue.current;
-        
-        // 上スワイプで50%以上スワイプしたら完全に縮小、そうでなければ元に戻す
+
+        // 上スワイプで、かつ以下のどちらかの条件を満たす場合、ヘッダーを完全に縮小するアニメーションを開始
+        // 1. 現在のスクロール値が、ヘッダー縮小距離の半分を超えている (currentValue > HEADER_SCROLL_DISTANCE / 2)
+        // 2. 指を離す速度が非常に速い (gestureState.vy < -0.5)
         if (gestureState.dy < 0 && (currentValue > HEADER_SCROLL_DISTANCE / 2 || gestureState.vy < -0.5)) {
           isAnimating.current = true;
           Animated.spring(scrollY, {
@@ -135,31 +145,86 @@ const PrivacyPolicyScreen: React.FC = () => {
     })
   ).current;
 
+  const handleSearch = () => {
+    console.log('検索アイコンがクリックされました');
+  };
+
+  const handleMail = () => {
+    console.log('メールアイコンがクリックされました');
+  };
+
+  const handleMenu = () => {
+    setShowShareMenu(!showShareMenu);
+  };
+
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: 'ヘルスデータバンク - プライバシーポリシー\nhttps://example.com/privacy-policy',
+        title: 'プライバシーポリシーを共有',
+      });
+    } catch (error) {
+      Alert.alert('エラー', '共有に失敗しました');
+    }
+    setShowShareMenu(false);
+  };
+
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.header, { height: headerHeight }]}>
+        {/* ヘッダートップバー */}
+        <View style={styles.topBar}>
+          {/* ロゴ */}
+          <View style={styles.logoContainer}>
+            <View style={styles.logoPlaceholder}>
+              <Text style={styles.logoText}>LOGO</Text>
+            </View>
+          </View>
+
+          {/* アイコンコンテナ */}
+          <View style={styles.iconsWrapper}>
+            <View style={styles.iconsContainer}>
+              <TouchableOpacity style={styles.iconButton} onPress={handleSearch}>
+                <Text style={styles.iconText}>🔍</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton} onPress={handleMail}>
+                <Text style={styles.iconText}>✉️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton} onPress={handleMenu}>
+                <Text style={styles.iconText}>☰</Text>
+              </TouchableOpacity>
+            </View>
+            {/* 共有ボタン */}
+            <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+              <Text style={styles.shareIcon}>📤</Text>
+              <Text style={styles.shareText}>Share</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+
         <Animated.Text style={[styles.breadcrumb, { opacity: breadcrumbOpacity }]}>
-          ホーム＞インフォメーション
+          ホーム　>　インフォメーション
         </Animated.Text>
         <Animated.Text style={[styles.title, { opacity: titleOpacity }]}>
           プライバシーポリシー
         </Animated.Text>
         <Animated.View style={{ opacity: buttonOpacity }}>
-          <TouchableOpacity style={styles.contactButton} onPress={() => console.log('お問い合わせボタンがクリックされました')}>
-            <Text style={styles.contactButtonText}>お問い合わせ →</Text>
+          <TouchableOpacity onPress={() => console.log('お問い合わせがクリックされました')}>
+            <Text style={styles.contactText}>お問い合わせ →</Text>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
-      
-      <Animated.View 
+
+      <Animated.View
         style={[
-          styles.scrollContainer, 
-          { 
+          styles.scrollContainer,
+          {
             top: contentTransform,
           }
-        ]} 
+        ]}
       >
-        <ScrollView 
+        <ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.contentContainer}
@@ -173,7 +238,7 @@ const PrivacyPolicyScreen: React.FC = () => {
               <Text style={styles.swipeHintText}>↑ 上にスワイプして表示領域を拡大</Text>
             </View>
           )}
-          
+
           <Text style={styles.sectionTitle}>1. 個人情報の取り扱いについて</Text>
           <Text style={styles.content}>
             当社は、お客様の個人情報を適切に管理し、法令に基づき適正に取り扱います。
@@ -232,6 +297,15 @@ const PrivacyPolicyScreen: React.FC = () => {
           <Text style={styles.lastUpdated}>最終更新日: 2024年1月18日</Text>
         </ScrollView>
       </Animated.View>
+
+      {/* シェアメニュー（最前面に表示） */}
+      {showShareMenu && (
+        <View style={styles.shareMenu}>
+          <TouchableOpacity style={styles.shareMenuItem} onPress={handleShare}>
+            <Text style={styles.shareMenuText}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -246,8 +320,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#1E3A8A',
-    paddingTop: 40,
+    backgroundColor: '#040d26',
+    paddingTop: 100,
     paddingBottom: 30,
     paddingHorizontal: 20,
     justifyContent: 'flex-end',
@@ -307,17 +381,92 @@ const styles = StyleSheet.create({
     marginTop: 30,
     textAlign: 'center',
   },
-  contactButton: {
-    marginTop: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-  },
-  contactButtonText: {
-    color: '#1E3A8A',
+  contactText: {
+    color: '#FFFFFF',
     fontSize: 16,
+    marginTop: 20,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+    position: 'absolute',
+    top: 15,
+    left: 20,
+    right: 20,
+  },
+  logoContainer: {
+    flex: 1,
+    marginTop: 10,
+  },
+  logoPlaceholder: {
+    width: 160,
+    height: 30,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoText: {
+    color: '#040d26',
+    fontSize: 18,
     fontWeight: 'bold',
+  },
+  iconsWrapper: {
+    alignItems: 'flex-end',
+  },
+  iconsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    padding: 8,
+    marginLeft: 12,
+  },
+  iconText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingRight: 8,
+  },
+  shareIcon: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    marginRight: 4,
+  },
+  shareText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  shareMenu: {
+    position: 'absolute',
+    top: 90,
+    right: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    zIndex: 999,
+  },
+  shareMenuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  shareMenuText: {
+    color: '#040d26',
+    fontSize: 16,
   },
 });
 
