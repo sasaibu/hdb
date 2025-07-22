@@ -73,6 +73,26 @@ export const mockVitals = [
     source: 'manual',
     createdAt: '2025-07-11T07:05:00Z',
   },
+  {
+    id: 'vital-007',
+    userId: 'user-001',
+    type: 'pulse',
+    value: 76,
+    unit: 'bpm',
+    measuredAt: '2025-07-10T07:00:00Z',
+    source: 'manual',
+    createdAt: '2025-07-10T07:05:00Z',
+  },
+  {
+    id: 'vital-008',
+    userId: 'user-001',
+    type: 'pulse',
+    value: 72,
+    unit: 'bpm',
+    measuredAt: '2025-07-09T07:00:00Z',
+    source: 'manual',
+    createdAt: '2025-07-09T07:05:00Z',
+  },
 ];
 
 export const mockRankings = [
@@ -188,6 +208,11 @@ export const generateVitalSummary = (userId: string) => {
       latest: 72,
       average7days: 70,
       restingRate: 65,
+    },
+    pulse: {
+      latest: 74,
+      average7days: 74,
+      restingRate: 68,
     },
   };
 };
