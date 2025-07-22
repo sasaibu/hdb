@@ -63,6 +63,16 @@ export const mockVitals = [
     source: 'healthkit',
     createdAt: '2025-07-11T07:05:00Z',
   },
+  {
+    id: 'vital-006',
+    userId: 'user-001',
+    type: 'pulse',
+    value: 74,
+    unit: 'bpm',
+    measuredAt: '2025-07-11T07:00:00Z',
+    source: 'manual',
+    createdAt: '2025-07-11T07:05:00Z',
+  },
 ];
 
 export const mockRankings = [
@@ -198,12 +208,13 @@ export const generateRandomVital = (type: string, userId: string) => {
     temperature: { min: 35.5, max: 37.5, unit: '℃', decimals: 1 },
     bloodPressure: { min: 100, max: 140, min2: 60, max2: 90, unit: 'mmHg' },
     heartRate: { min: 60, max: 100, unit: 'bpm' },
+    pulse: { min: 60, max: 100, unit: 'bpm' },
   };
 
   const config = baseValues[type as keyof typeof baseValues];
   if (!config) return null;
 
-  const value = config.decimals
+  const value = 'decimals' in config
     ? parseFloat((Math.random() * (config.max - config.min) + config.min).toFixed(config.decimals))
     : Math.floor(Math.random() * (config.max - config.min) + config.min);
 

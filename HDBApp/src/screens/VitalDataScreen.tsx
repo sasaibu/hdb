@@ -13,6 +13,7 @@ import {RootStackParamList} from '../navigation/AppNavigator';
 import VitalInputDialog from '../components/VitalInputDialog';
 import {VitalDataService} from '../services/VitalDataService';
 import {VitalDataRecord} from '../services/DatabaseService';
+import theme from '../styles/theme';
 
 type VitalDataScreenRouteProp = RouteProp<RootStackParamList, 'VitalData'>;
 type VitalDataScreenNavigationProp = StackNavigationProp<
@@ -182,6 +183,8 @@ const VitalDataScreen = ({route}: Props) => {
         return '℃';
       case '血圧':
         return 'mmHg';
+      case '心拍数':
+        return 'bpm';
       default:
         return '';
     }
@@ -352,19 +355,21 @@ const VitalDataScreen = ({route}: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background.secondary,
     padding: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: theme.colors.text.primary,
   },
   achievementContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.xl,
+    padding: 20,
     marginBottom: 20,
+    ...theme.shadow.md,
   },
   progressLabelContainer: {
     flexDirection: 'row',

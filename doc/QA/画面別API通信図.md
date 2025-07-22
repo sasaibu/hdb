@@ -9,6 +9,9 @@
 - **Keychain/Keystore**: セキュアなトークン保存
 - **AsyncStorage**: アプリ設定の永続化
 - **iCloud/Google Drive**: バックアップデータ保存
+- **App Store/Google Play**: アプリアップデート
+- **iTunes Search API**: App Storeの最新バージョン情報取得（iOS）
+- **Google Play In-app updates API / Developer API**: Play Storeの最新バージョン情報取得（Android）
 
 ## 1. スプラッシュ画面
 
@@ -17,12 +20,26 @@ sequenceDiagram
     participant App as HDBアプリ
     participant Firebase as Firebase Remote Config
     participant AWS as バイタルAWS
+    participant Storage as AsyncStorage
+    participant Store as App Store/Google Play
     
     App->>Firebase: Firebase設定取得
-    Firebase-->>App: アプリ設定情報
+    Firebase-->>App: アプリ設定情報（最新バージョン含む）
+    
+    Note over App: バージョンチェック
+    alt アプリバージョン < 最新バージョン
+        App->>App: アップデート推奨ダイアログ表示
+        alt ユーザーが「今すぐ更新」選択
+            App->>Store: ストアへ遷移
+        else ユーザーが「後で」選択
+            App->>App: 処理続行
+        end
+    end
+    
     App->>AWS: デバイス情報登録・更新API
-    Note over App,AWS: デバイスID、FCMトークン等
-    AWS-->>App: ログイン状態、利用権限、ミッション情報
+    Note over App,AWS: デバイスID、FCMトークン、アプリバージョン等
+    AWS-->>App: ログイン状態、利用権限
+    
 ```
 
 ## 2. ログイン画面
@@ -40,11 +57,11 @@ sequenceDiagram
     HDB-->>AWS: 認証結果
     AWS-->>App: 認可コード、ステート
     App->>AWS: トークン取得API
-    AWS-->>App: アクセストークン、リフレッシュトークン
+    AWS-->>App: アクセストークン、リフレッシュトークン、ユーザーID、利用権限
     App->>Keychain: トークン保存
 ```
 
-## 3. トップメニュー（ダッシュボード）
+## 3. トップメニュー（目標画面）
 
 ```mermaid
 sequenceDiagram
@@ -55,9 +72,9 @@ sequenceDiagram
     
     App->>DB: バイタルデータ取得（ローカル）
     DB-->>App: 歩数、体重等の最新データ
-    App->>AWS: 歩数ランキング取得API（不足）
-    AWS-->>App: ランキングデータ
-    App->>DB: ランキングキャッシュ保存
+    App->>DB: 目標設定取得（ローカル）
+    DB-->>App: ユーザーが設定した目標情報
+    Note over App: 目標達成状況を計算・表示
     
     Note over App,HDB: WebView表示時
     App->>AWS: Single Sign On API
@@ -115,20 +132,19 @@ sequenceDiagram
     participant App as HDBアプリ
     participant DB as SQLite
     participant AWS as バイタルAWS
-    participant Storage as AsyncStorage
     
-    Note over App,AWS: 画面表示時
-    App->>AWS: マイページ情報取得API（不足）
-    AWS-->>App: ニックネーム、アイコン、目標情報
-    App->>DB: user_profileテーブル更新
+    Note over App,DB: 画面表示時
+    App->>DB: user_profileテーブル取得（ローカル）
+    DB-->>App: ニックネーム、アイコン
     
     Note over App,AWS: 更新時
-    App->>AWS: マイデータ登録API（既存）
-    Note over App,AWS: ニックネーム、アイコン、目標設定
+    App->>AWS: マイデータ登録API（新規）
+    Note over App,AWS: ニックネーム、アイコン
     AWS-->>App: 更新結果
+    App->>DB: user_profileテーブル更新
 ```
 
-## 7. ミッション画面
+## 7. 目標設定画面
 
 ```mermaid
 sequenceDiagram
@@ -136,17 +152,18 @@ sequenceDiagram
     participant DB as SQLite
     participant AWS as バイタルAWS
     
-    Note over App,AWS: 初回表示時
-    App->>AWS: デバイス情報登録・更新API
-    AWS-->>App: ミッション情報（概要）
+    Note over App,DB: 目標表示
+    App->>DB: goals テーブル取得
+    DB-->>App: ユーザーが設定した目標一覧
     
-    Note over App,AWS: 詳細表示時
-    App->>AWS: ミッション詳細取得API（不足）
-    AWS-->>App: ミッション詳細情報
-    App->>DB: missionsテーブル更新
+    Note over App,DB: 目標設定・編集
+    App->>DB: goals テーブル更新
+    Note over DB: 目標タイプ、目標値、期間を保存
+    DB-->>App: 保存結果
     
-    Note over App,AWS: 進捗更新時
-    App->>AWS: ミッション進捗更新API（不足）
+    Note over App,AWS: 目標データ同期
+    App->>AWS: 目標設定更新API（新規）
+    Note over App,AWS: 目標タイプ、目標値、期間
     AWS-->>App: 更新結果
 ```
 
@@ -158,15 +175,15 @@ sequenceDiagram
     participant Storage as AsyncStorage
     participant AWS as バイタルAWS
     
-    Note over App,AWS: 画面表示時
-    App->>AWS: 通知設定取得API（不足）
-    AWS-->>App: 通知設定情報
-    App->>Storage: ローカル保存
+    Note over App,Storage: 画面表示時
+    App->>Storage: 通知設定取得（ローカル）
+    Storage-->>App: 通知設定情報
     
     Note over App,AWS: 設定変更時
-    App->>AWS: 通知設定更新API（不足）
-    AWS-->>App: 更新結果
     App->>Storage: ローカル更新
+    App->>AWS: マイデータ登録API
+    Note over App,AWS: 通知設定情報を含む
+    AWS-->>App: 更新結果
 ```
 
 ## 9. 連携サービス画面
@@ -194,17 +211,17 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant App as HDBアプリ
-    participant DB as SQLite
+    participant WebView as WebView
     participant AWS as バイタルAWS
+    participant HDB as HDB
     
-    App->>AWS: お知らせ一覧取得API（不足）
-    AWS-->>App: お知らせリスト
-    App->>DB: announcementsテーブル保存
+    Note over App,AWS: お知らせ画面表示
+    App->>AWS: Single Sign On API
+    AWS-->>App: お知らせ画面URL
+    App->>WebView: WebView表示
+    WebView->>HDB: お知らせ一覧表示
     
-    Note over App,AWS: 既読更新時
-    App->>AWS: お知らせ既読更新API（不足）
-    AWS-->>App: 更新結果
-    App->>DB: read_at更新
+    Note over WebView,HDB: 既読管理はHDB側で処理
 ```
 
 ## 11. DBバックアップ・リストア画面
@@ -234,24 +251,43 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant App as HDBアプリ
+    participant WebView as 転籍用WebView
     participant AWS as バイタルAWS
     participant HDB as HDB
     participant DB as SQLite
+    participant Storage as AsyncStorage
     
-    Note over App,AWS: 転籍ログイン
-    App->>AWS: 転籍用ログインAPI（既存）
-    AWS->>HDB: ログイン認証API（転籍用）
-    HDB-->>AWS: 認証結果
-    AWS-->>App: 転籍前ユーザーID
+    Note over App,WebView: 転籍画面表示
+    App->>AWS: Single Sign On API（転籍用）
+    AWS-->>App: 転籍用WebView URL
+    App->>WebView: 転籍画面表示
     
-    Note over App,AWS: データ移行
-    App->>AWS: 移行データ取得API（既存）
-    AWS-->>App: 移行データ（CSV形式）
-    App->>DB: データ保存
+    Note over WebView,HDB: 転籍前IDでログイン
+    WebView->>HDB: ログイン認証（転籍前ID）
+    HDB-->>WebView: 認証成功
     
-    Note over App,AWS: 進捗確認
-    App->>AWS: 移行進捗確認API（不足）
-    AWS-->>App: 移行状態
+    Note over HDB,AWS: サーバー側処理
+    HDB->>HDB: 転籍前データのUserID更新
+    Note over HDB: 転籍前ID → 転籍後IDに更新
+    HDB->>AWS: 転籍完了通知
+    AWS-->>HDB: 通知受領
+    
+    Note over WebView,App: リダイレクト処理
+    WebView->>App: リダイレクト（ディープリンク）
+    Note over App: hdbapp://transfer-complete?oldUserId=XXX&newUserId=YYY
+    
+    Note over App,DB: 端末側データ移行
+    App->>DB: トランザクション開始
+    App->>DB: 転籍前ユーザーIDのデータ検索
+    DB-->>App: 該当データ一覧
+    App->>DB: 全テーブルのuser_idを転籍後IDに更新
+    Note over App,DB: users, vital_data, missions等全テーブル
+    App->>DB: トランザクションコミット
+    
+    Note over App,Storage: 移行完了処理
+    App->>Storage: 移行完了フラグ保存
+    App->>App: ホーム画面へ遷移
+    App->>App: 転籍完了メッセージ表示
 ```
 
 ## 13. Push通知受信フロー
@@ -271,7 +307,45 @@ sequenceDiagram
     App->>App: 通知表示
 ```
 
-## API通信の特徴
+## 14. アプリバージョンチェックフロー
+
+```mermaid
+sequenceDiagram
+    participant App as HDBアプリ
+    participant Firebase as Firebase Remote Config
+    participant AWS as バイタルAWS
+    participant Store as App Store/Google Play
+    participant User as ユーザー
+    
+    Note over App,Firebase: アプリ起動時
+    App->>Firebase: アプリ設定取得要求
+    Firebase-->>App: 設定情報
+    Note over Firebase,App: latest_version（最新バージョン）
+    Note over Firebase,App: update_message（更新メッセージ）
+    
+    App->>App: 現在のバージョンと比較
+    
+    alt 現在のバージョン < 最新バージョン
+        App->>User: アップデート推奨ダイアログ表示
+        Note over App,User: 「新しいバージョンが利用可能です」
+        Note over App,User: 「今すぐ更新」「後で」ボタン
+        alt ユーザーが「今すぐ更新」選択
+            User->>App: 今すぐ更新押下
+            App->>Store: ストアアプリを開く
+        else ユーザーが「後で」選択
+            User->>App: 後で押下
+            App->>App: 通常処理続行
+        end
+    else 現在のバージョン = 最新バージョン
+        App->>App: 通常処理続行
+    end
+    
+    Note over App,AWS: バージョン情報をサーバーに送信
+    App->>AWS: デバイス情報登録・更新API
+    Note over App,AWS: app_version、os_version含む
+```
+
+## API関連のポイント
 
 1. **バイタルデータ**
    - 取得：HealthKit/ヘルスコネクト → アプリ内DB
@@ -290,7 +364,44 @@ sequenceDiagram
    - ランキングデータはローカルキャッシュ
    - 通知設定はAsyncStorageに保存
 
-5. **不足しているAPI**
-   - 各種取得系API（マイページ、ミッション、通知設定、お知らせ、ランキング）
-   - 更新系API（ミッション進捗、通知設定、お知らせ既読）
-   - 状態確認API（認証状態、移行進捗）
+5. **バージョン管理**
+   - Firebase Remote Config経由で最新バージョンを管理
+   - メリット: 柔軟な制御、カスタムメッセージ設定可能
+   - デメリット: 手動更新が必要
+   - アップデート推奨：最新バージョン未満の場合、更新を推奨（スキップ可能）
+   - 常に最新バージョンを保つように促す
+
+6. **不足しているAPI**
+   - 更新系API（目標設定）
+   - 移行完了通知API（転籍処理）
+
+## 転籍処理の重要ポイント
+
+### 処理フロー
+1. **転籍用WebView表示**
+   - アプリからSingle Sign On APIで転籍用URLを取得
+   - WebView内で転籍前のIDでログイン
+
+2. **サーバー側処理**
+   - HDBサーバーで転籍前データのUserIDを転籍後UserIDに更新
+   - 更新完了後、転籍完了通知をバイタルAWSへ送信
+
+3. **端末側処理**
+   - WebViewからのリダイレクト（ディープリンク）でアプリ側に通知
+   - リダイレクトURL例：`hdbapp://transfer-complete?oldUserId=XXX&newUserId=YYY`
+   - アプリ内DBの全テーブルのuser_idを一括更新（トランザクション処理）
+
+### 実装上の注意点
+- **ディープリンク設定**：iOS/Androidでのカスタムスキーム（hdbapp://）の設定が必要
+- **トランザクション処理**：データ整合性を保つため、全テーブルの更新は単一トランザクション内で実行
+- **エラーハンドリング**：転籍処理中のエラーに対する適切なリカバリー処理
+- **状態管理**：転籍完了フラグをAsyncStorageに保存し、重複処理を防止
+
+### 更新対象テーブル
+- users
+- vital_data
+- missions
+- events
+- notifications
+- linked_services
+- その他user_idカラムを持つ全テーブル

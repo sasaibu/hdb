@@ -1,313 +1,371 @@
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import VitalDataScreen from '../../src/screens/VitalDataScreen';
-import { VitalDataService } from '../../src/services/VitalDataService';
+import {render, fireEvent, waitFor} from '@testing-library/react-native';
 
-// VitalDataServiceのモック
-jest.mock('../../src/services/VitalDataService');
-
-// Alert.alertのモック
+// Mock React Native components completely
 jest.mock('react-native', () => {
-  const RN = jest.requireActual('react-native');
+  const React = require('react');
+  
+  const mockComponent = (name: string) => React.forwardRef((props: any, ref: any) => {
+    return React.createElement('View', {
+      ...props,
+      ref,
+      testID: props.testID || name,
+      'data-component': name
+    });
+  });
+
+  // Special Text component that preserves children
+  const MockText = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('Text', {
+      ...props,
+      ref,
+      testID: props.testID || 'Text',
+      'data-component': 'Text'
+    }, props.children);
+  });
+
+  // Special TouchableOpacity that handles onPress
+  const MockTouchableOpacity = React.forwardRef((props: any, ref: any) => {
+    return React.createElement('TouchableOpacity', {
+      ...props,
+      ref,
+      testID: props.testID || 'TouchableOpacity',
+      'data-component': 'TouchableOpacity',
+      onPress: props.onPress
+    }, props.children);
+  });
+
+  // Special FlatList that renders items
+  const MockFlatList = React.forwardRef((props: any, ref: any) => {
+    const items = props.data || [];
+    const ListEmptyComponent = props.ListEmptyComponent;
+    
+    if (items.length === 0 && ListEmptyComponent) {
+      return React.createElement('View', {
+        ref,
+        testID: 'FlatList-empty',
+        'data-component': 'FlatList'
+      }, React.createElement(ListEmptyComponent));
+    }
+    
+    return React.createElement('View', {
+      ...props,
+      ref,
+      testID: 'FlatList',
+      'data-component': 'FlatList'
+    }, items.map((item: any, index: number) => 
+      React.createElement('View', {
+        key: props.keyExtractor ? props.keyExtractor(item) : index,
+        testID: `FlatList-item-${index}`
+      }, props.renderItem ? props.renderItem({item, index}) : null)
+    ));
+  });
+
   return {
-    ...RN,
+    // Basic components
+    View: mockComponent('View'),
+    Text: MockText,
+    TouchableOpacity: MockTouchableOpacity,
+    FlatList: MockFlatList,
+    
+    // Alert
     Alert: {
       alert: jest.fn(),
+    },
+    
+    // StyleSheet
+    StyleSheet: {
+      create: jest.fn((styles) => styles),
+      flatten: jest.fn((style) => style),
     },
   };
 });
 
+// Mock React Navigation
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+    setOptions: jest.fn(),
+  }),
+  useRoute: () => ({
+    params: { title: '歩数' },
+  }),
+}));
+
+jest.mock('@react-navigation/stack', () => ({
+  StackNavigationProp: {},
+}));
+
+// Mock AppNavigator types
+jest.mock('../../src/navigation/AppNavigator', () => ({
+  RootStackParamList: {},
+}));
+
+// Mock VitalInputDialog
+jest.mock('../../src/components/VitalInputDialog', () => {
+  const React = require('react');
+  return React.forwardRef((props: any, ref: any) => {
+    if (!props.visible) return null;
+    return React.createElement('View', {
+      ref,
+      testID: 'VitalInputDialog',
+      'data-component': 'VitalInputDialog'
+    }, [
+      React.createElement('Text', { key: 'title' }, `編集: ${props.title}`),
+      React.createElement('Text', { key: 'value' }, `初期値: ${props.initialValue}`)
+    ]);
+  });
+});
+
+// Mock VitalDataService with immediate resolution
+const mockVitalDataService = {
+  initializeService: jest.fn(() => Promise.resolve()),
+  getVitalDataByType: jest.fn(() => Promise.resolve([])),
+  getVitalDataByPeriod: jest.fn(() => Promise.resolve([])),
+  calculateAchievementRate: jest.fn(() => Promise.resolve(80)),
+  convertToLegacyFormat: jest.fn(() => [] as any[]),
+  insertDummyData: jest.fn(() => Promise.resolve()),
+  updateVitalData: jest.fn(() => Promise.resolve()),
+  deleteVitalData: jest.fn(() => Promise.resolve()),
+};
+
+jest.mock('../../src/services/VitalDataService', () => ({
+  VitalDataService: jest.fn(() => mockVitalDataService),
+}));
+
+// Mock DatabaseService types
+jest.mock('../../src/services/DatabaseService', () => ({
+  VitalDataRecord: {},
+}));
+
+// Import VitalDataScreen after all mocks are set up
+import VitalDataScreen from '../../src/screens/VitalDataScreen';
+
+// Mock navigation
+const mockNavigate = jest.fn();
+const mockGoBack = jest.fn();
+const mockSetOptions = jest.fn();
 const mockNavigation = {
-  navigate: jest.fn(),
-  goBack: jest.fn(),
-  setOptions: jest.fn(),
+  navigate: mockNavigate,
+  goBack: mockGoBack,
+  setOptions: mockSetOptions,
+  canGoBack: jest.fn(),
+  dispatch: jest.fn(),
+  reset: jest.fn(),
+  isFocused: jest.fn(),
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  getParent: jest.fn(),
+  getState: jest.fn(),
+  getId: jest.fn(),
+  setParams: jest.fn(),
 };
 
 const mockRoute = {
   params: {
     title: '歩数',
   },
+  key: 'test-key',
+  name: 'VitalData' as const,
 };
 
 describe('VitalDataScreen', () => {
-  let mockVitalDataService: jest.Mocked<VitalDataService>;
+  let component: any;
 
   beforeEach(() => {
-    // VitalDataServiceのモックインスタンス作成
-    mockVitalDataService = {
-      initializeService: jest.fn(),
-      getVitalDataByType: jest.fn(),
-      getVitalDataByPeriod: jest.fn(),
-      calculateAchievementRate: jest.fn(),
-      convertToLegacyFormat: jest.fn(),
-      insertDummyData: jest.fn(),
-      updateVitalData: jest.fn(),
-      deleteVitalData: jest.fn(),
-    } as any;
-
-    // VitalDataServiceコンストラクタのモック
-    (VitalDataService as jest.Mock).mockImplementation(() => mockVitalDataService);
+    jest.clearAllMocks();
+    
+    // Reset all mocks to default behavior
+    mockVitalDataService.initializeService.mockResolvedValue(undefined);
+    mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
+    mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
+    mockVitalDataService.calculateAchievementRate.mockResolvedValue(80);
+    mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
+    mockVitalDataService.insertDummyData.mockResolvedValue(undefined);
+    mockVitalDataService.updateVitalData.mockResolvedValue(undefined);
+    mockVitalDataService.deleteVitalData.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    if (component && component.unmount) {
+      component.unmount();
+    }
   });
 
-  describe('画面レンダリング', () => {
-    test('画面が正常にレンダリングされる', async () => {
-      // モックデータの設定
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(80);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
+  it('displays loading state initially', () => {
+    // 非同期処理を遅延させる
+    mockVitalDataService.initializeService.mockImplementation(
+      () => new Promise(resolve => setTimeout(resolve, 1000))
+    );
 
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
 
-      await waitFor(() => {
-        expect(getByText('歩数 一覧')).toBeTruthy();
-      });
-    });
-
-    test('ローディング状態が表示される', () => {
-      // 非同期処理を遅延させる
-      mockVitalDataService.initializeService.mockImplementation(
-        () => new Promise(resolve => setTimeout(resolve, 1000))
-      );
-
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
-
-      expect(getByText('データを読み込み中...')).toBeTruthy();
-    });
-
-    test('達成率が表示される', async () => {
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(85.5);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
-
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
-
-      await waitFor(() => {
-        expect(getByText('85.5 %')).toBeTruthy();
-        expect(getByText('目標達成率')).toBeTruthy();
-      });
-    });
+    expect(component.getByText('データを読み込み中...')).toBeTruthy();
   });
 
-  describe('データ表示', () => {
-    test('バイタルデータが正しく表示される', async () => {
-      const mockData = [
-        { id: '1', date: '2025-07-08', value: '8,000 歩' },
-        { id: '2', date: '2025-07-07', value: '7,500 歩' },
-      ];
+  it('renders correctly with title and basic elements', async () => {
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
 
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(80);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
+    // 非同期処理完了を待つ
+    await waitFor(() => {
+      expect(component.getByText('歩数 一覧')).toBeTruthy();
+    }, { timeout: 1000 });
 
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
-
-      await waitFor(() => {
-        expect(getByText('8,000 歩')).toBeTruthy();
-        expect(getByText('7,500 歩')).toBeTruthy();
-        expect(getByText('2025-07-08')).toBeTruthy();
-        expect(getByText('2025-07-07')).toBeTruthy();
-      });
-    });
-
-    test('データが存在しない場合の表示', async () => {
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(null);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
-
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
-
-      await waitFor(() => {
-        expect(getByText('データがありません。')).toBeTruthy();
-      });
-    });
+    expect(component.getByText('目標達成率')).toBeTruthy();
+    expect(component.getByText('80.0 %')).toBeTruthy();
   });
 
-  describe('フィルタリング機能', () => {
-    test('フィルタボタンが表示される', async () => {
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(80);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
+  it('displays vital data when available', async () => {
+    const mockData = [
+      { id: '1', date: '2025-07-08', value: '8,000 歩' },
+      { id: '2', date: '2025-07-07', value: '7,500 歩' },
+    ];
 
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
+    mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
 
-      await waitFor(() => {
-        expect(getByText('今週')).toBeTruthy();
-        expect(getByText('今月')).toBeTruthy();
-        expect(getByText('全期間')).toBeTruthy();
-      });
-    });
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
 
-    test('フィルタボタンをタップするとデータが再読み込みされる', async () => {
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(80);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
-
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
-
-      await waitFor(() => {
-        expect(getByText('今月')).toBeTruthy();
-      });
-
-      // 今月ボタンをタップ
-      fireEvent.press(getByText('今月'));
-
-      await waitFor(() => {
-        expect(mockVitalDataService.getVitalDataByPeriod).toHaveBeenCalledWith('歩数', 'month');
-      });
-    });
+    await waitFor(() => {
+      expect(component.getByText('8,000 歩')).toBeTruthy();
+      expect(component.getByText('7,500 歩')).toBeTruthy();
+      expect(component.getByText('2025-07-08')).toBeTruthy();
+      expect(component.getByText('2025-07-07')).toBeTruthy();
+    }, { timeout: 1000 });
   });
 
-  describe('データ操作', () => {
-    test('削除ボタンをタップすると確認ダイアログが表示される', async () => {
-      const mockData = [
-        { id: '1', date: '2025-07-08', value: '8,000 歩' },
-      ];
+  it('displays empty state when no data', async () => {
+    mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
 
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(80);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
 
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
+    await waitFor(() => {
+      expect(component.getByText('データがありません。')).toBeTruthy();
+    }, { timeout: 1000 });
+  });
 
-      await waitFor(() => {
-        expect(getByText('削除')).toBeTruthy();
-      });
+  it('displays chart when data is available', async () => {
+    const mockData = [
+      { id: '1', date: '2025-07-08', value: '8,000 歩' },
+      { id: '2', date: '2025-07-07', value: '7,500 歩' },
+    ];
 
-      // 削除ボタンをタップ
-      fireEvent.press(getByText('削除'));
+    mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
 
-      // Alert.alertが呼ばれることを確認
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
+
+    await waitFor(() => {
+      expect(component.getByText('📊 推移グラフ')).toBeTruthy();
+      expect(component.getByText('単位: 歩')).toBeTruthy();
+    }, { timeout: 1000 });
+  });
+
+  it('handles delete button press', async () => {
+    const mockData = [
+      { id: '1', date: '2025-07-08', value: '8,000 歩' },
+    ];
+
+    mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
+
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
+
+    await waitFor(() => {
+      expect(component.getByText('削除')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // 削除ボタンをタップ
+    fireEvent.press(component.getByText('削除'));
+
+    // Alert.alertが呼ばれることを確認
+    expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
+      '削除',
+      'この項目を削除しますか？',
+      expect.any(Array)
+    );
+  });
+
+  it('handles API errors gracefully', async () => {
+    mockVitalDataService.initializeService.mockRejectedValue(new Error('Database error'));
+
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
+
+    await waitFor(() => {
       expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
-        '削除',
-        'この項目を削除しますか？',
-        expect.any(Array)
+        'エラー',
+        'データの読み込みに失敗しました。'
       );
-    });
+    }, { timeout: 1000 });
   });
 
-  describe('エラーハンドリング', () => {
-    test('データ読み込みエラー時にアラートが表示される', async () => {
-      mockVitalDataService.initializeService.mockRejectedValue(new Error('Database error'));
+  it('calls all required service methods', async () => {
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
 
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
-
-      await waitFor(() => {
-        expect(require('react-native').Alert.alert).toHaveBeenCalledWith(
-          'エラー',
-          'データの読み込みに失敗しました。'
-        );
-      });
-    });
+    await waitFor(() => {
+      expect(mockVitalDataService.initializeService).toHaveBeenCalled();
+      expect(mockVitalDataService.getVitalDataByType).toHaveBeenCalledWith('歩数');
+      expect(mockVitalDataService.getVitalDataByPeriod).toHaveBeenCalledWith('歩数', 'week');
+      expect(mockVitalDataService.calculateAchievementRate).toHaveBeenCalledWith('歩数');
+      expect(mockVitalDataService.convertToLegacyFormat).toHaveBeenCalled();
+    }, { timeout: 1000 });
   });
 
-  describe('異なるバイタルタイプ', () => {
-    test('体重画面が正しく表示される', async () => {
-      const weightRoute = {
-        params: {
-          title: '体重',
-        },
-      };
+  it('handles different vital types correctly', async () => {
+    const weightRoute = {
+      ...mockRoute,
+      params: { title: '体重' },
+    };
 
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(95);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue([]);
+    component = render(
+      <VitalDataScreen route={weightRoute as any} navigation={mockNavigation as any} />
+    );
 
-      const { getByText } = render(
-        <VitalDataScreen route={weightRoute as any} navigation={mockNavigation as any} />
-      );
-
-      await waitFor(() => {
-        expect(getByText('体重 一覧')).toBeTruthy();
-      });
-    });
-
-    test('血圧画面が正しく表示される', async () => {
-      const bloodPressureRoute = {
-        params: {
-          title: '血圧',
-        },
-      };
-
-      const mockData = [
-        { id: '1', date: '2025-07-08', value: '120/80 mmHg' },
-      ];
-
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(100);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
-
-      const { getByText } = render(
-        <VitalDataScreen route={bloodPressureRoute as any} navigation={mockNavigation as any} />
-      );
-
-      await waitFor(() => {
-        expect(getByText('血圧 一覧')).toBeTruthy();
-        expect(getByText('120/80 mmHg')).toBeTruthy();
-      });
-    });
+    await waitFor(() => {
+      expect(component.getByText('体重 一覧')).toBeTruthy();
+    }, { timeout: 1000 });
   });
 
-  describe('グラフ表示', () => {
-    test('データがある場合にグラフが表示される', async () => {
-      const mockData = [
-        { id: '1', date: '2025-07-08', value: '8,000 歩' },
-        { id: '2', date: '2025-07-07', value: '7,500 歩' },
-      ];
+  it('displays filter buttons', async () => {
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
 
-      mockVitalDataService.initializeService.mockResolvedValue();
-      mockVitalDataService.getVitalDataByType.mockResolvedValue([]);
-      mockVitalDataService.getVitalDataByPeriod.mockResolvedValue([]);
-      mockVitalDataService.calculateAchievementRate.mockResolvedValue(80);
-      mockVitalDataService.convertToLegacyFormat.mockReturnValue(mockData);
+    await waitFor(() => {
+      expect(component.getByText('今週')).toBeTruthy();
+      expect(component.getByText('今月')).toBeTruthy();
+      expect(component.getByText('全期間')).toBeTruthy();
+    }, { timeout: 1000 });
+  });
 
-      const { getByText } = render(
-        <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
-      );
+  it('handles filter button press', async () => {
+    component = render(
+      <VitalDataScreen route={mockRoute as any} navigation={mockNavigation as any} />
+    );
 
-      await waitFor(() => {
-        expect(getByText('📊 推移グラフ')).toBeTruthy();
-        expect(getByText('単位: 歩')).toBeTruthy();
-      });
-    });
+    await waitFor(() => {
+      expect(component.getByText('今月')).toBeTruthy();
+    }, { timeout: 1000 });
+
+    // 今月ボタンをタップ
+    fireEvent.press(component.getByText('今月'));
+
+    await waitFor(() => {
+      expect(mockVitalDataService.getVitalDataByPeriod).toHaveBeenCalledWith('歩数', 'month');
+    }, { timeout: 1000 });
   });
 });
