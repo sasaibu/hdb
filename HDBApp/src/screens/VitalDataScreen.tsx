@@ -185,10 +185,13 @@ const VitalDataScreen = ({route}: Props) => {
         return 'mmHg';
       case '心拍数':
         return 'bpm';
+      case '脈拍':
+        return 'bpm';
       default:
         return '';
     }
   };
+
 
   // グラフ用のデータ処理
   const getChartData = () => {

@@ -19,6 +19,7 @@ import {
   RootStackParamList,
 } from '../navigation/AppNavigator';
 import {apiClient} from '../services/api/apiClient';
+import {VitalDataService} from '../services/VitalDataService';
 import theme from '../styles/theme';
 
 const {width} = Dimensions.get('window');
