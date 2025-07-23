@@ -23,6 +23,7 @@ interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+  headers?: Record<string, string>;
 }
 
 // モックAPIサービス
@@ -726,6 +727,122 @@ export class MockApiService {
       error: 'Invalid credentials',
       message: '認証に失敗しました',
     };
+  }
+
+  // 移行データ取得API - POST /api/v1/health/migration（最新IF仕様書No.5対応）
+  async getMigrationData(userId: string, migrationId: string, index: number = 0, count: number = 100): Promise<ApiResponse<any>> {
+    await delay(1200);
+
+    // Bearer Token認証チェック
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+        message: '認証が必要です',
+      };
+    }
+
+    // 移行データの生成（JSONレスポンス）
+    const migrationData = this.generateMigrationJsonData(userId, migrationId, index, count);
+    
+    console.log(`MockAPI: Migration data retrieved for user ${userId}, migration ${migrationId}`);
+    console.log(`MockAPI: Index: ${index}, Count: ${count}, Records: ${migrationData.length}`);
+
+    return {
+      success: true,
+      data: {
+        migrationData,
+        totalRecords: migrationData.length,
+        hasMoreData: index + count < 500, // 仮の総件数500件
+        nextIndex: index + count,
+        migrationStatus: 'in_progress',
+        completedPercentage: Math.min(((index + count) / 500) * 100, 100),
+      },
+      message: `移行データを取得しました（${migrationData.length}件）`,
+      headers: {
+        'X-VitalHDB-Result': migrationData.length > 0 ? 'SUCCESS' : 'NO_DATA',
+        'Content-Type': 'application/json',
+      },
+    };
+  }
+
+  // JSON形式移行データ生成（CSV処理はサーバー側バッチ処理）
+  private generateMigrationJsonData(userId: string, migrationId: string, index: number, count: number): any[] {
+    const migrationData = [];
+    
+    // サンプルデータ生成
+    for (let i = 0; i < Math.min(count, 50); i++) {
+      const recordIndex = index + i;
+      const measurementTypes = ['1000', '1100', '1200', '1210', '1400']; // 歩数、体重、血圧、心拍数、体温
+      const measurementCode = measurementTypes[recordIndex % measurementTypes.length];
+      
+      const baseDate = new Date('2024-01-01');
+      baseDate.setDate(baseDate.getDate() + recordIndex);
+      
+      let value1, value2, value3, unit, measurementName;
+      
+      switch (measurementCode) {
+        case '1000': // 歩数
+          value1 = Math.floor(Math.random() * 5000) + 5000;
+          value2 = null;
+          value3 = null;
+          unit = 'steps';
+          measurementName = '歩数';
+          break;
+        case '1100': // 体重
+          value1 = Math.round((Math.random() * 20 + 60) * 10) / 10;
+          value2 = null;
+          value3 = null;
+          unit = 'kg';
+          measurementName = '体重';
+          break;
+        case '1200': // 血圧
+          value1 = Math.floor(Math.random() * 40) + 110; // 収縮期
+          value2 = Math.floor(Math.random() * 20) + 70;  // 拡張期
+          value3 = null;
+          unit = 'mmHg';
+          measurementName = '血圧';
+          break;
+        case '1210': // 心拍数
+          value1 = Math.floor(Math.random() * 40) + 60;
+          value2 = null;
+          value3 = null;
+          unit = 'bpm';
+          measurementName = '心拍数';
+          break;
+        case '1400': // 体温
+          value1 = Math.round((Math.random() * 2 + 36) * 10) / 10;
+          value2 = null;
+          value3 = null;
+          unit = '°C';
+          measurementName = '体温';
+          break;
+        default:
+          value1 = 0;
+          value2 = null;
+          value3 = null;
+          unit = '';
+          measurementName = '不明';
+      }
+
+      migrationData.push({
+        id: `vital-migration-${recordIndex}`,
+        userId,
+        measurementCode,
+        measurementName,
+        measuredAt: baseDate.toISOString(),
+        value1,
+        value2,
+        value3,
+        unit,
+        source: 'dhealth_migration',
+        device: 'legacy_device',
+        createdAt: baseDate.toISOString(),
+      });
+    }
+    
+    return migrationData;
   }
 
   async executeMigration(migrationToken: string): Promise<ApiResponse<any>> {
