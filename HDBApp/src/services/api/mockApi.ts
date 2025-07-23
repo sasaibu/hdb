@@ -861,6 +861,77 @@ export class MockApiService {
     return vital.value3 || null;
   }
 
+  // Single Sign On API - POST /api/v1/health/sso
+  async singleSignOn(userId: string, screen: string): Promise<ApiResponse<any>> {
+    await delay(800);
+
+    // Bearer Token認証チェック
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      return {
+        success: false,
+        error: 'Unauthorized',
+        message: '認証が必要です',
+      };
+    }
+
+    // 画面種別に応じたURL生成
+    const baseUrl = 'https://hdb.example.com';
+    const urlMap: Record<string, string> = {
+      // マイページ関連
+      'mypage': `${baseUrl}/mypage`,
+      'profile': `${baseUrl}/mypage/profile`,
+      'settings': `${baseUrl}/mypage/settings`,
+      
+      // バイタルデータ関連
+      'vitals': `${baseUrl}/vitals`,
+      'vitals_chart': `${baseUrl}/vitals/chart`,
+      'vitals_history': `${baseUrl}/vitals/history`,
+      
+      // 目標・ミッション関連
+      'goals': `${baseUrl}/goals`,
+      'missions': `${baseUrl}/missions`,
+      'achievements': `${baseUrl}/achievements`,
+      
+      // ランキング・コミュニティ
+      'ranking': `${baseUrl}/ranking`,
+      'community': `${baseUrl}/community`,
+      
+      // お知らせ・サポート
+      'notifications': `${baseUrl}/notifications`,
+      'support': `${baseUrl}/support`,
+      'faq': `${baseUrl}/faq`,
+      
+      // 健康情報・コンテンツ
+      'health_tips': `${baseUrl}/health/tips`,
+      'articles': `${baseUrl}/health/articles`,
+      'recipes': `${baseUrl}/health/recipes`,
+      
+      // 設定・管理
+      'account': `${baseUrl}/account`,
+      'privacy': `${baseUrl}/privacy`,
+      'terms': `${baseUrl}/terms`,
+    };
+
+    const memberUrl = urlMap[screen] || `${baseUrl}/dashboard`;
+    
+    // ログイン済みページURL生成（セッション情報付与）
+    const ssoUrl = `${memberUrl}?sso_token=${token}&user_id=${userId}&timestamp=${Date.now()}`;
+
+    console.log(`MockAPI: SSO URL generated for screen '${screen}':`, ssoUrl);
+
+    return {
+      success: true,
+      data: {
+        member_url: ssoUrl,
+        screen,
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30分後
+        session_id: `sso-session-${Date.now()}`,
+      },
+      message: 'SSO URLを生成しました',
+    };
+  }
+
   // デモデータ生成（開発用）
   async generateDemoData(type: string): Promise<ApiResponse<any>> {
     await delay(300);
