@@ -54,6 +54,9 @@ const TimingDetailScreen: React.FC<Props> = ({navigation, route}) => {
               multiline={true}
               numberOfLines={5}
               autoFocus={true}
+              keyboardType="default"
+              autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
 
