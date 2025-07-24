@@ -12,10 +12,19 @@ import type {RootStackParamList} from '../navigation/AppNavigator';
 
 type Props = StackScreenProps<RootStackParamList, 'GoalConfirmation'>;
 
-const GoalConfirmationScreen: React.FC<Props> = ({navigation}) => {
+const GoalConfirmationScreen: React.FC<Props> = ({navigation, route}) => {
   const handleConfirm = () => {
-    // ホーム画面へ遷移
-    navigation.navigate('Main');
+    // 目標継続画面へ遷移
+    navigation.navigate('GoalContinuation', {
+      goalType: route.params?.goalType,
+      goalPrinciple1: route.params?.goalPrinciple1,
+      goalPrinciple2: route.params?.goalPrinciple2,
+      goalReason: route.params?.goalReason,
+      goalDetail: route.params?.goalDetail,
+      notificationTime: route.params?.notificationTime,
+      isNotificationOn: route.params?.isNotificationOn,
+      timing: route.params?.timing,
+    });
   };
 
   const handleEdit = () => {

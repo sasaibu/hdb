@@ -20,6 +20,11 @@ import {
 } from '../navigation/AppNavigator';
 import {apiClient} from '../services/api/apiClient';
 import theme from '../styles/theme';
+import BottomNavigation from '../components/BottomNavigation';
+import HealthCheckScreen from './HealthCheckScreen';
+import PulseSurveyScreen from './PulseSurveyScreen';
+import RecordScreen from './RecordScreen';
+import NotificationHistoryScreen from './NotificationHistoryScreen';
 
 const {width} = Dimensions.get('window');
 
@@ -126,6 +131,7 @@ export default function HomeScreen({navigation}: Props) {
   const [rankingData, setRankingData] = useState<RankingData[]>([]);
   const [loading, setLoading] = useState(true);
   const [vitalSummary, setVitalSummary] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('home');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -235,9 +241,21 @@ export default function HomeScreen({navigation}: Props) {
     },
   ];
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <WelcomeHeader />
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'health-check':
+        return <HealthCheckScreen />;
+      case 'pulse-survey':
+        return <PulseSurveyScreen />;
+      case 'record':
+        return <RecordScreen />;
+      case 'notifications':
+        return <NotificationHistoryScreen />;
+      case 'home':
+      default:
+        return (
+          <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <WelcomeHeader />
       
       <QuickStats vitalSummary={vitalSummary} />
 
@@ -303,12 +321,28 @@ export default function HomeScreen({navigation}: Props) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.bottomSpacer} />
-    </ScrollView>
+            <View style={styles.bottomSpacer} />
+          </ScrollView>
+        );
+    }
+  };
+
+  return (
+    <View style={styles.mainContainer}>
+      {renderContent()}
+      <BottomNavigation
+        activeTab={activeTab}
+        onTabPress={setActiveTab}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background.secondary,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.secondary,

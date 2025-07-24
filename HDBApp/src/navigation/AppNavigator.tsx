@@ -32,6 +32,7 @@ import GoalExamplesScreen from '../screens/GoalExamplesScreen'; // 追加
 import TimingDetailScreen from '../screens/TimingDetailScreen'; // 追加
 import GoalDetailScreen from '../screens/GoalDetailScreen'; // 追加
 import GoalConfirmationScreen from '../screens/GoalConfirmationScreen'; // 追加
+import GoalContinuationScreen from '../screens/GoalContinuationScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -45,12 +46,37 @@ export type RootStackParamList = {
   NotificationHistory: undefined; // 追加
   OpenSourceLicenses: undefined; // 追加
   GoalInput: undefined; // 追加
-  GoalNotification: undefined; // 追加
+  GoalNotification: {
+    goalType?: string;
+    goalPrinciple1?: string;
+    goalPrinciple2?: string;
+    goalReason?: string;
+    goalDetail?: string;
+  }; // 追加
   TimingInput: {currentTiming?: string; onSave?: (timing: string) => void}; // 追加
   GoalExamples: {onSelectExample?: (example: string) => void}; // 追加
   TimingDetail: {onSave?: (timing: string) => void}; // 追加
   GoalDetail: {initialGoal?: string; onSave?: (goal: string) => void}; // 追加
-  GoalConfirmation: undefined; // 追加
+  GoalConfirmation: {
+    goalType?: string;
+    goalPrinciple1?: string;
+    goalPrinciple2?: string;
+    goalReason?: string;
+    goalDetail?: string;
+    notificationTime?: string;
+    isNotificationOn?: boolean;
+    timing?: string;
+  }; // 追加
+  GoalContinuation: {
+    goalType?: string;
+    goalPrinciple1?: string;
+    goalPrinciple2?: string;
+    goalReason?: string;
+    goalDetail?: string;
+    notificationTime?: string;
+    isNotificationOn?: boolean;
+    timing?: string;
+  }; // 追加
 };
 
 export type MainDrawerParamList = {
@@ -314,6 +340,18 @@ export default function AppNavigator() {
           options={{
             headerShown: true, 
             title: '目標設定確認',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="GoalContinuation" // 追加
+          component={GoalContinuationScreen}
+          options={{
+            headerShown: true, 
+            title: '目標継続',
             headerStyle: {
               backgroundColor: '#FF8C00',
             },

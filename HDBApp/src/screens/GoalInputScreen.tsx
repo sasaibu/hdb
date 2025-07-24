@@ -20,9 +20,15 @@ const GoalInputScreen: React.FC<Props> = ({navigation}) => {
 
   const handleNext = () => {
     if (goal.trim()) {
-      // TODO: 目標を保存して次の画面へ
+      // 目標を保存して次の画面へ
       console.log('入力された目標:', goal);
-      navigation.navigate('GoalNotification');
+      navigation.navigate('GoalNotification', {
+        goalType: '回数', // デフォルトは回数として設定
+        goalPrinciple1: goal,
+        goalPrinciple2: '1回', // デフォルト値
+        goalReason: '', // 後で入力
+        goalDetail: goal,
+      });
     }
   };
 
