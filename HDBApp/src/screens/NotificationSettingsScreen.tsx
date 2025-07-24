@@ -31,7 +31,23 @@ const NotificationSettingsScreen = () => {
   const loadSettings = async () => {
     try {
       const notificationSettings = await notificationService.getSettings();
-      setSettings(notificationSettings);
+      
+      // 新ER図対応: 各種通知設定フラグをAsyncStorageから読み込み
+      const newNoticeEnabled = await AsyncStorage.getItem('new_notice_notification_enabled');
+      const unreadExamEnabled = await AsyncStorage.getItem('unread_exam_notification_enabled');
+      const pulseSurveyEnabled = await AsyncStorage.getItem('pulse_survey_notification_enabled');
+      const stressCheckEnabled = await AsyncStorage.getItem('stress_check_notification_enabled');
+      
+      // 既存の設定に新しい設定を統合
+      const updatedSettings = {
+        ...notificationSettings,
+        newAnnouncementNotification: newNoticeEnabled !== 'false',
+        unreadExamNotification: unreadExamEnabled !== 'false',
+        pulseSurveyNotification: pulseSurveyEnabled !== 'false',
+        stressCheckNotification: stressCheckEnabled !== 'false',
+      };
+      
+      setSettings(updatedSettings);
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
     }
@@ -41,6 +57,13 @@ const NotificationSettingsScreen = () => {
   const saveSettings = async (newSettings: NotificationSettings) => {
     try {
       await notificationService.updateSettings(newSettings);
+      
+      // 新ER図対応: 各種通知設定フラグをAsyncStorageに保存
+      await AsyncStorage.setItem('new_notice_notification_enabled', newSettings.newAnnouncementNotification.toString());
+      await AsyncStorage.setItem('unread_exam_notification_enabled', newSettings.unreadExamNotification.toString());
+      await AsyncStorage.setItem('pulse_survey_notification_enabled', newSettings.pulseSurveyNotification.toString());
+      await AsyncStorage.setItem('stress_check_notification_enabled', newSettings.stressCheckNotification.toString());
+      
       setSettings(newSettings);
     } catch (error) {
       console.error('設定の保存に失敗しました:', error);

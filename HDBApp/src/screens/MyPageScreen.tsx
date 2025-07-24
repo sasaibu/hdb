@@ -38,7 +38,18 @@ interface UserProfile {
   age: number;
   height: number;
   weight: number;
-  avatar: string;
+  showNickname: boolean;
+  goals: Goal[];
+  supportComment?: string;
+}
+
+interface Goal {
+  id: string;
+  type: 'steps' | 'weight' | 'exercise';
+  target: number;
+  current: number;
+  unit: string;
+  achieved: boolean;
 }
 
 interface SettingItem {
@@ -59,7 +70,26 @@ export default function MyPageScreen({navigation}: Props) {
     age: 35,
     height: 170,
     weight: 65,
-    avatar: '👨‍💼',
+    showNickname: true,
+    goals: [
+      {
+        id: '1',
+        type: 'steps',
+        target: 10000,
+        current: 7500,
+        unit: '歩',
+        achieved: false,
+      },
+      {
+        id: '2',
+        type: 'weight',
+        target: 60,
+        current: 65,
+        unit: 'kg',
+        achieved: false,
+      },
+    ],
+    supportComment: 'がんばって健康管理を続けましょう！',
   });
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -111,8 +141,8 @@ export default function MyPageScreen({navigation}: Props) {
                 useNativeDriver: true,
               }),
             ]).start(() => {
-              // @ts-ignore - ログアウト時はLogin画面に戻る
-              navigation.reset({
+              // ログアウト時はLogin画面に戻る
+              navigation.getParent()?.reset({
                 index: 0,
                 routes: [{name: 'Login'}],
               });
@@ -243,17 +273,6 @@ export default function MyPageScreen({navigation}: Props) {
             </View>
             
             <View style={styles.profileContent}>
-              <TouchableOpacity
-                style={styles.avatarContainer}
-                onPress={() => setModalVisible(true)}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarEmoji}>{profile.avatar}</Text>
-                </View>
-                <View style={styles.editBadge}>
-                  <Text style={styles.editIcon}>✏️</Text>
-                </View>
-              </TouchableOpacity>
-              
               <Text style={styles.profileName}>{profile.name}</Text>
               <Text style={styles.profileEmail}>{profile.email}</Text>
               
@@ -266,6 +285,105 @@ export default function MyPageScreen({navigation}: Props) {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* ニックネーム表示設定 */}
+          <View style={styles.nicknameSection}>
+            <Text style={styles.sectionTitle}>👤 ニックネーム設定</Text>
+            <View style={styles.nicknameContainer}>
+              <View style={styles.nicknameRow}>
+                <View style={styles.nicknameInfo}>
+                  <Text style={styles.nicknameLabel}>ニックネーム表示</Text>
+                  <Text style={styles.nicknameSubtitle}>
+                    他のユーザーにニックネームを表示する
+                  </Text>
+                </View>
+                <Switch
+                  value={profile.showNickname}
+                  onValueChange={(value) => 
+                    setProfile(prev => ({...prev, showNickname: value}))
+                  }
+                  trackColor={{
+                    false: theme.colors.gray[300],
+                    true: theme.colors.primary[200],
+                  }}
+                  thumbColor={
+                    profile.showNickname ? theme.colors.primary[500] : theme.colors.gray[400]
+                  }
+                />
+              </View>
+              {profile.showNickname && (
+                <View style={styles.nicknamePreview}>
+                  <Text style={styles.nicknamePreviewLabel}>表示名:</Text>
+                  <Text style={styles.nicknamePreviewText}>{profile.name}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* 目標設定セクション */}
+          <View style={styles.goalsSection}>
+            <Text style={styles.sectionTitle}>🎯 目標設定</Text>
+            <View style={styles.goalsContainer}>
+              {profile.goals.map((goal) => (
+                <View key={goal.id} style={styles.goalItem}>
+                  <View style={styles.goalHeader}>
+                    <View style={styles.goalInfo}>
+                      <Text style={styles.goalType}>
+                        {goal.type === 'steps' ? '👣 歩数' : 
+                         goal.type === 'weight' ? '⚖️ 体重' : '💪 運動'}
+                      </Text>
+                      <Text style={styles.goalTarget}>
+                        目標: {goal.target.toLocaleString()}{goal.unit}
+                      </Text>
+                    </View>
+                    <View style={styles.goalStatus}>
+                      <Text style={[
+                        styles.goalStatusText,
+                        {color: goal.achieved ? theme.colors.success : theme.colors.warning}
+                      ]}>
+                        {goal.achieved ? '達成' : '未達成'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.goalProgress}>
+                    <View style={styles.goalProgressBar}>
+                      <View 
+                        style={[
+                          styles.goalProgressFill,
+                          {
+                            width: `${Math.min((goal.current / goal.target) * 100, 100)}%`,
+                            backgroundColor: goal.achieved ? theme.colors.success : theme.colors.primary[500]
+                          }
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.goalProgressText}>
+                      {goal.current.toLocaleString()} / {goal.target.toLocaleString()}{goal.unit}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+              <TouchableOpacity 
+                style={styles.addGoalButton}
+                onPress={() => Alert.alert('開発中', '目標追加機能は開発中です。')}
+              >
+                <Text style={styles.addGoalButtonText}>+ 新しい目標を追加</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 応援コメント表示エリア */}
+          {profile.supportComment && (
+            <View style={styles.supportSection}>
+              <Text style={styles.sectionTitle}>💬 応援メッセージ</Text>
+              <View style={styles.supportContainer}>
+                <View style={styles.supportIcon}>
+                  <Text style={styles.supportIconText}>🌟</Text>
+                </View>
+                <Text style={styles.supportComment}>{profile.supportComment}</Text>
+              </View>
+            </View>
+          )}
 
           {/* 健康データサマリー */}
           <View style={styles.healthSummary}>
@@ -567,5 +685,167 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 12,
     color: theme.colors.text.tertiary,
+  },
+  // ニックネーム設定スタイル
+  nicknameSection: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  nicknameContainer: {
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.xl,
+    padding: 20,
+    ...theme.shadow.md,
+  },
+  nicknameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  nicknameInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  nicknameLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 4,
+  },
+  nicknameSubtitle: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+  },
+  nicknamePreview: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border.light,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  nicknamePreviewLabel: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    marginRight: 8,
+  },
+  nicknamePreviewText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.primary[600],
+  },
+  // 目標設定スタイル
+  goalsSection: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  goalsContainer: {
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.xl,
+    padding: 20,
+    ...theme.shadow.md,
+  },
+  goalItem: {
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
+  },
+  goalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  goalInfo: {
+    flex: 1,
+  },
+  goalType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 4,
+  },
+  goalTarget: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+  },
+  goalStatus: {
+    alignItems: 'flex-end',
+  },
+  goalStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.colors.background.secondary,
+  },
+  goalProgress: {
+    marginTop: 8,
+  },
+  goalProgressBar: {
+    height: 8,
+    backgroundColor: theme.colors.gray[200],
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  goalProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  goalProgressText: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+    textAlign: 'right',
+  },
+  addGoalButton: {
+    borderWidth: 2,
+    borderColor: theme.colors.primary[300],
+    borderStyle: 'dashed',
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addGoalButtonText: {
+    fontSize: 14,
+    color: theme.colors.primary[600],
+    fontWeight: '600',
+  },
+  // 応援コメントスタイル
+  supportSection: {
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  supportContainer: {
+    backgroundColor: theme.colors.accent[50],
+    borderRadius: theme.borderRadius.xl,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.accent[400],
+    ...theme.shadow.sm,
+  },
+  supportIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.accent[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  supportIconText: {
+    fontSize: 20,
+  },
+  supportComment: {
+    flex: 1,
+    fontSize: 16,
+    color: theme.colors.text.primary,
+    lineHeight: 24,
+    fontStyle: 'italic',
   },
 });

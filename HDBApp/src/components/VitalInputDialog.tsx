@@ -11,10 +11,11 @@ import {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave: (value: string, value2?: string) => void;
+  onSave: (value: string, value2?: string, pulse?: string) => void;
   title: string;
   initialValue: string;
   initialValue2?: string;
+  initialPulse?: string;
 }
 
 const VitalInputDialog = ({
@@ -24,14 +25,17 @@ const VitalInputDialog = ({
   title,
   initialValue,
   initialValue2,
+  initialPulse,
 }: Props) => {
   const [value, setValue] = React.useState(initialValue);
   const [value2, setValue2] = React.useState(initialValue2 || '');
+  const [pulse, setPulse] = React.useState(initialPulse || '');
 
   React.useEffect(() => {
     setValue(initialValue);
     setValue2(initialValue2 || '');
-  }, [initialValue, initialValue2]);
+    setPulse(initialPulse || '');
+  }, [initialValue, initialValue2, initialPulse]);
 
   const isBloodPressure = title === '血圧';
 
@@ -62,6 +66,14 @@ const VitalInputDialog = ({
       if (numValue <= numValue2) {
         return false;
       }
+      
+      // 脈拍のバリデーション（オプション）
+      if (pulse.trim()) {
+        const pulseValue = parseFloat(pulse);
+        if (isNaN(pulseValue) || pulseValue < 40 || pulseValue > 200) {
+          return false;
+        }
+      }
     }
 
     return true;
@@ -73,7 +85,7 @@ const VitalInputDialog = ({
     }
     
     if (isBloodPressure) {
-      onSave(value, value2);
+      onSave(value, value2, pulse);
     } else {
       onSave(value);
     }
@@ -117,17 +129,31 @@ const VitalInputDialog = ({
           </View>
 
           {isBloodPressure && (
-            <View style={styles.inputRow}>
-              <Text style={styles.label}>拡張期</Text>
-              <TextInput
-                style={styles.input}
-                onChangeText={setValue2}
-                value={value2}
-                keyboardType="numeric"
-                placeholder="例: 80"
-              />
-              <Text style={styles.unit}>mmHg</Text>
-            </View>
+            <>
+              <View style={styles.inputRow}>
+                <Text style={styles.label}>拡張期</Text>
+                <TextInput
+                  style={styles.input}
+                  onChangeText={setValue2}
+                  value={value2}
+                  keyboardType="numeric"
+                  placeholder="例: 80"
+                />
+                <Text style={styles.unit}>mmHg</Text>
+              </View>
+              
+              <View style={styles.inputRow}>
+                <Text style={styles.label}>脈拍</Text>
+                <TextInput
+                  style={styles.input}
+                  onChangeText={setPulse}
+                  value={pulse}
+                  keyboardType="numeric"
+                  placeholder="例: 72 (任意)"
+                />
+                <Text style={styles.unit}>bpm</Text>
+              </View>
+            </>
           )}
 
           <View style={styles.buttonRow}>
