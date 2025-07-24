@@ -22,6 +22,8 @@ import NoticeScreen from '../screens/NoticeScreen'; // 追加
 import TermsScreen from '../screens/TermsScreen'; // 追加
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen'; // 追加
 import OpenSourceLicensesScreen from '../screens/OpenSourceLicensesScreen'; // 追加
+import DataDeletionScreen from '../screens/DataDeletionScreen'; // 追加
+import LogoutScreen from '../screens/LogoutScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -50,6 +52,8 @@ export type MainDrawerParamList = {
   Terms: undefined; // 追加
   PrivacyPolicy: undefined; // 追加
   OpenSourceLicenses: undefined; // 追加
+  DataDeletion: undefined; // 追加
+  Logout: undefined; // 追加
   // DataMigration: undefined; // 削除
 };
 
@@ -149,6 +153,16 @@ function MainDrawer() {
         name="OpenSourceLicenses"
         component={OpenSourceLicensesScreen}
         options={{title: 'オープンソースライセンス'}}
+      />
+      <Drawer.Screen
+        name="DataDeletion"
+        component={DataDeletionScreen}
+        options={{title: 'データ削除について'}}
+      />
+      <Drawer.Screen
+        name="Logout"
+        component={LogoutScreen}
+        options={{title: 'ログアウト'}}
       />
     </Drawer.Navigator>
   );
