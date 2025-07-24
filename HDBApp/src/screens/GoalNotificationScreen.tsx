@@ -157,10 +157,10 @@ const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.nextButton, hasToggleTouched ? styles.nextButtonActive : styles.nextButtonDisabled]}
+          style={[styles.nextButton, (hasToggleTouched || timing.trim()) ? styles.nextButtonActive : styles.nextButtonDisabled]}
           onPress={handleNext}
-          disabled={!hasToggleTouched}>
-          <Text style={[styles.nextButtonText, hasToggleTouched && styles.nextButtonTextActive]}>
+          disabled={!hasToggleTouched && !timing.trim()}>
+          <Text style={[styles.nextButtonText, (hasToggleTouched || timing.trim()) && styles.nextButtonTextActive]}>
             次へ
           </Text>
         </TouchableOpacity>

@@ -42,7 +42,10 @@ const GoalInputScreen: React.FC<Props> = ({navigation}) => {
 
           <TouchableOpacity 
             style={styles.inputSection}
-            onPress={() => navigation.navigate('GoalDetail', {initialGoal: goal})}>
+            onPress={() => navigation.navigate('GoalDetail', {
+              initialGoal: goal,
+              onSave: (newGoal: string) => setGoal(newGoal),
+            })}>
             <Text style={[styles.inputPlaceholder, goal && styles.inputText]}>
               {goal || '目標を入力してください'}
             </Text>
