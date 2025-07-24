@@ -24,6 +24,13 @@ import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen'; // 追加
 import OpenSourceLicensesScreen from '../screens/OpenSourceLicensesScreen'; // 追加
 import DataDeletionScreen from '../screens/DataDeletionScreen'; // 追加
 import LogoutScreen from '../screens/LogoutScreen'; // 追加
+import GoalSettingScreen from '../screens/GoalSettingScreen'; // 追加
+import GoalInputScreen from '../screens/GoalInputScreen'; // 追加
+import GoalNotificationScreen from '../screens/GoalNotificationScreen'; // 追加
+import TimingInputScreen from '../screens/TimingInputScreen'; // 追加
+import GoalExamplesScreen from '../screens/GoalExamplesScreen'; // 追加
+import TimingDetailScreen from '../screens/TimingDetailScreen'; // 追加
+import GoalDetailScreen from '../screens/GoalDetailScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -36,6 +43,12 @@ export type RootStackParamList = {
   LinkedServicesSettings: undefined; // 追加
   NotificationHistory: undefined; // 追加
   OpenSourceLicenses: undefined; // 追加
+  GoalInput: undefined; // 追加
+  GoalNotification: undefined; // 追加
+  TimingInput: {currentTiming?: string; onSave?: (timing: string) => void}; // 追加
+  GoalExamples: {onSelectExample?: (example: string) => void}; // 追加
+  TimingDetail: {onSave?: (timing: string) => void}; // 追加
+  GoalDetail: {initialGoal?: string}; // 追加
 };
 
 export type MainDrawerParamList = {
@@ -54,6 +67,7 @@ export type MainDrawerParamList = {
   OpenSourceLicenses: undefined; // 追加
   DataDeletion: undefined; // 追加
   Logout: undefined; // 追加
+  GoalSetting: undefined; // 追加
   // DataMigration: undefined; // 削除
 };
 
@@ -164,6 +178,11 @@ function MainDrawer() {
         component={LogoutScreen}
         options={{title: 'ログアウト'}}
       />
+      <Drawer.Screen
+        name="GoalSetting"
+        component={GoalSettingScreen}
+        options={{title: '目標設定'}}
+      />
     </Drawer.Navigator>
   );
 }
@@ -214,6 +233,78 @@ export default function AppNavigator() {
           name="OpenSourceLicenses" // 追加
           component={OpenSourceLicensesScreen}
           options={{headerShown: true, title: 'オープンソースライセンス'}}
+        />
+        <Stack.Screen
+          name="GoalInput" // 追加
+          component={GoalInputScreen}
+          options={{
+            headerShown: true, 
+            title: '目標入力',
+            headerStyle: {
+              backgroundColor: '#FFF5E6',
+            },
+            headerTintColor: '#000000',
+          }}
+        />
+        <Stack.Screen
+          name="GoalNotification" // 追加
+          component={GoalNotificationScreen}
+          options={{
+            headerShown: true, 
+            title: '通知設定',
+            headerStyle: {
+              backgroundColor: '#FFF5E6',
+            },
+            headerTintColor: '#000000',
+          }}
+        />
+        <Stack.Screen
+          name="TimingInput" // 追加
+          component={TimingInputScreen}
+          options={{
+            headerShown: true, 
+            title: 'タイミング入力',
+            headerStyle: {
+              backgroundColor: '#FFF5E6',
+            },
+            headerTintColor: '#000000',
+          }}
+        />
+        <Stack.Screen
+          name="GoalExamples" // 追加
+          component={GoalExamplesScreen}
+          options={{
+            headerShown: true, 
+            title: '目標例文',
+            headerStyle: {
+              backgroundColor: '#FFF5E6',
+            },
+            headerTintColor: '#000000',
+          }}
+        />
+        <Stack.Screen
+          name="TimingDetail" // 追加
+          component={TimingDetailScreen}
+          options={{
+            headerShown: true, 
+            title: 'タイミング詳細',
+            headerStyle: {
+              backgroundColor: '#FFF5E6',
+            },
+            headerTintColor: '#000000',
+          }}
+        />
+        <Stack.Screen
+          name="GoalDetail" // 追加
+          component={GoalDetailScreen}
+          options={{
+            headerShown: true, 
+            title: '目標入力',
+            headerStyle: {
+              backgroundColor: '#FFF5E6',
+            },
+            headerTintColor: '#000000',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
