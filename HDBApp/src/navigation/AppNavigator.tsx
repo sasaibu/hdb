@@ -48,7 +48,7 @@ export type RootStackParamList = {
   TimingInput: {currentTiming?: string; onSave?: (timing: string) => void}; // 追加
   GoalExamples: {onSelectExample?: (example: string) => void}; // 追加
   TimingDetail: {onSave?: (timing: string) => void}; // 追加
-  GoalDetail: {initialGoal?: string}; // 追加
+  GoalDetail: {initialGoal?: string; onSave?: (goal: string) => void}; // 追加
 };
 
 export type MainDrawerParamList = {
