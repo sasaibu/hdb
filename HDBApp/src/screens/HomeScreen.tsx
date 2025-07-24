@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import {DrawerNavigationProp} from '@react-navigation/drawer';
 import {CompositeNavigationProp} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -54,7 +55,7 @@ function DashboardCard({title, value, unit, color, icon, onPress}: DashboardCard
     <TouchableOpacity style={[styles.card, {borderLeftColor: color}]} onPress={onPress}>
       <View style={styles.cardHeader}>
         <View style={[styles.cardIcon, {backgroundColor: color + '20'}]}>
-          <Text style={[styles.cardIconText, {color}]}>{icon}</Text>
+          <Icon name={icon} size={20} color={color} />
         </View>
         <Text style={styles.cardTitle}>{title}</Text>
       </View>
@@ -202,21 +203,21 @@ export default function HomeScreen({navigation}: Props) {
       value: vitalSummary?.steps?.today?.toLocaleString() || '---',
       unit: '歩',
       color: theme.health.vitals.steps,
-      icon: '👟',
+      icon: 'directions-walk',
     },
     {
       title: '体重',
       value: vitalSummary?.weight?.latest?.toFixed(1) || '---',
       unit: 'kg',
       color: theme.health.vitals.weight,
-      icon: '⚖️',
+      icon: 'monitor-weight',
     },
     {
       title: '体温',
       value: vitalSummary?.temperature?.latest?.toFixed(1) || '---',
       unit: '℃',
       color: theme.health.vitals.temperature,
-      icon: '🌡️',
+      icon: 'thermostat',
     },
     {
       title: '血圧',
@@ -225,14 +226,14 @@ export default function HomeScreen({navigation}: Props) {
         : '---',
       unit: 'mmHg',
       color: theme.health.vitals.bloodPressure,
-      icon: '💓',
+      icon: 'favorite',
     },
     {
       title: '心拍数',
       value: vitalSummary?.heartRate?.latest?.toString() || '---',
       unit: 'bpm',
       color: theme.health.vitals.heartRate,
-      icon: '💗',
+      icon: 'monitor-heart',
     },
   ];
 
