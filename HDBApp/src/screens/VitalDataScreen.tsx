@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ScrollView,
 } from 'react-native';
 import {RouteProp} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -209,11 +210,31 @@ const VitalDataScreen = ({route}: Props) => {
 
   // 棒グラフコンポーネント
   const renderChart = () => {
-    if (chartData.length === 0) return null;
+    if (chartData.length === 0) {
+      return (
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>📊 推移グラフ</Text>
+          <View style={styles.emptyChartContainer}>
+            <Text style={styles.emptyChartText}>データがありません</Text>
+          </View>
+        </View>
+      );
+    }
+
+    // データが多い場合の表示調整
+    const maxBarsToShow = 10;
+    const displayData = chartData.length > maxBarsToShow 
+      ? chartData.slice(-maxBarsToShow) // 最新のデータを表示
+      : chartData;
 
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>📊 推移グラフ</Text>
+        {chartData.length > maxBarsToShow && (
+          <Text style={styles.chartSubtitle}>
+            最新{maxBarsToShow}件を表示（全{chartData.length}件）
+          </Text>
+        )}
         <View style={styles.chartWrapper}>
           {/* Y軸の目盛り */}
           <View style={styles.yAxisContainer}>
@@ -228,36 +249,44 @@ const VitalDataScreen = ({route}: Props) => {
               <View style={styles.gridLine} />
               <View style={styles.gridLine} />
             </View>
-            <View style={styles.chart}>
-              {chartData.map((item, index) => {
-                const barHeight = maxValue > 0 ? (item.numericValue / maxValue) * 140 : 4;
-                const isLatest = index === chartData.length - 1;
-                return (
-                  <View key={item.id} style={styles.barContainer}>
-                    <View style={styles.barWrapper}>
-                      {/* 数値を棒の上に表示 */}
-                      <Text style={[styles.barValueTop, isLatest && styles.barValueTopLatest]}>
-                        {item.numericValue.toFixed(title === '歩数' ? 0 : 1)}
+            {/* スクロール可能なチャート */}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.scrollableChart}
+              style={styles.chartScrollView}
+            >
+              <View style={[styles.chart, { width: Math.max(300, displayData.length * 50) }]}>
+                {displayData.map((item, index) => {
+                  const barHeight = maxValue > 0 ? (item.numericValue / maxValue) * 140 : 4;
+                  const isLatest = index === displayData.length - 1;
+                  return (
+                    <View key={`${item.id}-${index}`} style={styles.barContainer}>
+                      <View style={styles.barWrapper}>
+                        {/* 数値を棒の上に表示 */}
+                        <Text style={[styles.barValueTop, isLatest && styles.barValueTopLatest]}>
+                          {item.numericValue.toFixed(title === '歩数' ? 0 : 1)}
+                        </Text>
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: Math.max(barHeight, 4),
+                              backgroundColor: isLatest ? '#007AFF' : '#4CAF50',
+                              shadowColor: isLatest ? '#007AFF' : '#4CAF50',
+                            },
+                            isLatest && styles.latestBar,
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.barLabel, isLatest && styles.barLabelLatest]}>
+                        {item.date.slice(5).replace('-', '/')}
                       </Text>
-                      <View
-                        style={[
-                          styles.bar,
-                          {
-                            height: Math.max(barHeight, 4),
-                            backgroundColor: isLatest ? '#007AFF' : '#4CAF50',
-                            shadowColor: isLatest ? '#007AFF' : '#4CAF50',
-                          },
-                          isLatest && styles.latestBar,
-                        ]}
-                      />
                     </View>
-                    <Text style={[styles.barLabel, isLatest && styles.barLabelLatest]}>
-                      {item.date.slice(5).replace('-', '/')}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
           </View>
         </View>
         {/* 単位表示 */}
@@ -582,6 +611,30 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666',
+  },
+  emptyChartContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
+  },
+  emptyChartText: {
+    fontSize: 16,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  chartSubtitle: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 15,
+    fontStyle: 'italic',
+  },
+  chartScrollView: {
+    flex: 1,
+  },
+  scrollableChart: {
+    paddingHorizontal: 10,
   },
 });
 
