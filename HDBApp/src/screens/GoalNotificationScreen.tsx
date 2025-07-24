@@ -31,6 +31,9 @@ const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
     // TODO: 通知設定を保存して次の画面へ
     console.log('通知時刻:', `${selectedHour}:${selectedMinute}`);
     console.log('通知ON/OFF:', isNotificationOn);
+    console.log('タイミング:', timing);
+    // 確認画面へ遷移
+    navigation.navigate('GoalConfirmation');
   };
 
   const formatTime = () => {
