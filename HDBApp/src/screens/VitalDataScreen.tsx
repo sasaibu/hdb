@@ -296,19 +296,21 @@ const VitalDataScreen = ({route}: Props) => {
   };
 
   const renderItem = ({item}: {item: VitalListItem}) => (
-    <TouchableOpacity onPress={() => handleEdit(item)}>
-      <View style={styles.listItem}>
+    <View style={styles.listItem}>
+      <TouchableOpacity 
+        style={styles.itemContent}
+        onPress={() => handleEdit(item)}>
         <View>
           <Text style={styles.itemDate}>{item.date}</Text>
           <Text style={styles.itemValue}>{item.value}</Text>
         </View>
-        <View style={styles.itemActions}>
-          <TouchableOpacity onPress={() => handleDelete(item.id)}>
-            <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
-          </TouchableOpacity>
-        </View>
+      </TouchableOpacity>
+      <View style={styles.itemActions}>
+        <TouchableOpacity onPress={() => handleDelete(item.id)}>
+          <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (loading) {
@@ -470,6 +472,9 @@ const styles = StyleSheet.create({
   },
   itemActions: {
     flexDirection: 'row',
+  },
+  itemContent: {
+    flex: 1,
   },
   actionText: {
     color: '#007AFF',
