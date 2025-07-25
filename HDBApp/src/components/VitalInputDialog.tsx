@@ -11,7 +11,7 @@ import {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave: (value: string, value2?: string) => void;
+  onSave: (value: string, value2?: string, date?: Date) => void;
   title: string;
   initialValue: string;
   initialValue2?: string;
@@ -27,10 +27,14 @@ const VitalInputDialog = ({
 }: Props) => {
   const [value, setValue] = React.useState(initialValue);
   const [value2, setValue2] = React.useState(initialValue2 || '');
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const [isToday, setIsToday] = React.useState(true);
 
   React.useEffect(() => {
     setValue(initialValue);
     setValue2(initialValue2 || '');
+    setSelectedDate(new Date());
+    setIsToday(true);
   }, [initialValue, initialValue2]);
 
   const isBloodPressure = title === '血圧';
@@ -73,11 +77,26 @@ const VitalInputDialog = ({
     }
     
     if (isBloodPressure) {
-      onSave(value, value2);
+      onSave(value, value2, selectedDate);
     } else {
-      onSave(value);
+      onSave(value, undefined, selectedDate);
     }
     onClose();
+  };
+
+  const toggleDate = () => {
+    const newDate = new Date();
+    if (isToday) {
+      newDate.setDate(newDate.getDate() - 1);
+      setIsToday(false);
+    } else {
+      setIsToday(true);
+    }
+    setSelectedDate(newDate);
+  };
+
+  const formatDate = (date: Date) => {
+    return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
   };
 
   return (
@@ -92,8 +111,13 @@ const VitalInputDialog = ({
 
           <View style={styles.inputRow}>
             <Text style={styles.label}>日付</Text>
-            <TouchableOpacity style={styles.datePicker}>
-              <Text>2025/07/02</Text>
+            <TouchableOpacity style={styles.datePicker} onPress={toggleDate}>
+              <Text>{formatDate(selectedDate)}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.dateToggle} onPress={toggleDate}>
+              <Text style={styles.dateToggleText}>
+                {isToday ? '当日' : '前日'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -233,6 +257,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     width: 50,
+  },
+  dateToggle: {
+    marginLeft: 10,
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  dateToggleText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

@@ -7,6 +7,7 @@ import {createDrawerNavigator} from '@react-navigation/drawer';
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
+import MainTabScreen from '../screens/MainTabScreen';
 import WebViewScreen from '../screens/WebViewScreen';
 import VitalDataScreen from '../screens/VitalDataScreen';
 import VitalListScreen from '../screens/VitalListScreen'; // 追加
@@ -122,7 +123,7 @@ function MainDrawer() {
       }}>
       <Drawer.Screen
         name="Home"
-        component={HomeScreen}
+        component={MainTabScreen}
         options={{title: 'ホーム'}}
       />
       <Drawer.Screen

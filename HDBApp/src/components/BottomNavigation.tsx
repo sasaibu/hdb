@@ -21,11 +21,11 @@ interface BottomNavigationProps {
 }
 
 const tabs: TabItem[] = [
-  { key: 'health-check', label: '健診' },
-  { key: 'pulse-survey', label: 'パルスサーベイ' },
-  { key: 'home', label: 'ホーム' },
-  { key: 'record', label: '記録' },
-  { key: 'notifications', label: 'お知らせ' },
+  { key: 'home', label: 'ホーム', icon: '🏠' },
+  { key: 'goal', label: '目標', icon: '🎯' },
+  { key: 'health-check', label: '健診', icon: '🏥' },
+  { key: 'record', label: '記録', icon: '📝' },
+  { key: 'notifications', label: 'お知らせ', icon: '🔔' },
 ];
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({
@@ -41,9 +41,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
           onPress={() => onTabPress(tab.key)}
           activeOpacity={0.7}
         >
-          <View style={styles.iconPlaceholder}>
+          <View style={[styles.iconPlaceholder, activeTab === tab.key && styles.activeIconPlaceholder]}>
             <Text style={[styles.icon, activeTab === tab.key && styles.activeIcon]}>
-              {tab.label.charAt(0)}
+              {tab.icon || tab.label.charAt(0)}
             </Text>
           </View>
           <Text
@@ -85,21 +85,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   iconPlaceholder: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F0F0F0',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
+  activeIconPlaceholder: {
+    backgroundColor: '#FFE5DC',
+  },
   icon: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#666666',
-    fontWeight: '600',
   },
   activeIcon: {
-    color: '#FF6B35',
+    fontSize: 22,
   },
   label: {
     fontSize: 10,
