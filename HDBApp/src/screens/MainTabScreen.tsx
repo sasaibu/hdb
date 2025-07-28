@@ -31,7 +31,9 @@ export default function MainTabScreen({ navigation }: Props) {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'goal':
+      case 'health-check':
+        return <HealthCheckScreen />;
+      case 'pulse-survey':
         return (
           <GoalContinuationScreen
             navigation={navigation as any}
@@ -42,8 +44,6 @@ export default function MainTabScreen({ navigation }: Props) {
             }}
           />
         );
-      case 'health-check':
-        return <HealthCheckScreen />;
       case 'record':
         return <RecordScreen />;
       case 'notifications':
