@@ -116,8 +116,8 @@ const VitalDataScreen = ({route}: Props) => {
     setModalVisible(true);
   };
 
-  const handleSave = async (newValue: string) => {
-    if (!selectedItem) return;
+  const handleSave = async (newValue: string, newValue2?: string, date?: Date) => {
+    if (!selectedItem && !date) return;
 
     try {
       const numericValue = parseFloat(newValue.replace(/[^0-9.]/g, ''));
@@ -145,27 +145,46 @@ const VitalDataScreen = ({route}: Props) => {
       // 血圧の場合の処理
       let systolic, diastolic;
       if (title === '血圧') {
-        const parts = newValue.split('/');
-        if (parts.length === 2) {
-          systolic = parseInt(parts[0]);
-          diastolic = parseInt(parts[1]);
-        } else {
+        if (newValue2) {
           systolic = numericValue;
-          diastolic = 80; // デフォルト値
+          diastolic = parseFloat(newValue2);
+        } else {
+          const parts = newValue.split('/');
+          if (parts.length === 2) {
+            systolic = parseInt(parts[0]);
+            diastolic = parseInt(parts[1]);
+          } else {
+            systolic = numericValue;
+            diastolic = 80; // デフォルト値
+          }
         }
       }
 
-      await vitalDataService.updateVitalData(
-        parseInt(selectedItem.id),
-        numericValue,
-        systolic,
-        diastolic
-      );
+      if (date) {
+        // 新規データとして保存（日付指定）
+        await vitalDataService.addVitalData(
+          title,
+          numericValue,
+          date,
+          systolic,
+          diastolic,
+          'manual'
+        );
+        Alert.alert('成功', `${date.toLocaleDateString('ja-JP')}のデータを追加しました。`);
+      } else if (selectedItem) {
+        // 既存データの更新
+        await vitalDataService.updateVitalData(
+          parseInt(selectedItem.id),
+          numericValue,
+          systolic,
+          diastolic
+        );
+        Alert.alert('成功', 'データを更新しました。');
+      }
       
       await loadData(); // データを再読み込み
       setModalVisible(false);
       setSelectedItem(null);
-      Alert.alert('成功', 'データを更新しました。');
       
     } catch (error) {
       console.error('Error updating data:', error);

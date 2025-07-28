@@ -25,9 +25,15 @@ export class VitalDataService {
   }
 
   // バイタルデータの追加
-  async addVitalData(type: string, value: number, date?: string, systolic?: number, diastolic?: number, source: string = 'manual'): Promise<number> {
+  async addVitalData(type: string, value: number, date?: string | Date, systolic?: number, diastolic?: number, source: string = 'manual'): Promise<number> {
     const unit = this.getUnitByType(type);
-    const recordedDate = date || new Date().toISOString().split('T')[0];
+    let recordedDate: string;
+    
+    if (date instanceof Date) {
+      recordedDate = date.toISOString().split('T')[0];
+    } else {
+      recordedDate = date || new Date().toISOString().split('T')[0];
+    }
 
     const data: VitalDataRecord = {
       type,
