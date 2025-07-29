@@ -100,9 +100,24 @@ const VitalInputDialog = ({
     if (isBloodPressure) {
       onSave(value, value2, pulse);
     } else {
-      onSave(value);
+      onSave(value, undefined, selectedDate);
     }
     onClose();
+  };
+
+  const toggleDate = () => {
+    const newDate = new Date();
+    if (isToday) {
+      newDate.setDate(newDate.getDate() - 1);
+      setIsToday(false);
+    } else {
+      setIsToday(true);
+    }
+    setSelectedDate(newDate);
+  };
+
+  const formatDate = (date: Date) => {
+    return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
   };
 
   return (
@@ -298,6 +313,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     width: 50,
+  },
+  dateToggle: {
+    marginLeft: 10,
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  dateToggleText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

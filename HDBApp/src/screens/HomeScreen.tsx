@@ -22,11 +22,9 @@ import {
 import {apiClient} from '../services/api/apiClient';
 import {VitalDataService} from '../services/VitalDataService';
 import theme from '../styles/theme';
-import BottomNavigation from '../components/BottomNavigation';
-import HealthCheckScreen from './HealthCheckScreen';
-import PulseSurveyScreen from './PulseSurveyScreen';
-import RecordScreen from './RecordScreen';
-import NotificationHistoryScreen from './NotificationHistoryScreen';
+import VitalInputDialog from '../components/VitalInputDialog';
+import ManualInputButton from '../components/ManualInputButton';
+import {VitalDataService} from '../services/VitalDataService';
 
 const {width} = Dimensions.get('window');
 
@@ -133,7 +131,9 @@ export default function HomeScreen({navigation}: Props) {
   const [rankingData, setRankingData] = useState<RankingData[]>([]);
   const [loading, setLoading] = useState(true);
   const [vitalSummary, setVitalSummary] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('home');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedVitalType, setSelectedVitalType] = useState<string>('');
+  const vitalDataService = new VitalDataService();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -174,6 +174,68 @@ export default function HomeScreen({navigation}: Props) {
 
   const handleCardPress = (type: string) => {
     navigation.navigate('VitalData', {title: type});
+  };
+
+  const handleManualInput = () => {
+    setModalVisible(true);
+  };
+
+  const handleSaveVitalData = async (value: string, value2?: string, date?: Date) => {
+    if (!selectedVitalType || !date) return;
+
+    try {
+      const numericValue = parseFloat(value);
+      if (isNaN(numericValue)) {
+        Alert.alert('エラー', '正しい数値を入力してください。');
+        return;
+      }
+
+      let systolic, diastolic;
+      if (selectedVitalType === '血圧' && value2) {
+        systolic = numericValue;
+        diastolic = parseFloat(value2);
+      }
+
+      await vitalDataService.addVitalData(
+        selectedVitalType,
+        numericValue,
+        date,
+        systolic,
+        diastolic,
+        'manual'
+      );
+
+      Alert.alert('成功', `${date.toLocaleDateString('ja-JP')}の${selectedVitalType}データを追加しました。`);
+      setModalVisible(false);
+      
+      // データを再読み込み
+      const fetchData = async () => {
+        const response = await apiClient.getVitalSummary();
+        if (response.success) {
+          setVitalSummary(response.data);
+        }
+      };
+      fetchData();
+    } catch (error) {
+      console.error('Error saving vital data:', error);
+      Alert.alert('エラー', 'データの保存に失敗しました。');
+    }
+  };
+
+  const showVitalTypeSelection = () => {
+    Alert.alert(
+      'データの種類を選択',
+      '入力するデータの種類を選択してください',
+      [
+        {text: '歩数', onPress: () => {setSelectedVitalType('歩数'); setModalVisible(true);}},
+        {text: '体重', onPress: () => {setSelectedVitalType('体重'); setModalVisible(true);}},
+        {text: '体温', onPress: () => {setSelectedVitalType('体温'); setModalVisible(true);}},
+        {text: '血圧', onPress: () => {setSelectedVitalType('血圧'); setModalVisible(true);}},
+        {text: '心拍数', onPress: () => {setSelectedVitalType('心拍数'); setModalVisible(true);}},
+        {text: 'キャンセル', style: 'cancel'},
+      ],
+      {cancelable: true}
+    );
   };
 
   const handleWebViewDemo = () => {
@@ -243,23 +305,13 @@ export default function HomeScreen({navigation}: Props) {
     },
   ];
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'health-check':
-        return <HealthCheckScreen />;
-      case 'pulse-survey':
-        return <PulseSurveyScreen />;
-      case 'record':
-        return <RecordScreen />;
-      case 'notifications':
-        return <NotificationHistoryScreen />;
-      case 'home':
-      default:
-        return (
-          <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <WelcomeHeader />
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <WelcomeHeader />
       
       <QuickStats vitalSummary={vitalSummary} />
+      
+      <ManualInputButton onPress={showVitalTypeSelection} />
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>バイタルデータ 📊</Text>
@@ -323,28 +375,20 @@ export default function HomeScreen({navigation}: Props) {
         </TouchableOpacity>
       </View>
 
-            <View style={styles.bottomSpacer} />
-          </ScrollView>
-        );
-    }
-  };
-
-  return (
-    <View style={styles.mainContainer}>
-      {renderContent()}
-      <BottomNavigation
-        activeTab={activeTab}
-        onTabPress={setActiveTab}
+      <View style={styles.bottomSpacer} />
+      
+      <VitalInputDialog
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSaveVitalData}
+        title={selectedVitalType}
+        initialValue=""
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: theme.colors.background.secondary,
-  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.secondary,
