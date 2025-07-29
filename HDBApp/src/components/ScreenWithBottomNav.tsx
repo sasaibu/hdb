@@ -22,16 +22,20 @@ const ScreenWithBottomNav: React.FC<ScreenWithBottomNavProps> = ({
       case 'home':
         navigation.navigate('Main', { screen: 'Home' });
         break;
-      case 'goal':
-        // 目標画面へ遷移
-        navigation.navigate('GoalSetting');
-        break;
       case 'health-check':
         // 健診画面へ遷移（WebView）
         navigation.navigate('WebView', { 
           url: 'https://example.com/health-check', 
           title: '健診',
           screen: 'health-check'
+        });
+        break;
+      case 'pulse-survey':
+        // パルスサーベイ画面へ遷移（WebView）
+        navigation.navigate('WebView', { 
+          url: 'https://example.com/pulse-survey', 
+          title: 'パルスサーベイ',
+          screen: 'pulse-survey'
         });
         break;
       case 'record':

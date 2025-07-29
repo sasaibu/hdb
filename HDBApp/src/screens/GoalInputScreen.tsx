@@ -45,7 +45,7 @@ const GoalInputScreen: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <ScreenWithBottomNav activeTab="goal">
+    <ScreenWithBottomNav activeTab="home">
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView 
           style={styles.container}

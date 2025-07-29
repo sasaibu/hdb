@@ -49,7 +49,7 @@ const GoalConfirmationScreen: React.FC<Props> = ({navigation, route}) => {
   };
 
   return (
-    <ScreenWithBottomNav activeTab="goal">
+    <ScreenWithBottomNav activeTab="home">
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <ScrollView 

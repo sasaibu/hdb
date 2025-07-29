@@ -22,9 +22,9 @@ interface BottomNavigationProps {
 }
 
 const tabs: TabItem[] = [
-  { key: 'home', label: 'ホーム', icon: '🏠' },
-  { key: 'goal', label: '目標', icon: '🎯' },
   { key: 'health-check', label: '健診', icon: '🏥' },
+  { key: 'pulse-survey', label: 'パルスサーベイ', icon: '💭' },
+  { key: 'home', label: 'ホーム', icon: '🏠' },
   { key: 'record', label: '記録', icon: '📝' },
   { key: 'notifications', label: 'お知らせ', icon: '🔔' },
 ];
@@ -35,8 +35,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
 }) => {
   const { isGoalSetting } = useGoalSafe();
 
-  // 目標設定中に有効なタブ
-  const enabledTabsDuringGoalSetting = ['home', 'goal', 'health-check'];
+  // 目標設定中に有効なタブ（健診、パルスサーベイ、ホームのみ）
+  const enabledTabsDuringGoalSetting = ['health-check', 'pulse-survey', 'home'];
 
   const isTabEnabled = (tabKey: string) => {
     if (!isGoalSetting) {

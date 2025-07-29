@@ -31,19 +31,15 @@ export default function MainTabScreen({ navigation }: Props) {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'goal':
-        return (
-          <GoalContinuationScreen
-            navigation={navigation as any}
-            route={{
-              key: 'GoalContinuation',
-              name: 'GoalContinuation',
-              params: undefined,
-            }}
-          />
-        );
       case 'health-check':
         return <HealthCheckScreen />;
+      case 'pulse-survey':
+        // パルスサーベイ画面（仮実装）
+        return (
+          <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <Text>パルスサーベイ画面</Text>
+          </View>
+        );
       case 'record':
         return <RecordScreen />;
       case 'notifications':
