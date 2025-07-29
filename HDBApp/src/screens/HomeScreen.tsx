@@ -24,7 +24,6 @@ import {VitalDataService} from '../services/VitalDataService';
 import theme from '../styles/theme';
 import VitalInputDialog from '../components/VitalInputDialog';
 import ManualInputButton from '../components/ManualInputButton';
-import {VitalDataService} from '../services/VitalDataService';
 
 const {width} = Dimensions.get('window');
 
