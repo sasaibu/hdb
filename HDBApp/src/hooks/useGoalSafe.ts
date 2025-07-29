@@ -9,8 +9,13 @@ export const useGoalSafe = () => {
       return {
         isGoalSetting: false,
         hasCompletedGoal: false,
+        goalAchievementDate: null,
+        showCelebrationDialog: false,
         setIsGoalSetting: () => {},
         setHasCompletedGoal: () => {},
+        setGoalAchievementDate: () => {},
+        setShowCelebrationDialog: () => {},
+        checkGoalAchievement: () => false,
       };
     }
     return context;
@@ -19,8 +24,13 @@ export const useGoalSafe = () => {
     return {
       isGoalSetting: false,
       hasCompletedGoal: false,
+      goalAchievementDate: null,
+      showCelebrationDialog: false,
       setIsGoalSetting: () => {},
       setHasCompletedGoal: () => {},
+      setGoalAchievementDate: () => {},
+      setShowCelebrationDialog: () => {},
+      checkGoalAchievement: () => false,
     };
   }
 };

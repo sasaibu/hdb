@@ -34,6 +34,7 @@ import TimingDetailScreen from '../screens/TimingDetailScreen'; // 追加
 import GoalDetailScreen from '../screens/GoalDetailScreen'; // 追加
 import GoalConfirmationScreen from '../screens/GoalConfirmationScreen'; // 追加
 import GoalContinuationScreen from '../screens/GoalContinuationScreen'; // 追加
+import DoneScreen from '../screens/DoneScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -78,6 +79,7 @@ export type RootStackParamList = {
     isNotificationOn?: boolean;
     timing?: string;
   }; // 追加
+  Done: undefined;
 };
 
 export type MainDrawerParamList = {
@@ -354,6 +356,18 @@ export default function AppNavigator() {
           options={{
             headerShown: true, 
             title: '目標継続',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="Done"
+          component={DoneScreen}
+          options={{
+            headerShown: true, 
+            title: '完了',
             headerStyle: {
               backgroundColor: '#FF8C00',
             },
