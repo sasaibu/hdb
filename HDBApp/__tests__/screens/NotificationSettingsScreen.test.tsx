@@ -114,13 +114,17 @@ describe('NotificationSettingsScreen', () => {
     (useNavigation as jest.Mock).mockReturnValue(mockNavigation);
     (NotificationService.getInstance as jest.Mock).mockReturnValue(mockNotificationService);
     
-    // Default settings
+    // Default settings with new notification types
     mockNotificationService.getSettings.mockResolvedValue({
       enabled: false,
       vitalDataReminder: true,
       medicationReminder: true,
       appointmentReminder: true,
       reminderTime: '09:00',
+      newAnnouncementNotification: true,
+      unreadExamNotification: true,
+      pulseSurveyNotification: true,
+      stressCheckNotification: true,
     });
   });
 
@@ -390,9 +394,187 @@ describe('NotificationSettingsScreen', () => {
       expect(getByText('予約リマインダー')).toBeTruthy();
       expect(getByText('リマインダー時刻: 09:00')).toBeTruthy();
       
+      // New notification settings
+      expect(getByText('新規お知らせ通知')).toBeTruthy();
+      expect(getByText('未閲覧の検診通知')).toBeTruthy();
+      expect(getByText('パルスサーベイ通知')).toBeTruthy();
+      expect(getByText('ストレスチェック通知')).toBeTruthy();
+      
       // Buttons
       expect(getByText('テスト通知を送信')).toBeTruthy();
       expect(getByText('通知履歴を見る')).toBeTruthy();
+    });
+  });
+
+  // New tests for the 4 additional notification settings
+  it('toggles new announcement notification correctly', async () => {
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      // New announcement notification should be switch index 4
+      fireEvent(switches[4], 'valueChange', false);
+      
+      expect(mockNotificationService.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          newAnnouncementNotification: false,
+        })
+      );
+    });
+  });
+
+  it('toggles unread exam notification correctly', async () => {
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      // Unread exam notification should be switch index 5
+      fireEvent(switches[5], 'valueChange', false);
+      
+      expect(mockNotificationService.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          unreadExamNotification: false,
+        })
+      );
+    });
+  });
+
+  it('toggles pulse survey notification correctly', async () => {
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      // Pulse survey notification should be switch index 6
+      fireEvent(switches[6], 'valueChange', false);
+      
+      expect(mockNotificationService.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pulseSurveyNotification: false,
+        })
+      );
+    });
+  });
+
+  it('toggles stress check notification correctly', async () => {
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      // Stress check notification should be switch index 7
+      fireEvent(switches[7], 'valueChange', false);
+      
+      expect(mockNotificationService.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          stressCheckNotification: false,
+        })
+      );
+    });
+  });
+
+  it('disables new notification switches when notifications are disabled', async () => {
+    mockNotificationService.getSettings.mockResolvedValue({
+      enabled: false,
+      vitalDataReminder: true,
+      medicationReminder: true,
+      appointmentReminder: true,
+      reminderTime: '09:00',
+      newAnnouncementNotification: true,
+      unreadExamNotification: true,
+      pulseSurveyNotification: true,
+      stressCheckNotification: true,
+    });
+
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      // New notification switches should be disabled when notifications are off
+      expect(switches[4].props.disabled).toBe(true); // newAnnouncementNotification
+      expect(switches[5].props.disabled).toBe(true); // unreadExamNotification
+      expect(switches[6].props.disabled).toBe(true); // pulseSurveyNotification
+      expect(switches[7].props.disabled).toBe(true); // stressCheckNotification
+    });
+  });
+
+  it('enables new notification switches when notifications are enabled', async () => {
+    mockNotificationService.getSettings.mockResolvedValue({
+      enabled: true,
+      vitalDataReminder: true,
+      medicationReminder: true,
+      appointmentReminder: true,
+      reminderTime: '09:00',
+      newAnnouncementNotification: true,
+      unreadExamNotification: true,
+      pulseSurveyNotification: true,
+      stressCheckNotification: true,
+    });
+
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      // New notification switches should be enabled when notifications are on
+      expect(switches[4].props.disabled).toBe(false); // newAnnouncementNotification
+      expect(switches[5].props.disabled).toBe(false); // unreadExamNotification
+      expect(switches[6].props.disabled).toBe(false); // pulseSurveyNotification
+      expect(switches[7].props.disabled).toBe(false); // stressCheckNotification
+    });
+  });
+
+  it('displays correct switch values for new notification settings', async () => {
+    mockNotificationService.getSettings.mockResolvedValue({
+      enabled: true,
+      vitalDataReminder: true,
+      medicationReminder: true,
+      appointmentReminder: true,
+      reminderTime: '09:00',
+      newAnnouncementNotification: false,
+      unreadExamNotification: true,
+      pulseSurveyNotification: false,
+      stressCheckNotification: true,
+    });
+
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      expect(switches[4].props.value).toBe(false); // newAnnouncementNotification
+      expect(switches[5].props.value).toBe(true);  // unreadExamNotification
+      expect(switches[6].props.value).toBe(false); // pulseSurveyNotification
+      expect(switches[7].props.value).toBe(true);  // stressCheckNotification
+    });
+  });
+
+  it('loads AsyncStorage settings for new notification types', async () => {
+    (AsyncStorage.getItem as jest.Mock)
+      .mockResolvedValueOnce('false') // new_notice_notification_enabled
+      .mockResolvedValueOnce('true')  // unread_exam_notification_enabled
+      .mockResolvedValueOnce('false') // pulse_survey_notification_enabled
+      .mockResolvedValueOnce('true'); // stress_check_notification_enabled
+
+    render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith('new_notice_notification_enabled');
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith('unread_exam_notification_enabled');
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith('pulse_survey_notification_enabled');
+      expect(AsyncStorage.getItem).toHaveBeenCalledWith('stress_check_notification_enabled');
+    });
+  });
+
+  it('saves AsyncStorage settings for new notification types', async () => {
+    const {getAllByTestId} = render(<NotificationSettingsScreen />);
+
+    await waitFor(() => {
+      const switches = getAllByTestId('Switch');
+      fireEvent(switches[4], 'valueChange', false); // Toggle new announcement notification
+    });
+
+    await waitFor(() => {
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('new_notice_notification_enabled', 'false');
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('unread_exam_notification_enabled', 'true');
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('pulse_survey_notification_enabled', 'true');
+      expect(AsyncStorage.setItem).toHaveBeenCalledWith('stress_check_notification_enabled', 'true');
     });
   });
 });
