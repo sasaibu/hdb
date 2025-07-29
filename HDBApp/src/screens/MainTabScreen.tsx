@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
+  Text,
 } from 'react-native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -16,6 +17,8 @@ import GoalContinuationScreen from './GoalContinuationScreen';
 import HealthCheckScreen from './HealthCheckScreen';
 import RecordScreen from './RecordScreen';
 import NotificationHistoryScreen from './NotificationHistoryScreen';
+import PulseSurveyPlaceholderScreen from './PulseSurveyPlaceholderScreen';
+import HealthCheckPlaceholderScreen from './HealthCheckPlaceholderScreen';
 
 type MainTabScreenNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<MainDrawerParamList, 'Home'>,
@@ -29,17 +32,17 @@ interface Props {
 export default function MainTabScreen({ navigation }: Props) {
   const [activeTab, setActiveTab] = useState('home');
 
+  const handleTabPress = (tab: string) => {
+    // パルスサーベイと健診は特別なタブとして処理
+    setActiveTab(tab);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'health-check':
         return <HealthCheckScreen />;
       case 'pulse-survey':
-        // パルスサーベイ画面（仮実装）
-        return (
-          <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-            <Text>パルスサーベイ画面</Text>
-          </View>
-        );
+        return <PulseSurveyPlaceholderScreen />;
       case 'record':
         return <RecordScreen />;
       case 'notifications':
@@ -53,7 +56,7 @@ export default function MainTabScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>{renderContent()}</View>
-      <BottomNavigation activeTab={activeTab} onTabPress={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} onTabPress={handleTabPress} />
     </View>
   );
 }
