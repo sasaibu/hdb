@@ -11,6 +11,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import AppNavigator from './src/navigation/AppNavigator';
 import {ErrorBoundary} from './src/utils/ErrorHandler';
 import NotificationService from './src/services/NotificationService';
+import {GoalProvider} from './src/contexts/GoalContext';
 import './src/utils/DatabaseDebugger'; // デバッグユーティリティを読み込み
 
 function App(): React.JSX.Element {
@@ -32,8 +33,10 @@ function App(): React.JSX.Element {
   return (
     <GestureHandlerRootView style={{flex: 1}}>
       <ErrorBoundary>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <AppNavigator />
+        <GoalProvider>
+          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+          <AppNavigator />
+        </GoalProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
   );

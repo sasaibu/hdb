@@ -11,13 +11,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {DrawerScreenProps} from '@react-navigation/drawer';
 import type {MainDrawerParamList} from '../types/navigation';
 import {GOAL_SETTING_CONTENT} from '../constants/goalSettingContent';
+import {useGoal} from '../contexts/GoalContext';
+import ScreenWithBottomNav from '../components/ScreenWithBottomNav';
 
 type Props = DrawerScreenProps<MainDrawerParamList, 'GoalSetting'>;
 
 const GOAL_SETTING_SHOWN_KEY = 'goalSettingShown';
 
 const GoalSettingScreen: React.FC<Props> = ({navigation}) => {
+  const { setIsGoalSetting } = useGoal();
+
   useEffect(() => {
+    // 目標設定モードに入る
+    setIsGoalSetting(true);
+
     // 既に表示済みかチェック
     const checkIfShown = async () => {
       try {
@@ -32,7 +39,12 @@ const GoalSettingScreen: React.FC<Props> = ({navigation}) => {
     };
     
     checkIfShown();
-  }, [navigation]);
+
+    // クリーンアップ時に目標設定モードを解除
+    return () => {
+      setIsGoalSetting(false);
+    };
+  }, [navigation, setIsGoalSetting]);
 
   const handleConfirm = async () => {
     try {
@@ -47,43 +59,42 @@ const GoalSettingScreen: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* 上部の橙色背景 */}
-        <View style={styles.topOrangeBar} />
-        
-        {/* メインコンテンツ（80%） */}
-        <View style={styles.mainContent}>
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={true}>
-            
-            <View style={styles.blackBorder}>
-              <Text style={styles.contentText}>
-                {GOAL_SETTING_CONTENT.text}
-              </Text>
+    <ScreenWithBottomNav activeTab="goal">
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          {/* 上部の橙色背景 */}
+          <View style={styles.topOrangeBar} />
+          
+          {/* メインコンテンツ（80%） */}
+          <View style={styles.mainContent}>
+            <ScrollView 
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={true}>
               
-              <TouchableOpacity 
-                style={styles.confirmButton}
-                onPress={handleConfirm}>
-                <Text style={styles.confirmButtonText}>
-                  {GOAL_SETTING_CONTENT.buttonText}
+              <View style={styles.blackBorder}>
+                <Text style={styles.contentText}>
+                  {GOAL_SETTING_CONTENT.text}
                 </Text>
-              </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.confirmButton}
+                  onPress={handleConfirm}>
+                  <Text style={styles.confirmButtonText}>
+                    {GOAL_SETTING_CONTENT.buttonText}
+                  </Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.contentTextBottom}>
+                  {GOAL_SETTING_CONTENT.text2}
+                </Text>
+              </View>
               
-              <Text style={styles.contentTextBottom}>
-                {GOAL_SETTING_CONTENT.text2}
-              </Text>
-            </View>
-            
-          </ScrollView>
+            </ScrollView>
+          </View>
         </View>
-        
-        {/* 下部の橙色背景（ナビゲーション用の余白） */}
-        <View style={styles.bottomOrangeBar} />
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ScreenWithBottomNav>
   );
 };
 
@@ -101,7 +112,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF5E6', // より薄い橙色
   },
   mainContent: {
-    flex: 8, // 80%の高さ
+    flex: 1, // BottomNavigationのスペースを考慮
     backgroundColor: '#FFF5E6', // より薄い橙色（黒枠の左右も橙色に）
   },
   scrollView: {
