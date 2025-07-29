@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
 import {StackNavigationProp} from '@react-navigation/stack';
 import {RouteProp} from '@react-navigation/native';
 import {WebView} from 'react-native-webview';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RootStackParamList} from '../navigation/AppNavigator';
+import {mockApi} from '../services/api/mockApi';
 
 type WebViewScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -26,13 +28,42 @@ interface Props {
 
 export default function WebViewScreen({navigation, route}: Props) {
   const [isLoading, setIsLoading] = useState(true);
-  const {url, title} = route.params;
+  const [ssoUrl, setSsoUrl] = useState<string | null>(null);
+  const {url, title, screen} = route.params;
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
       title: title || 'Web',
     });
   }, [navigation, title]);
+
+  // SSO URL取得
+  useEffect(() => {
+    const getSsoUrl = async () => {
+      if (screen) {
+        try {
+          const userStr = await AsyncStorage.getItem('current_user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            const response = await mockApi.singleSignOn(user.id, screen);
+            
+            if (response.success && response.data?.member_url) {
+              setSsoUrl(response.data.member_url);
+              console.log('SSO URL取得成功:', response.data.member_url);
+            } else {
+              console.error('SSO URL取得失敗:', response.error);
+              Alert.alert('エラー', 'ログイン済みページURLの取得に失敗しました');
+            }
+          }
+        } catch (error) {
+          console.error('SSO API呼び出しエラー:', error);
+          Alert.alert('エラー', 'ログイン済みページURLの取得に失敗しました');
+        }
+      }
+    };
+
+    getSsoUrl();
+  }, [screen]);
 
   const handleLoadStart = () => {
     setIsLoading(true);
@@ -67,7 +98,7 @@ export default function WebViewScreen({navigation, route}: Props) {
       )}
       
       <WebView
-        source={{uri: url}}
+        source={{uri: ssoUrl || url}}
         style={styles.webview}
         onLoadStart={handleLoadStart}
         onLoadEnd={handleLoadEnd}

@@ -213,12 +213,9 @@ const VitalListScreen = ({navigation}: Props) => {
     
     if (editMode) {
       toggleItemSelection(item.id);
-    } else if (currentTab.id === 'steps') {
-      // 歩数の場合は詳細画面に遷移
-      navigation.navigate('VitalData', {title: '歩数'});
     } else {
-      // その他は編集ダイアログ（今回は簡易実装）
-      Alert.alert('編集', `${currentTab.title}の編集機能は今後実装予定です。`);
+      // 各バイタルの詳細画面に遷移
+      navigation.navigate('VitalData', {title: currentTab.title});
     }
   };
 
@@ -371,33 +368,34 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     backgroundColor: '#fff',
-    borderBottomWidth: 0,
-    height: 32,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    maxHeight: 60,
   },
   tabContent: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    height: 32,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    alignItems: 'center',
   },
   tab: {
     paddingHorizontal: 12,
-    paddingVertical: 0,
+    paddingVertical: 8,
     marginHorizontal: 4,
-    borderRadius: 4,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    height: 32,
+    minHeight: 44,
   },
   activeTab: {
     backgroundColor: '#007AFF',
   },
   tabIcon: {
-    fontSize: 18,
-    marginRight: 6,
+    fontSize: 16,
+    marginRight: 4,
   },
   tabText: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#666',
     fontWeight: '600',
   },

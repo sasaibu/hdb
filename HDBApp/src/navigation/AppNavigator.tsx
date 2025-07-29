@@ -39,7 +39,7 @@ export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
   Main: undefined;
-  WebView: {url: string; title?: string};
+  WebView: {url: string; title?: string; screen?: string};
   VitalData: {title: string};
   DataMigrationLogin: undefined; // 追加
   DataMigration: undefined; // 追加
@@ -162,9 +162,10 @@ function MainDrawer() {
         options={{title: '連携サービス設定'}}
       />
       <Drawer.Screen
-        name="お知らせ"
+        name="Notice"
         component={NoticeScreen}
         options={({navigation}) => ({
+          title: 'お知らせ',
           headerTitle: () => (
             <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
               <Text style={{color: '#FFFFFF', fontSize: 18, fontWeight: 'bold'}}>

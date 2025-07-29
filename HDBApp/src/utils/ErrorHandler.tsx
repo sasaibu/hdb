@@ -1,5 +1,6 @@
 import React, {Component, ReactNode} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface State {
   hasError: boolean;
@@ -22,7 +23,38 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    // TODO: エラーログ送信処理
+    
+    // 非機能要求項目39対応: エラーログをAsyncStorageに保存
+    this.saveErrorLog(error, errorInfo);
+  }
+
+  private async saveErrorLog(error: Error, errorInfo: any) {
+    try {
+      const errorLog = {
+        timestamp: new Date().toISOString(),
+        error: {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        },
+        errorInfo,
+        userAgent: 'React Native App',
+      };
+
+      const existingLogs = await AsyncStorage.getItem('error_logs');
+      const logs = existingLogs ? JSON.parse(existingLogs) : [];
+      logs.push(errorLog);
+      
+      // 最新50件のみ保持（ストレージ容量を考慮）
+      if (logs.length > 50) {
+        logs.splice(0, logs.length - 50);
+      }
+      
+      await AsyncStorage.setItem('error_logs', JSON.stringify(logs));
+      console.log('Error log saved to AsyncStorage');
+    } catch (logError) {
+      console.error('Failed to save error log:', logError);
+    }
   }
 
   handleReload = () => {
@@ -77,6 +109,27 @@ export const handleApiError = (error: any): string => {
   } else {
     // その他のエラー
     return '予期しないエラーが発生しました';
+  }
+};
+
+// エラーログ取得機能（非機能要求項目70対応）
+export const getErrorLogs = async (): Promise<any[]> => {
+  try {
+    const logs = await AsyncStorage.getItem('error_logs');
+    return logs ? JSON.parse(logs) : [];
+  } catch (error) {
+    console.error('Failed to get error logs:', error);
+    return [];
+  }
+};
+
+// エラーログクリア機能
+export const clearErrorLogs = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem('error_logs');
+    console.log('Error logs cleared');
+  } catch (error) {
+    console.error('Failed to clear error logs:', error);
   }
 };
 
