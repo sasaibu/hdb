@@ -7,6 +7,7 @@ import {createDrawerNavigator} from '@react-navigation/drawer';
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/LoginScreen';
 import HomeScreen from '../screens/HomeScreen';
+import MainTabScreen from '../screens/MainTabScreen';
 import WebViewScreen from '../screens/WebViewScreen';
 import VitalDataScreen from '../screens/VitalDataScreen';
 import VitalListScreen from '../screens/VitalListScreen'; // 追加
@@ -31,6 +32,8 @@ import TimingInputScreen from '../screens/TimingInputScreen'; // 追加
 import GoalExamplesScreen from '../screens/GoalExamplesScreen'; // 追加
 import TimingDetailScreen from '../screens/TimingDetailScreen'; // 追加
 import GoalDetailScreen from '../screens/GoalDetailScreen'; // 追加
+import GoalConfirmationScreen from '../screens/GoalConfirmationScreen'; // 追加
+import GoalContinuationScreen from '../screens/GoalContinuationScreen'; // 追加
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -44,11 +47,37 @@ export type RootStackParamList = {
   NotificationHistory: undefined; // 追加
   OpenSourceLicenses: undefined; // 追加
   GoalInput: undefined; // 追加
-  GoalNotification: undefined; // 追加
+  GoalNotification: {
+    goalType?: string;
+    goalPrinciple1?: string;
+    goalPrinciple2?: string;
+    goalReason?: string;
+    goalDetail?: string;
+  }; // 追加
   TimingInput: {currentTiming?: string; onSave?: (timing: string) => void}; // 追加
   GoalExamples: {onSelectExample?: (example: string) => void}; // 追加
   TimingDetail: {onSave?: (timing: string) => void}; // 追加
-  GoalDetail: {initialGoal?: string}; // 追加
+  GoalDetail: {initialGoal?: string; onSave?: (goal: string) => void}; // 追加
+  GoalConfirmation: {
+    goalType?: string;
+    goalPrinciple1?: string;
+    goalPrinciple2?: string;
+    goalReason?: string;
+    goalDetail?: string;
+    notificationTime?: string;
+    isNotificationOn?: boolean;
+    timing?: string;
+  }; // 追加
+  GoalContinuation: {
+    goalType?: string;
+    goalPrinciple1?: string;
+    goalPrinciple2?: string;
+    goalReason?: string;
+    goalDetail?: string;
+    notificationTime?: string;
+    isNotificationOn?: boolean;
+    timing?: string;
+  }; // 追加
 };
 
 export type MainDrawerParamList = {
@@ -81,7 +110,7 @@ function MainDrawer() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: '#a8c5ff',
+          backgroundColor: '#FF8C00',
         },
         headerTintColor: '#FFFFFF',
         headerTitleStyle: {
@@ -94,7 +123,7 @@ function MainDrawer() {
       }}>
       <Drawer.Screen
         name="Home"
-        component={HomeScreen}
+        component={MainTabScreen}
         options={{title: 'ホーム'}}
       />
       <Drawer.Screen
@@ -242,9 +271,9 @@ export default function AppNavigator() {
             headerShown: true, 
             title: '目標入力',
             headerStyle: {
-              backgroundColor: '#FFF5E6',
+              backgroundColor: '#FF8C00',
             },
-            headerTintColor: '#000000',
+            headerTintColor: '#FFFFFF',
           }}
         />
         <Stack.Screen
@@ -254,9 +283,9 @@ export default function AppNavigator() {
             headerShown: true, 
             title: '通知設定',
             headerStyle: {
-              backgroundColor: '#FFF5E6',
+              backgroundColor: '#FF8C00',
             },
-            headerTintColor: '#000000',
+            headerTintColor: '#FFFFFF',
           }}
         />
         <Stack.Screen
@@ -266,9 +295,9 @@ export default function AppNavigator() {
             headerShown: true, 
             title: 'タイミング入力',
             headerStyle: {
-              backgroundColor: '#FFF5E6',
+              backgroundColor: '#FF8C00',
             },
-            headerTintColor: '#000000',
+            headerTintColor: '#FFFFFF',
           }}
         />
         <Stack.Screen
@@ -278,9 +307,9 @@ export default function AppNavigator() {
             headerShown: true, 
             title: '目標例文',
             headerStyle: {
-              backgroundColor: '#FFF5E6',
+              backgroundColor: '#FF8C00',
             },
-            headerTintColor: '#000000',
+            headerTintColor: '#FFFFFF',
           }}
         />
         <Stack.Screen
@@ -290,9 +319,9 @@ export default function AppNavigator() {
             headerShown: true, 
             title: 'タイミング詳細',
             headerStyle: {
-              backgroundColor: '#FFF5E6',
+              backgroundColor: '#FF8C00',
             },
-            headerTintColor: '#000000',
+            headerTintColor: '#FFFFFF',
           }}
         />
         <Stack.Screen
@@ -302,9 +331,33 @@ export default function AppNavigator() {
             headerShown: true, 
             title: '目標入力',
             headerStyle: {
-              backgroundColor: '#FFF5E6',
+              backgroundColor: '#FF8C00',
             },
-            headerTintColor: '#000000',
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="GoalConfirmation" // 追加
+          component={GoalConfirmationScreen}
+          options={{
+            headerShown: true, 
+            title: '目標設定確認',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="GoalContinuation" // 追加
+          component={GoalContinuationScreen}
+          options={{
+            headerShown: true, 
+            title: '目標継続',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
           }}
         />
       </Stack.Navigator>

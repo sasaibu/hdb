@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, Switch, SafeAreaView, TouchableOpacity, Alert} from 'react-native';
+import {View, Text, StyleSheet, Switch, SafeAreaView, TouchableOpacity, Alert, ScrollView} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -107,7 +107,8 @@ const NotificationSettingsScreen = () => {
       <View style={styles.header}>
         <Text style={styles.title}>通知設定</Text>
       </View>
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
         <Text style={styles.description}>
           プッシュ通知をオンにすると下記のお知らせを受け取ることができます。
         </Text>
@@ -203,7 +204,8 @@ const NotificationSettingsScreen = () => {
         >
           <Text style={styles.historyButtonText}>通知履歴を見る</Text>
         </TouchableOpacity>
-      </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -224,6 +226,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 30,
+  },
+  scrollView: {
+    flex: 1,
   },
   description: {
     fontSize: 14,

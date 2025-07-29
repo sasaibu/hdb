@@ -9,18 +9,19 @@ import {
   Switch,
   Modal,
   FlatList,
+  Platform,
 } from 'react-native';
+// DateTimePicker removed - using custom implementation
 import type {StackScreenProps} from '@react-navigation/stack';
 import type {RootStackParamList} from '../navigation/AppNavigator';
 
 type Props = StackScreenProps<RootStackParamList, 'GoalNotification'>;
 
-const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
+const GoalNotificationScreen: React.FC<Props> = ({navigation, route}) => {
   const [selectedHour, setSelectedHour] = useState(22);
   const [selectedMinute, setSelectedMinute] = useState(0);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isNotificationOn, setIsNotificationOn] = useState(true);
-  const [pickerType, setPickerType] = useState<'hour' | 'minute'>('hour');
   const [timing, setTiming] = useState('');
   const [hasToggleTouched, setHasToggleTouched] = useState(false);
 
@@ -31,6 +32,18 @@ const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
     // TODO: 通知設定を保存して次の画面へ
     console.log('通知時刻:', `${selectedHour}:${selectedMinute}`);
     console.log('通知ON/OFF:', isNotificationOn);
+    console.log('タイミング:', timing);
+    // 確認画面へ遷移（前の画面から受け取ったデータも含めて渡す）
+    navigation.navigate('GoalConfirmation', {
+      goalType: route.params?.goalType,
+      goalPrinciple1: route.params?.goalPrinciple1,
+      goalPrinciple2: route.params?.goalPrinciple2,
+      goalReason: route.params?.goalReason,
+      goalDetail: route.params?.goalDetail,
+      notificationTime: `${selectedHour}:${selectedMinute}`,
+      isNotificationOn,
+      timing,
+    });
   };
 
   const formatTime = () => {
@@ -39,9 +52,12 @@ const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
     return `${hour}:${minute}`;
   };
 
-  const openTimePicker = (type: 'hour' | 'minute') => {
-    setPickerType(type);
-    setShowTimePicker(true);
+  const handleTimeChange = (type: 'hour' | 'minute', value: number) => {
+    if (type === 'hour') {
+      setSelectedHour(value);
+    } else {
+      setSelectedMinute(value);
+    }
   };
 
   return (
@@ -60,23 +76,13 @@ const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
 
         <View style={styles.timeSection}>
           <View style={styles.timeWrapper}>
-            <View style={styles.timePickerContainer}>
-              <TouchableOpacity 
-                style={styles.timePartButton}
-                onPress={() => openTimePicker('hour')}>
-                <Text style={styles.timeText}>
-                  {selectedHour.toString().padStart(2, '0')}
-                </Text>
-              </TouchableOpacity>
-              <Text style={styles.timeSeparator}>:</Text>
-              <TouchableOpacity 
-                style={styles.timePartButton}
-                onPress={() => openTimePicker('minute')}>
-                <Text style={styles.timeText}>
-                  {selectedMinute.toString().padStart(2, '0')}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={styles.timeButton}
+              onPress={() => setShowTimePicker(true)}>
+              <Text style={styles.timeText}>
+                {formatTime()}
+              </Text>
+            </TouchableOpacity>
 
             <View style={styles.toggleContainer}>
               <Text style={styles.toggleLabel}>通知OFF</Text>
@@ -96,46 +102,135 @@ const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
         <Modal
           visible={showTimePicker}
           transparent={true}
-          animationType="slide"
+          animationType={Platform.OS === 'ios' ? 'slide' : 'fade'}
           onRequestClose={() => setShowTimePicker(false)}>
           <TouchableOpacity 
             style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => setShowTimePicker(false)}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>
-                {pickerType === 'hour' ? '時間を選択' : '分を選択'}
-              </Text>
-              <FlatList
-                data={pickerType === 'hour' ? hours : minutes}
-                keyExtractor={(item) => item.toString()}
-                renderItem={({item}) => (
-                  <TouchableOpacity
-                    style={styles.timeItem}
-                    onPress={() => {
-                      if (pickerType === 'hour') {
-                        setSelectedHour(item);
-                      } else {
-                        setSelectedMinute(item);
-                      }
-                      setShowTimePicker(false);
-                    }}>
-                    <Text style={[
-                      styles.timeItemText,
-                      (pickerType === 'hour' ? selectedHour === item : selectedMinute === item) && styles.selectedTimeItemText
-                    ]}>
-                      {item.toString().padStart(2, '0')}
-                    </Text>
+            <View style={Platform.OS === 'ios' ? styles.iosModalContent : styles.modalContent}>
+              {Platform.OS === 'ios' && (
+                <View style={styles.iosHeader}>
+                  <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                    <Text style={styles.iosCancelText}>キャンセル</Text>
                   </TouchableOpacity>
-                )}
-                showsVerticalScrollIndicator={true}
-                style={styles.timeList}
-              />
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setShowTimePicker(false)}>
-                <Text style={styles.closeButtonText}>閉じる</Text>
-              </TouchableOpacity>
+                  <Text style={styles.iosTitle}>時刻を選択</Text>
+                  <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                    <Text style={styles.iosDoneText}>完了</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {Platform.OS === 'ios' ? (
+                <View style={styles.iosPickerContainer}>
+                  <View style={styles.iosPickerColumn}>
+                    <ScrollView 
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.iosPickerScrollContent}
+                      bounces={false}
+                      overScrollMode="never">
+                      <View style={styles.iosPickerSpacer} />
+                      {hours.map((hour) => (
+                        <TouchableOpacity
+                          key={`hour-${hour}`}
+                          style={styles.iosPickerItem}
+                          onPress={() => handleTimeChange('hour', hour)}>
+                          <Text style={[
+                            styles.iosPickerItemText,
+                            selectedHour === hour && styles.iosSelectedPickerItemText
+                          ]}>
+                            {hour.toString().padStart(2, '0')}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      <View style={styles.iosPickerSpacer} />
+                    </ScrollView>
+                  </View>
+                  <Text style={styles.iosPickerSeparator}>:</Text>
+                  <View style={styles.iosPickerColumn}>
+                    <ScrollView 
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.iosPickerScrollContent}
+                      bounces={false}
+                      overScrollMode="never">
+                      <View style={styles.iosPickerSpacer} />
+                      {minutes.map((minute) => (
+                        <TouchableOpacity
+                          key={`minute-${minute}`}
+                          style={styles.iosPickerItem}
+                          onPress={() => handleTimeChange('minute', minute)}>
+                          <Text style={[
+                            styles.iosPickerItemText,
+                            selectedMinute === minute && styles.iosSelectedPickerItemText
+                          ]}>
+                            {minute.toString().padStart(2, '0')}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      <View style={styles.iosPickerSpacer} />
+                    </ScrollView>
+                  </View>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.modalTitle}>時刻を選択</Text>
+                  <View style={styles.androidPickerContainer}>
+                    <ScrollView 
+                      style={styles.androidHourColumn}
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.androidPickerScrollContent}
+                      bounces={false}
+                      overScrollMode="never">
+                      <View style={styles.androidPickerSpacer} />
+                      {hours.map((hour) => (
+                        <TouchableOpacity
+                          key={`hour-${hour}`}
+                          style={styles.timeItem}
+                          onPress={() => {
+                            handleTimeChange('hour', hour);
+                          }}>
+                          <Text style={[
+                            styles.timeItemText,
+                            selectedHour === hour && styles.selectedTimeItemText
+                          ]}>
+                            {hour.toString().padStart(2, '0')}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      <View style={styles.androidPickerSpacer} />
+                    </ScrollView>
+                    <Text style={styles.androidSeparator}>:</Text>
+                    <ScrollView 
+                      style={styles.androidMinuteColumn}
+                      showsVerticalScrollIndicator={false}
+                      contentContainerStyle={styles.androidPickerScrollContent}
+                      bounces={false}
+                      overScrollMode="never">
+                      <View style={styles.androidPickerSpacer} />
+                      {minutes.map((minute) => (
+                        <TouchableOpacity
+                          key={`minute-${minute}`}
+                          style={styles.timeItem}
+                          onPress={() => {
+                            handleTimeChange('minute', minute);
+                          }}>
+                          <Text style={[
+                            styles.timeItemText,
+                            selectedMinute === minute && styles.selectedTimeItemText
+                          ]}>
+                            {minute.toString().padStart(2, '0')}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                      <View style={styles.androidPickerSpacer} />
+                    </ScrollView>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.closeButton}
+                    onPress={() => setShowTimePicker(false)}>
+                    <Text style={styles.closeButtonText}>閉じる</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </TouchableOpacity>
         </Modal>
@@ -157,10 +252,10 @@ const GoalNotificationScreen: React.FC<Props> = ({navigation}) => {
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.nextButton, hasToggleTouched ? styles.nextButtonActive : styles.nextButtonDisabled]}
+          style={[styles.nextButton, (hasToggleTouched || timing.trim()) ? styles.nextButtonActive : styles.nextButtonDisabled]}
           onPress={handleNext}
-          disabled={!hasToggleTouched}>
-          <Text style={[styles.nextButtonText, hasToggleTouched && styles.nextButtonTextActive]}>
+          disabled={!hasToggleTouched && !timing.trim()}>
+          <Text style={[styles.nextButtonText, (hasToggleTouched || timing.trim()) && styles.nextButtonTextActive]}>
             次へ
           </Text>
         </TouchableOpacity>
@@ -205,11 +300,11 @@ const styles = StyleSheet.create({
   },
   timeButton: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderWidth: 2,
+    borderColor: '#FF8C00',
     borderRadius: 8,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
+    paddingVertical: 20,
+    paddingHorizontal: 60,
   },
   timeText: {
     fontSize: 32,
@@ -347,6 +442,119 @@ const styles = StyleSheet.create({
     color: '#999999', // グレー文字
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // iOS専用スタイル
+  iosModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+    maxHeight: '50%',
+  },
+  iosHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  iosCancelText: {
+    color: '#FF8C00',
+    fontSize: 16,
+  },
+  iosTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  iosDoneText: {
+    color: '#FF8C00',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  iosTimeList: {
+    maxHeight: 250,
+  },
+  iosTimeItem: {
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E0E0E0',
+  },
+  iosTimeItemText: {
+    fontSize: 20,
+    textAlign: 'center',
+    color: '#000000',
+  },
+  iosSelectedTimeItemText: {
+    color: '#FF8C00',
+    fontWeight: 'bold',
+  },
+  // iOS風ピッカースタイル
+  iosPickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 216,
+    paddingHorizontal: 20,
+  },
+  iosPickerColumn: {
+    width: 70,
+    height: 216,
+  },
+  iosPickerScrollContent: {
+    paddingVertical: 0,
+  },
+  iosPickerSpacer: {
+    height: 86, // (216 - 44) / 2 to center the first/last item
+  },
+  iosPickerItem: {
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iosPickerItemText: {
+    fontSize: 22,
+    color: '#000000',
+  },
+  iosSelectedPickerItemText: {
+    color: '#FF8C00',
+    fontWeight: 'bold',
+  },
+  iosPickerSeparator: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginHorizontal: 5,
+    color: '#000000',
+  },
+  // Android用スタイル
+  androidPickerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+    paddingHorizontal: 20,
+  },
+  androidHourColumn: {
+    width: 80,
+    height: 200,
+  },
+  androidMinuteColumn: {
+    width: 80,
+    height: 200,
+  },
+  androidSeparator: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginHorizontal: 10,
+  },
+  androidPickerScrollContent: {
+    paddingVertical: 0,
+  },
+  androidPickerSpacer: {
+    height: 70, // (200 - 60) / 2 to center the first/last item (60 = item height + border)
   },
 });
 

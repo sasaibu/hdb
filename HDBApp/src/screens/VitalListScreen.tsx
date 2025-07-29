@@ -213,12 +213,9 @@ const VitalListScreen = ({navigation}: Props) => {
     
     if (editMode) {
       toggleItemSelection(item.id);
-    } else if (currentTab.id === 'steps') {
-      // 歩数の場合は詳細画面に遷移
-      navigation.navigate('VitalData', {title: '歩数'});
     } else {
-      // その他は編集ダイアログ（今回は簡易実装）
-      Alert.alert('編集', `${currentTab.title}の編集機能は今後実装予定です。`);
+      // 各バイタルの詳細画面に遷移
+      navigation.navigate('VitalData', {title: currentTab.title});
     }
   };
 

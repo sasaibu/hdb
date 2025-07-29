@@ -21,8 +21,10 @@ const GoalDetailScreen: React.FC<Props> = ({navigation, route}) => {
   const handleSave = () => {
     if (goal.trim()) {
       // 前の画面（GoalInputScreen）に戻って目標を更新
-      navigation.navigate('GoalInput');
-      // TODO: 目標を保存する処理を追加
+      if (route.params?.onSave) {
+        route.params.onSave(goal);
+      }
+      navigation.goBack();
     }
   };
 
