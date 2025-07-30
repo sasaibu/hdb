@@ -34,6 +34,16 @@ import TimingDetailScreen from '../screens/TimingDetailScreen'; // 追加
 import GoalDetailScreen from '../screens/GoalDetailScreen'; // 追加
 import GoalConfirmationScreen from '../screens/GoalConfirmationScreen'; // 追加
 import GoalContinuationScreen from '../screens/GoalContinuationScreen'; // 追加
+import VitalDetailScreen from '../screens/VitalDetailScreen'; // 追加
+import ServiceTermsScreen from '../screens/ServiceTermsScreen'; // オンボーディング画面
+import EmailInputScreen from '../screens/EmailInputScreen'; // オンボーディング画面
+import NicknameInputScreen from '../screens/NicknameInputScreen'; // オンボーディング画面
+import HealthcareDataMigrationScreen from '../screens/HealthcareDataMigrationScreen'; // オンボーディング画面
+import PointsScreen from '../screens/PointsScreen'; // ポイント画面
+import PointsExchangeScreen from '../screens/PointsExchangeScreen'; // ポイント交換画面
+import StressCheckScreen from '../screens/StressCheckScreen'; // ストレスチェック画面
+import StressCheckAnswerScreen from '../screens/StressCheckAnswerScreen'; // ストレスチェック回答画面
+import StressCheckResultScreen from '../screens/StressCheckResultScreen'; // ストレスチェック結果画面
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -41,6 +51,7 @@ export type RootStackParamList = {
   Main: undefined;
   WebView: {url: string; title?: string; screen?: string};
   VitalData: {title: string};
+  VitalDetail: {vitalType: string; date: string; recordId?: string};
   DataMigrationLogin: undefined; // 追加
   DataMigration: undefined; // 追加
   LinkedServicesSettings: undefined; // 追加
@@ -78,6 +89,13 @@ export type RootStackParamList = {
     isNotificationOn?: boolean;
     timing?: string;
   }; // 追加
+  ServiceTerms: undefined; // オンボーディング
+  EmailInput: undefined; // オンボーディング
+  NicknameInput: undefined; // オンボーディング
+  HealthcareDataMigration: undefined; // オンボーディング
+  PointsExchange: undefined; // ポイント交換画面
+  StressCheckAnswer: {checkId: string; title: string}; // ストレスチェック回答
+  StressCheckResult: {checkId: string; title: string; answers?: {[key: string]: number}}; // ストレスチェック結果
 };
 
 export type MainDrawerParamList = {
@@ -95,6 +113,8 @@ export type MainDrawerParamList = {
   PrivacyPolicy: undefined; // 追加
   OpenSourceLicenses: undefined; // 追加
   DataDeletion: undefined; // 追加
+  StressCheck: undefined; // ストレスチェック画面
+  Points: undefined; // ポイント画面
   Logout: undefined; // 追加
   GoalSetting: undefined; // 追加
   // DataMigration: undefined; // 削除
@@ -202,6 +222,16 @@ function MainDrawer() {
         name="DataDeletion"
         component={DataDeletionScreen}
         options={{title: 'データ削除について'}}
+      />
+      <Drawer.Screen
+        name="StressCheck"
+        component={StressCheckScreen}
+        options={{title: 'ストレスチェック'}}
+      />
+      <Drawer.Screen
+        name="Points"
+        component={PointsScreen}
+        options={{title: 'ポイント'}}
       />
       <Drawer.Screen
         name="Logout"
@@ -354,6 +384,102 @@ export default function AppNavigator() {
           options={{
             headerShown: true, 
             title: '目標継続',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="VitalDetail" // 追加
+          component={VitalDetailScreen}
+          options={{
+            headerShown: true,
+            title: '詳細表示',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="ServiceTerms"
+          component={ServiceTermsScreen}
+          options={{
+            headerShown: true,
+            title: 'サービス利用条件',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="EmailInput"
+          component={EmailInputScreen}
+          options={{
+            headerShown: true,
+            title: 'メールアドレス入力',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="NicknameInput"
+          component={NicknameInputScreen}
+          options={{
+            headerShown: true,
+            title: 'ニックネーム入力',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="HealthcareDataMigration"
+          component={HealthcareDataMigrationScreen}
+          options={{
+            headerShown: true,
+            title: 'データ移行',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="PointsExchange"
+          component={PointsExchangeScreen}
+          options={{
+            headerShown: true,
+            title: 'ポイント交換',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="StressCheckAnswer"
+          component={StressCheckAnswerScreen}
+          options={{
+            headerShown: true,
+            title: 'ストレスチェック回答',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="StressCheckResult"
+          component={StressCheckResultScreen}
+          options={{
+            headerShown: true,
+            title: 'ストレスチェック結果',
             headerStyle: {
               backgroundColor: '#FF8C00',
             },
