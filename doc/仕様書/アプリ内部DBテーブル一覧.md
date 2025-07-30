@@ -31,10 +31,9 @@
 | vital_sync_log | 同期ログ | id, table_name, record_id, sync_type, sync_status, error_message, synced_at, created_at | 同期状態の管理 |
 | **目標・達成管理** ||||
 | user_targets | ユーザー目標値 | user_id, vital_type, target_value, period_type, start_date, end_date, created_at, updated_at | vital_type: steps/weight等 |
-| achievement_records | 達成記録 | id, user_id, vital_type, target_value, achieved_value, achievement_rate, achieved_date, created_at | 目標達成履歴 |
-| **ミッション・イベント** ||||
-| missions | ミッション情報 | id, mission_id, title, description, target_type, target_value, start_date, end_date, reward_points, sync_status, created_at, updated_at | サーバーから取得 |
-| user_missions | ユーザーミッション進捗 | user_id, mission_id, current_value, status, completed_at, sync_status, created_at, updated_at | status: active/completed |
+| daily_achievements | 日次達成状況 | user_id, target_id, achievement_date, is_achieved, achieved_value, target_value, created_at, updated_at | 日ごとの達成状況を管理 |
+| achievement_summary | 達成サマリー | user_id, target_id, total_count, current_streak, max_streak, last_achieved_at, created_at, updated_at | 継続回数と表示用サマリー |
+| achievement_records | 達成記録 | id, user_id, vital_type, target_value, achieved_value, achievement_rate, achieved_date, created_at | 目標達成履歴（既存互換） |
 | **通知・お知らせ** ||||
 | announcements | お知らせ | id, announcement_id, title, body, category, priority, read_at, created_at | サーバーから取得 |
 | notification_settings | 通知設定 | user_id, notification_type, push_enabled, email_enabled, time_from, time_to, created_at, updated_at | 種別ごとの通知設定 |
@@ -106,6 +105,36 @@
 3. **バイタルデータ**:
    - HealthKit/ヘルスコネクト → SQLite（vital_*テーブル） → バイタルAWS
    - 全てローカルDBで管理、Firebaseには保存しない
+
+## 目標達成管理の詳細仕様
+
+### 日次達成状況の管理
+目標達成は**日ごとの達成状況**と**継続回数の表示**を分離して管理します。
+
+#### 例：7/1から目標設定した場合
+```
+設定日: 7/1
+7/1 未達成 (is_achieved: false)
+7/2 未達成 (is_achieved: false)  
+7/3 達成   (is_achieved: true)   ← 1回目
+7/4 達成   (is_achieved: true)   ← 2回目
+7/5 未達成 (is_achieved: false)
+7/6 達成   (is_achieved: true)   ← 3回目
+7/7 達成   (is_achieved: true)   ← 4回目 (本日分Done)
+```
+
+#### テーブル設計のポイント
+- **daily_achievements**: 各日の達成状況を個別に記録
+- **achievement_summary**: 継続回数や最大連続記録を集計管理
+- **表示ロジック**: 「○回目」「Done」は達成済み日数をカウント
+- **継続性分析**: 日次データから連続達成日数や達成パターンを分析可能
+
+#### 画面表示例
+```
+目標: 1日8000歩
+達成状況: 4回目 Done ✓
+継続記録: 最大2日連続
+```
 
 ## Keychain/Keystoreで管理するデータ
 

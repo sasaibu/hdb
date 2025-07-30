@@ -63,17 +63,57 @@ erDiagram
         string sync_status "同期ステータス"
         datetime created_at "作成日時"
     }
+    
+    user_targets["ユーザー目標 (user_targets)"] {
+        int target_id PK "目標ID"
+        string user_id FK "ユーザーID"
+        string vital_type "バイタル種別"
+        float target_value "目標値"
+        string period_type "期間種別"
+        date start_date "開始日"
+        date end_date "終了日"
+        datetime created_at "作成日時"
+        datetime updated_at "更新日時"
+    }
+    
+    daily_achievements["日次達成状況 (daily_achievements)"] {
+        string user_id FK "ユーザーID"
+        int target_id FK "目標ID"
+        date achievement_date PK "達成日"
+        boolean is_achieved "達成フラグ"
+        float achieved_value "達成値"
+        float target_value "目標値"
+        datetime created_at "作成日時"
+        datetime updated_at "更新日時"
+    }
+    
+    achievement_summary["達成サマリー (achievement_summary)"] {
+        string user_id FK "ユーザーID"
+        int target_id FK "目標ID"
+        int total_count "総達成回数"
+        int current_streak "現在の連続記録"
+        int max_streak "最大連続記録"
+        datetime last_achieved_at "最終達成日時"
+        datetime created_at "作成日時"
+        datetime updated_at "更新日時"
+    }
 
     %% リレーションシップ
     users ||--o{ data_sources : "1対多"
     users ||--o{ vital_data : "1対多"
     users ||--o{ daily_steps : "1対多"
     users ||--o{ daily_heart_rate : "1対多"
+    users ||--o{ user_targets : "1対多"
+    users ||--o{ daily_achievements : "1対多"
+    users ||--o{ achievement_summary : "1対多"
     
     data_sources ||--o{ vital_data : "1対多"
     data_sources ||--o{ daily_steps : "1対多"
     data_sources ||--o{ daily_heart_rate : "1対多"
     measurement_codes ||--o{ vital_data : "1対多"
+    
+    user_targets ||--o{ daily_achievements : "1対多"
+    user_targets ||--o{ achievement_summary : "1対多"
 ```
 
 ## コアテーブル説明
@@ -87,6 +127,11 @@ erDiagram
 - **vital_data**: 統合バイタルデータ（全測定項目を統一管理）
 - **daily_steps**: 1日の歩数集計データ（パフォーマンス最適化）
 - **daily_heart_rate**: 1日の心拍数集計データ（パフォーマンス最適化）
+
+### 目標管理
+- **user_targets**: ユーザーが設定する個人目標（自分で入力）
+- **daily_achievements**: 日ごとの目標達成状況を詳細管理
+- **achievement_summary**: 達成回数や連続記録のサマリー情報
 
 ## 設計思想
 
