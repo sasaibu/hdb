@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ScrollView,
 } from 'react-native';
 import {RouteProp} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -13,6 +14,7 @@ import {RootStackParamList} from '../navigation/AppNavigator';
 import VitalInputDialog from '../components/VitalInputDialog';
 import {VitalDataService} from '../services/VitalDataService';
 import {VitalDataRecord} from '../services/DatabaseService';
+import theme from '../styles/theme';
 
 type VitalDataScreenRouteProp = RouteProp<RootStackParamList, 'VitalData'>;
 type VitalDataScreenNavigationProp = StackNavigationProp<
@@ -115,8 +117,8 @@ const VitalDataScreen = ({route}: Props) => {
     setModalVisible(true);
   };
 
-  const handleSave = async (newValue: string) => {
-    if (!selectedItem) return;
+  const handleSave = async (newValue: string, newValue2?: string, date?: Date) => {
+    if (!selectedItem && !date) return;
 
     try {
       const numericValue = parseFloat(newValue.replace(/[^0-9.]/g, ''));
@@ -144,27 +146,46 @@ const VitalDataScreen = ({route}: Props) => {
       // 血圧の場合の処理
       let systolic, diastolic;
       if (title === '血圧') {
-        const parts = newValue.split('/');
-        if (parts.length === 2) {
-          systolic = parseInt(parts[0]);
-          diastolic = parseInt(parts[1]);
-        } else {
+        if (newValue2) {
           systolic = numericValue;
-          diastolic = 80; // デフォルト値
+          diastolic = parseFloat(newValue2);
+        } else {
+          const parts = newValue.split('/');
+          if (parts.length === 2) {
+            systolic = parseInt(parts[0]);
+            diastolic = parseInt(parts[1]);
+          } else {
+            systolic = numericValue;
+            diastolic = 80; // デフォルト値
+          }
         }
       }
 
-      await vitalDataService.updateVitalData(
-        parseInt(selectedItem.id),
-        numericValue,
-        systolic,
-        diastolic
-      );
+      if (date) {
+        // 新規データとして保存（日付指定）
+        await vitalDataService.addVitalData(
+          title,
+          numericValue,
+          date,
+          systolic,
+          diastolic,
+          'manual'
+        );
+        Alert.alert('成功', `${date.toLocaleDateString('ja-JP')}のデータを追加しました。`);
+      } else if (selectedItem) {
+        // 既存データの更新
+        await vitalDataService.updateVitalData(
+          parseInt(selectedItem.id),
+          numericValue,
+          systolic,
+          diastolic
+        );
+        Alert.alert('成功', 'データを更新しました。');
+      }
       
       await loadData(); // データを再読み込み
       setModalVisible(false);
       setSelectedItem(null);
-      Alert.alert('成功', 'データを更新しました。');
       
     } catch (error) {
       console.error('Error updating data:', error);
@@ -182,10 +203,15 @@ const VitalDataScreen = ({route}: Props) => {
         return '℃';
       case '血圧':
         return 'mmHg';
+      case '心拍数':
+        return 'bpm';
+      case '脈拍':
+        return 'bpm';
       default:
         return '';
     }
   };
+
 
   // グラフ用のデータ処理
   const getChartData = () => {
@@ -203,11 +229,31 @@ const VitalDataScreen = ({route}: Props) => {
 
   // 棒グラフコンポーネント
   const renderChart = () => {
-    if (chartData.length === 0) return null;
+    if (chartData.length === 0) {
+      return (
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>📊 推移グラフ</Text>
+          <View style={styles.emptyChartContainer}>
+            <Text style={styles.emptyChartText}>データがありません</Text>
+          </View>
+        </View>
+      );
+    }
+
+    // データが多い場合の表示調整
+    const maxBarsToShow = 10;
+    const displayData = chartData.length > maxBarsToShow 
+      ? chartData.slice(-maxBarsToShow) // 最新のデータを表示
+      : chartData;
 
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>📊 推移グラフ</Text>
+        {chartData.length > maxBarsToShow && (
+          <Text style={styles.chartSubtitle}>
+            最新{maxBarsToShow}件を表示（全{chartData.length}件）
+          </Text>
+        )}
         <View style={styles.chartWrapper}>
           {/* Y軸の目盛り */}
           <View style={styles.yAxisContainer}>
@@ -222,36 +268,44 @@ const VitalDataScreen = ({route}: Props) => {
               <View style={styles.gridLine} />
               <View style={styles.gridLine} />
             </View>
-            <View style={styles.chart}>
-              {chartData.map((item, index) => {
-                const barHeight = maxValue > 0 ? (item.numericValue / maxValue) * 140 : 4;
-                const isLatest = index === chartData.length - 1;
-                return (
-                  <View key={item.id} style={styles.barContainer}>
-                    <View style={styles.barWrapper}>
-                      {/* 数値を棒の上に表示 */}
-                      <Text style={[styles.barValueTop, isLatest && styles.barValueTopLatest]}>
-                        {item.numericValue.toFixed(title === '歩数' ? 0 : 1)}
+            {/* スクロール可能なチャート */}
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.scrollableChart}
+              style={styles.chartScrollView}
+            >
+              <View style={[styles.chart, { width: Math.max(300, displayData.length * 50) }]}>
+                {displayData.map((item, index) => {
+                  const barHeight = maxValue > 0 ? (item.numericValue / maxValue) * 140 : 4;
+                  const isLatest = index === displayData.length - 1;
+                  return (
+                    <View key={`${item.id}-${index}`} style={styles.barContainer}>
+                      <View style={styles.barWrapper}>
+                        {/* 数値を棒の上に表示 */}
+                        <Text style={[styles.barValueTop, isLatest && styles.barValueTopLatest]}>
+                          {item.numericValue.toFixed(title === '歩数' ? 0 : 1)}
+                        </Text>
+                        <View
+                          style={[
+                            styles.bar,
+                            {
+                              height: Math.max(barHeight, 4),
+                              backgroundColor: isLatest ? '#007AFF' : '#4CAF50',
+                              shadowColor: isLatest ? '#007AFF' : '#4CAF50',
+                            },
+                            isLatest && styles.latestBar,
+                          ]}
+                        />
+                      </View>
+                      <Text style={[styles.barLabel, isLatest && styles.barLabelLatest]}>
+                        {item.date.slice(5).replace('-', '/')}
                       </Text>
-                      <View
-                        style={[
-                          styles.bar,
-                          {
-                            height: Math.max(barHeight, 4),
-                            backgroundColor: isLatest ? '#007AFF' : '#4CAF50',
-                            shadowColor: isLatest ? '#007AFF' : '#4CAF50',
-                          },
-                          isLatest && styles.latestBar,
-                        ]}
-                      />
                     </View>
-                    <Text style={[styles.barLabel, isLatest && styles.barLabelLatest]}>
-                      {item.date.slice(5).replace('-', '/')}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
           </View>
         </View>
         {/* 単位表示 */}
@@ -261,19 +315,21 @@ const VitalDataScreen = ({route}: Props) => {
   };
 
   const renderItem = ({item}: {item: VitalListItem}) => (
-    <TouchableOpacity onPress={() => handleEdit(item)}>
-      <View style={styles.listItem}>
+    <View style={styles.listItem}>
+      <TouchableOpacity 
+        style={styles.itemContent}
+        onPress={() => handleEdit(item)}>
         <View>
           <Text style={styles.itemDate}>{item.date}</Text>
           <Text style={styles.itemValue}>{item.value}</Text>
         </View>
-        <View style={styles.itemActions}>
-          <TouchableOpacity onPress={() => handleDelete(item.id)}>
-            <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
-          </TouchableOpacity>
-        </View>
+      </TouchableOpacity>
+      <View style={styles.itemActions}>
+        <TouchableOpacity onPress={() => handleDelete(item.id)}>
+          <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (loading) {
@@ -352,19 +408,21 @@ const VitalDataScreen = ({route}: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background.secondary,
     padding: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: theme.colors.text.primary,
   },
   achievementContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.xl,
+    padding: 20,
     marginBottom: 20,
+    ...theme.shadow.md,
   },
   progressLabelContainer: {
     flexDirection: 'row',
@@ -433,6 +491,9 @@ const styles = StyleSheet.create({
   },
   itemActions: {
     flexDirection: 'row',
+  },
+  itemContent: {
+    flex: 1,
   },
   actionText: {
     color: '#007AFF',
@@ -574,6 +635,30 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666',
+  },
+  emptyChartContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 120,
+  },
+  emptyChartText: {
+    fontSize: 16,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  chartSubtitle: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 15,
+    fontStyle: 'italic',
+  },
+  chartScrollView: {
+    flex: 1,
+  },
+  scrollableChart: {
+    paddingHorizontal: 10,
   },
 });
 

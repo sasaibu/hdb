@@ -39,6 +39,8 @@ const NewVitalInputDialog: React.FC<NewVitalInputDialogProps> = ({
         return 'mmHg';
       case '心拍数':
         return 'bpm';
+      case '脈拍':
+        return 'bpm';
       default:
         return '';
     }
@@ -56,6 +58,8 @@ const NewVitalInputDialog: React.FC<NewVitalInputDialogProps> = ({
         return '収縮期 例: 120';
       case '心拍数':
         return '例: 72';
+      case '脈拍':
+        return '例: 75';
       default:
         return '';
     }
@@ -118,6 +122,12 @@ const NewVitalInputDialog: React.FC<NewVitalInputDialogProps> = ({
           return false;
         }
         break;
+      case '脈拍':
+        if (numValue < 30 || numValue > 200) {
+          Alert.alert('エラー', '脈拍は30〜200bpmの範囲で入力してください');
+          return false;
+        }
+        break;
     }
 
     return true;
@@ -135,7 +145,8 @@ const NewVitalInputDialog: React.FC<NewVitalInputDialogProps> = ({
               vitalType === '体重' ? 'weight' :
               vitalType === '体温' ? 'temperature' :
               vitalType === '血圧' ? 'bloodPressure' :
-              vitalType === '心拍数' ? 'heartRate' : vitalType,
+              vitalType === '心拍数' ? 'heartRate' :
+              vitalType === '脈拍' ? 'pulse' : vitalType,
         value: parseFloat(value),
         value2: vitalType === '血圧' ? parseFloat(value2) : undefined,
         unit: getUnit(),

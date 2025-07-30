@@ -44,28 +44,44 @@ Health Data Bank (HDB) Androidアプリの開発環境を構築するための�
    - Android SDK Platform-Tools
    - Intel x86 Emulator Accelerator (HAXM installer)
 
-### 5. 環境変数の設定
-1. スタートメニューで「環境変数」を検索して「システム環境変数の編集」を開く
-2. 「環境変数」ボタンをクリック
-3. システム環境変数に以下を追加：
-   - 変数名：`ANDROID_HOME`
-   - 値：`C:\Users\[ユーザー名]\AppData\Local\Android\Sdk`
-4. PATH変数に以下を追加：
-   - `%ANDROID_HOME%\platform-tools`
-   - `%ANDROID_HOME%\emulator`
-   - `%ANDROID_HOME%\tools`
-   - `%ANDROID_HOME%\tools\bin`
+   
+### 5. Java Development Kit (JDK) のインストール
+1. [temurin 17](https://adoptium.net/temurin/releases/)
+   
+2. 「Version」で 17 (LTS) を選択し、あなたのOS (Windows) とアーキテクチャ (x64) に合った 
+   JDK パッケージ (.msi インストーラー) をダウンロードします。 
+3. ダウンロードした .msi ファイルをダブルクリックしてインストーラーを起動します。
+   
+4. 画面の指示に従ってインストールを進めます。
+   デフォルトのインストールパス（例: C:\Program Files\Eclipse Adoptium\jdk-17.x.x.x-hotspot）を控えておいてください。
 
-### 6. Java Development Kit (JDK) のインストール
-1. [OpenJDK 11](https://adoptium.net/) をダウンロード
-2. インストール実行
-3. 環境変数 `JAVA_HOME` を設定：
-   - 変数名：`JAVA_HOME`
-   - 値：`C:\Program Files\Eclipse Adoptium\jdk-11.x.x.x-hotspot`
-4. コマンドプロンプトで確認：
-   ```cmd
-   java -version
-   ```
+### 6. 環境変数の設定 
+ 
+1. スタートメニューで「環境変数」と検索し、「システム環境変数の編集」を開きます。
+2. 開いたウィンドウで「環境変数(N)...」ボタンをクリックします。
+3. 「システム環境変数」セクションで、以下の変数を新規で追加または編集します。
+
+   - ANDROID_HOME の追加:
+     - 変数名：ANDROID_HOME
+     - 変数値：C:\Users\[ユーザー名]\AppData\Local\Android\Sdk （Android SDKの実際のインストールパスに置き換えてください）
+     - 「OK」をクリックします。
+   - JAVA_HOME の追加:
+     - 変数名：JAVA_HOME
+     - 変数値：C:\Program Files\Eclipse Adoptium\jdk-17.x.x.x-hotspot （JDKの実際のインストールパスに置き換えてください）
+     - 「OK」をクリックします。
+   - Path 変数の編集:
+     - 「Path」という変数を選択し、「編集(I)...」をクリックします。
+     - 「新規(N)」をクリックし、以下のパスを1つずつ追加します。
+     -   %ANDROID_HOME%\platform-tools
+     -   %ANDROID_HOME%\emulator
+     -   %ANDROID_HOME%\tools
+     -   %ANDROID_HOME%\tools\bin
+     -   %JAVA_HOME%\bin
+   - 追加したら「OK」をクリックします。
+
+4. すべての環境変数のダイアログを「OK」で閉じます。
+   
+5. コマンドプロンプトまたはPowerShellを新しく開き直し、以下のコマンドで環境変数が正しく設定されているか確認します。
 
 ### 7. Android Virtual Device (AVD) の作成
 1. Android Studio で「Tools」→「AVD Manager」を開く
@@ -121,7 +137,7 @@ git --version
 
 ### 4. Java Development Kit (JDK) のインストール
 ```bash
-brew install --cask adoptopenjdk11
+brew install --cask temurin@17
 ```
 確認：
 ```bash
@@ -136,8 +152,9 @@ brew install --cask android-studio
 ### 6. Android Studio の設定
 1. Android Studioを起動
 2. Setup Wizardでデフォルト設定を適用
-3. 「More Actions」→「SDK Manager」をクリック
+3. ウェルカム画面の「More Actions」または上部メニューの「Tools」から「SDK Manager」をクリックします。
 4. 「SDK Platforms」タブで以下をインストール：
+   - Android 14 (API level 34) またはあなたがターゲットとする最新のAPIレベル
    - Android 13 (API level 33)
    - Android 12 (API level 31)
    - Android 11 (API level 30)
@@ -161,6 +178,9 @@ brew install --cask android-studio
    export ANDROID_HOME=$HOME/Library/Android/sdk
    export PATH=$PATH:$ANDROID_HOME/emulator
    export PATH=$PATH:$ANDROID_HOME/platform-tools
+   # JDKのパスはHomebrewが自動でsymlinkを作成するため、通常は不要ですが、明示的に指定する場合は以下を追加
+   # export JAVA_HOME=$(/usr/libexec/java_home -v 17) # JDK 17の場合
+   # export PATH=$JAVA_HOME/bin:$PATH
    ```
 
 3. 設定を反映：
@@ -173,9 +193,9 @@ brew install --cask android-studio
 ### 8. Android Virtual Device (AVD) の作成
 1. Android Studio で「Tools」→「AVD Manager」を開く
 2. 「Create Virtual Device」をクリック
-3. 「Phone」カテゴリから「Pixel 4」を選択
-4. System Image で「API 33」を選択してダウンロード
-5. AVD設定を完了して作成
+3. 「Phone」カテゴリから「Pixel 4」または任意の推奨デバイスを選択し、「Next」をクリックします。
+4. System Image で「API 34」を選択してダウンロード
+5. AVDの設定画面で、名前やメモリ設定などを確認し、「Finish」をクリックして作成を完了します。
 
 ### 9. プロジェクトのセットアップ
 ```bash

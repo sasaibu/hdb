@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, Switch, SafeAreaView, TouchableOpacity, Alert} from 'react-native';
+import {View, Text, StyleSheet, Switch, SafeAreaView, TouchableOpacity, Alert, ScrollView} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import {StackNavigationProp} from '@react-navigation/stack';
@@ -18,6 +18,11 @@ const NotificationSettingsScreen = () => {
     medicationReminder: true,
     appointmentReminder: true,
     reminderTime: '09:00',
+    // 新仕様追加項目
+    newAnnouncementNotification: true,
+    unreadExamNotification: true,
+    pulseSurveyNotification: true,
+    stressCheckNotification: true,
   });
 
   const notificationService = NotificationService.getInstance();
@@ -26,7 +31,23 @@ const NotificationSettingsScreen = () => {
   const loadSettings = async () => {
     try {
       const notificationSettings = await notificationService.getSettings();
-      setSettings(notificationSettings);
+      
+      // 新ER図対応: 各種通知設定フラグをAsyncStorageから読み込み
+      const newNoticeEnabled = await AsyncStorage.getItem('new_notice_notification_enabled');
+      const unreadExamEnabled = await AsyncStorage.getItem('unread_exam_notification_enabled');
+      const pulseSurveyEnabled = await AsyncStorage.getItem('pulse_survey_notification_enabled');
+      const stressCheckEnabled = await AsyncStorage.getItem('stress_check_notification_enabled');
+      
+      // 既存の設定に新しい設定を統合
+      const updatedSettings = {
+        ...notificationSettings,
+        newAnnouncementNotification: newNoticeEnabled !== 'false',
+        unreadExamNotification: unreadExamEnabled !== 'false',
+        pulseSurveyNotification: pulseSurveyEnabled !== 'false',
+        stressCheckNotification: stressCheckEnabled !== 'false',
+      };
+      
+      setSettings(updatedSettings);
     } catch (error) {
       console.error('設定の読み込みに失敗しました:', error);
     }
@@ -36,6 +57,13 @@ const NotificationSettingsScreen = () => {
   const saveSettings = async (newSettings: NotificationSettings) => {
     try {
       await notificationService.updateSettings(newSettings);
+      
+      // 新ER図対応: 各種通知設定フラグをAsyncStorageに保存
+      await AsyncStorage.setItem('new_notice_notification_enabled', newSettings.newAnnouncementNotification.toString());
+      await AsyncStorage.setItem('unread_exam_notification_enabled', newSettings.unreadExamNotification.toString());
+      await AsyncStorage.setItem('pulse_survey_notification_enabled', newSettings.pulseSurveyNotification.toString());
+      await AsyncStorage.setItem('stress_check_notification_enabled', newSettings.stressCheckNotification.toString());
+      
       setSettings(newSettings);
     } catch (error) {
       console.error('設定の保存に失敗しました:', error);
@@ -79,7 +107,8 @@ const NotificationSettingsScreen = () => {
       <View style={styles.header}>
         <Text style={styles.title}>通知設定</Text>
       </View>
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
         <Text style={styles.description}>
           プッシュ通知をオンにすると下記のお知らせを受け取ることができます。
         </Text>
@@ -123,6 +152,42 @@ const NotificationSettingsScreen = () => {
 
         <View style={styles.separator} />
 
+        {/* 新仕様追加項目 */}
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>新規お知らせ通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('newAnnouncementNotification')}
+            value={settings.newAnnouncementNotification}
+            disabled={!settings.enabled}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>未閲覧の検診通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('unreadExamNotification')}
+            value={settings.unreadExamNotification}
+            disabled={!settings.enabled}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>パルスサーベイ通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('pulseSurveyNotification')}
+            value={settings.pulseSurveyNotification}
+            disabled={!settings.enabled}
+          />
+        </View>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>ストレスチェック通知</Text>
+          <Switch
+            onValueChange={() => toggleSwitch('stressCheckNotification')}
+            value={settings.stressCheckNotification}
+            disabled={!settings.enabled}
+          />
+        </View>
+
+        <View style={styles.separator} />
+
         <View style={styles.settingRow}>
           <Text style={styles.settingLabel}>リマインダー時刻: {settings.reminderTime}</Text>
         </View>
@@ -139,7 +204,8 @@ const NotificationSettingsScreen = () => {
         >
           <Text style={styles.historyButtonText}>通知履歴を見る</Text>
         </TouchableOpacity>
-      </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -160,6 +226,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 30,
+  },
+  scrollView: {
+    flex: 1,
   },
   description: {
     fontSize: 14,

@@ -1,0 +1,12 @@
+No	API	エンドポイント	内容	認証	リクエストパラメータ	レスポンス	備考
+1	デバイス情報登録・更新	POST /api/v1/health/device	デバイス情報の登録および更新	Basic認証	client_id, device_id, device_info, app_version, os, os_version, manufacturer, model, brand, push_token	device_id, logined, authorized_type, recommend_goal, migration	1日1回実行
+2	ログイン	GET /api/v1/health/login	HDB会員認証	なし	client_id, device_id, redirect_uri, state	code, state（リダイレクト）	WebView使用
+3	ログアウト	POST /api/v1/health/logout	ログアウト実行	Bearer Token	client_id, device_id, user_id	なし	-
+4	トークン取得	POST /api/v1/health/token	アクセストークン・リフレッシュトークン取得	Basic認証	client_id, grant_type, redirect_uri, code OR refresh_token	access_token, expires_in, refresh_token, token_type, user_id, authorized_type, recommend_goal, migration	認可コード/リフレッシュトークン両対応
+5	移行データ取得	POST /api/v1/health/migration	dヘルスケア移行データ取得	Bearer Token	user_id, migration_id, index, count	CSV形式バイタルデータ	レスポンスヘッダにX-VitalHDB-Result
+6	転籍用ログイン	POST /api/v1/user/transfer	転籍前ユーザーログイン	Bearer Token	user_id, redirect_uri, state	transfer_user_id, state（リダイレクト）	転籍データ移行用
+7	Single Sign On	POST /api/v1/health/sso	HDBログイン済みページURL取得	Bearer Token	user_id, screen	member_url	WebView遷移用
+8	Healthデータ登録	POST /api/v1/health/register	バイタルデータ登録	Bearer Token	user_id, health配列（id, code, start_time, end_time, value1, value2, value3, intraday, source, device, deleted）	なし	測定項目コード使用
+9	マイデータ登録	POST /api/v1/health/mydata	マイページ・目標・通知設定登録	Bearer Token	user_id, mypage（nickname, showed）, goal（goal_id, unique_goal）, goal_achievement（goal_id, time, status）, push（permission）	support_comment, goal_push	応援コメント・目標プッシュ通知返却
+10	アプリDBバックアップ	POST /api/v1/health/backup	アプリDBファイルバックアップ	Bearer Token	user_id, multipart/form-data	password, expires_at	バイナリファイル送信
+11	アプリDBリストア	POST /api/v1/health/restore	バックアップDBファイル取得	Bearer Token	user_id, password	バイナリファイル	レスポンスヘッダにX-VitalHDB-Result

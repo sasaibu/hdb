@@ -6,17 +6,30 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Image,
 } from 'react-native';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: {nickname: string}) => void;
+  onSave: (data: {
+    nickname: string;
+    showNickname?: boolean;
+    goals?: Goal[];
+  }) => void;
   user: {
     nickname: string;
-    icon: string;
+    showNickname?: boolean;
+    goals?: Goal[];
   };
+}
+
+interface Goal {
+  id: string;
+  type: 'steps' | 'weight' | 'exercise';
+  target: number;
+  current: number;
+  unit: string;
+  achieved: boolean;
 }
 
 const ProfileEditModal = ({visible, onClose, onSave, user}: Props) => {
@@ -39,11 +52,6 @@ const ProfileEditModal = ({visible, onClose, onSave, user}: Props) => {
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
           <Text style={styles.modalTitle}>プロフィール編集</Text>
-
-          <Image source={{uri: user.icon}} style={styles.avatar} />
-          <TouchableOpacity>
-            <Text style={styles.changeImageText}>画像を編集</Text>
-          </TouchableOpacity>
 
           <TextInput
             style={styles.input}
@@ -98,16 +106,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 10,
-  },
-  changeImageText: {
-    color: '#007AFF',
-    marginBottom: 20,
   },
   input: {
     width: '100%',

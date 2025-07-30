@@ -62,14 +62,36 @@ export class DatabaseService {
       );
     `;
 
+    // 新仕様対応: 1日の心拍データテーブル
+    const createDailyHeartRateTable = `
+      CREATE TABLE IF NOT EXISTS daily_heart_rate (
+        date TEXT NOT NULL,
+        user_no INTEGER DEFAULT 1,
+        data_source_no INTEGER DEFAULT 1,
+        min_value INTEGER NOT NULL,
+        max_value INTEGER NOT NULL,
+        sync_status TEXT DEFAULT 'pending',
+        synced_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (date, user_no, data_source_no)
+      );
+    `;
+
     const createIndexes = `
       CREATE INDEX IF NOT EXISTS idx_vital_data_type_date 
       ON vital_data(type, recorded_date);
     `;
 
+    const createDailyHeartRateIndexes = `
+      CREATE INDEX IF NOT EXISTS idx_daily_heart_rate_date 
+      ON daily_heart_rate(date);
+    `;
+
     await this.executeSql(createVitalDataTable);
     await this.executeSql(createTargetsTable);
+    await this.executeSql(createDailyHeartRateTable);
     await this.executeSql(createIndexes);
+    await this.executeSql(createDailyHeartRateIndexes);
   }
 
   executeSql(sql: string, params: any[] = []): Promise<any> {
@@ -277,9 +299,78 @@ export class DatabaseService {
     return data;
   }
 
+  // 新仕様対応: 1日の心拍データ管理
+  async insertOrUpdateDailyHeartRate(date: string, minValue: number, maxValue: number, userNo: number = 1, dataSourceNo: number = 1): Promise<void> {
+    const sql = `
+      INSERT OR REPLACE INTO daily_heart_rate (date, user_no, data_source_no, min_value, max_value)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    
+    await this.executeSql(sql, [date, userNo, dataSourceNo, minValue, maxValue]);
+  }
+
+  async getDailyHeartRate(date: string, userNo: number = 1, dataSourceNo: number = 1): Promise<any> {
+    const sql = `
+      SELECT * FROM daily_heart_rate 
+      WHERE date = ? AND user_no = ? AND data_source_no = ?
+    `;
+    
+    const result = await this.executeSql(sql, [date, userNo, dataSourceNo]);
+    
+    if (result.rows.length > 0) {
+      return result.rows.item(0);
+    }
+    return null;
+  }
+
+  async getDailyHeartRateByDateRange(startDate: string, endDate: string, userNo: number = 1): Promise<any[]> {
+    const sql = `
+      SELECT * FROM daily_heart_rate 
+      WHERE date BETWEEN ? AND ? AND user_no = ?
+      ORDER BY date DESC
+    `;
+    
+    const result = await this.executeSql(sql, [startDate, endDate, userNo]);
+    const data: any[] = [];
+    
+    for (let i = 0; i < result.rows.length; i++) {
+      data.push(result.rows.item(i));
+    }
+    
+    return data;
+  }
+
+  async getUnsyncedDailyHeartRate(): Promise<any[]> {
+    const sql = `
+      SELECT * FROM daily_heart_rate 
+      WHERE sync_status IS NULL OR sync_status = 'pending'
+      ORDER BY date DESC
+    `;
+    
+    const result = await this.executeSql(sql);
+    const data: any[] = [];
+    
+    for (let i = 0; i < result.rows.length; i++) {
+      data.push(result.rows.item(i));
+    }
+    
+    return data;
+  }
+
+  async markDailyHeartRateAsSynced(date: string, userNo: number = 1, dataSourceNo: number = 1): Promise<void> {
+    const sql = `
+      UPDATE daily_heart_rate 
+      SET sync_status = 'synced', synced_at = datetime('now')
+      WHERE date = ? AND user_no = ? AND data_source_no = ?
+    `;
+    
+    await this.executeSql(sql, [date, userNo, dataSourceNo]);
+  }
+
   async clearAllData(): Promise<void> {
     await this.executeSql('DELETE FROM vital_data');
     await this.executeSql('DELETE FROM targets');
+    await this.executeSql('DELETE FROM daily_heart_rate');
     console.log('All data cleared');
   }
 

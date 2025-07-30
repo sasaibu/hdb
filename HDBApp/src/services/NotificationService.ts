@@ -8,6 +8,11 @@ export interface NotificationSettings {
   medicationReminder: boolean;
   appointmentReminder: boolean;
   reminderTime: string;
+  // 新仕様追加項目
+  newAnnouncementNotification: boolean;
+  unreadExamNotification: boolean;
+  pulseSurveyNotification: boolean;
+  stressCheckNotification: boolean;
 }
 
 export interface NotificationData {
@@ -27,6 +32,11 @@ class NotificationService {
     medicationReminder: true,
     appointmentReminder: true,
     reminderTime: '09:00',
+    // 新仕様追加項目のデフォルト値
+    newAnnouncementNotification: true,
+    unreadExamNotification: true,
+    pulseSurveyNotification: true,
+    stressCheckNotification: true,
   };
 
   private notifications: NotificationData[] = [];

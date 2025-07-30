@@ -1,6 +1,7 @@
 import {useState, useEffect} from 'react';
 import {User, LoginRequest} from '../types';
 import {apiClient} from '../services/api/apiClient';
+import KeychainService from '../services/KeychainService';
 
 interface AuthState {
   user: User | null;
@@ -21,14 +22,29 @@ export function useAuth() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await apiClient.verifyToken();
+      const keychainService = KeychainService.getInstance();
       
-      if (response.success && response.data?.user) {
-        setAuthState({
-          user: response.data.user,
-          isLoading: false,
-          isAuthenticated: true,
-        });
+      // Keychainからアクセストークンを確認
+      const isTokenValid = await keychainService.isAccessTokenValid();
+      
+      if (isTokenValid) {
+        const response = await apiClient.verifyToken();
+        
+        if (response.success && response.data?.user) {
+          setAuthState({
+            user: response.data.user,
+            isLoading: false,
+            isAuthenticated: true,
+          });
+        } else {
+          // トークンが無効な場合はKeychainからクリア
+          await keychainService.clearAllTokens();
+          setAuthState({
+            user: null,
+            isLoading: false,
+            isAuthenticated: false,
+          });
+        }
       } else {
         setAuthState({
           user: null,
@@ -52,6 +68,18 @@ export function useAuth() {
       const response = await apiClient.login(credentials.username, credentials.password);
       
       if (response.success && response.data) {
+        const keychainService = KeychainService.getInstance();
+        
+        // 認証トークンをKeychainに保存
+        if (response.data.accessToken) {
+          const expiry = response.data.expiresAt ? new Date(response.data.expiresAt) : undefined;
+          await keychainService.saveAccessToken(response.data.accessToken, expiry);
+        }
+        
+        if (response.data.refreshToken) {
+          await keychainService.saveRefreshToken(response.data.refreshToken);
+        }
+        
         setAuthState({
           user: response.data.user,
           isLoading: false,
@@ -78,7 +106,13 @@ export function useAuth() {
 
   const logout = async () => {
     try {
+      const keychainService = KeychainService.getInstance();
+      
       await apiClient.logout();
+      
+      // Keychainから全ての認証情報をクリア
+      await keychainService.clearAllTokens();
+      
       setAuthState({
         user: null,
         isLoading: false,
@@ -86,7 +120,15 @@ export function useAuth() {
       });
     } catch (error) {
       console.error('Logout error:', error);
-      // エラーがあってもローカルの状態はクリア
+      
+      // エラーがあってもローカルの状態とKeychainはクリア
+      try {
+        const keychainService = KeychainService.getInstance();
+        await keychainService.clearAllTokens();
+      } catch (keychainError) {
+        console.error('Keychain clear error:', keychainError);
+      }
+      
       setAuthState({
         user: null,
         isLoading: false,
