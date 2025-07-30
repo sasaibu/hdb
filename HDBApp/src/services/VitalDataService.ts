@@ -394,6 +394,38 @@ export class VitalDataService {
     return typeMap[type] || type;
   }
 
+  // データ更新
+  async updateVitalData(id: number, value: number, diastolic?: number): Promise<void> {
+    try {
+      let sql: string;
+      let params: any[];
+      
+      if (diastolic !== undefined) {
+        // 血圧の場合
+        sql = `
+          UPDATE vital_data 
+          SET value = ?, diastolic = ?, updated_at = datetime('now')
+          WHERE id = ?
+        `;
+        params = [value, diastolic, id];
+      } else {
+        // その他のバイタル
+        sql = `
+          UPDATE vital_data 
+          SET value = ?, updated_at = datetime('now')
+          WHERE id = ?
+        `;
+        params = [value, id];
+      }
+      
+      await this.dbService.executeSql(sql, params);
+      console.log(`Updated vital data record with id: ${id}`);
+    } catch (error) {
+      console.error('Error updating vital data:', error);
+      throw error;
+    }
+  }
+
   // 測定項目コード変換（新ER図対応）
   convertTypeToMeasurementCode(type: string, isManual: boolean = false): string {
     const codeMap: Record<string, string> = {
