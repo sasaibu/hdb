@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,23 @@ import {
 } from 'react-native';
 import type {StackScreenProps} from '@react-navigation/stack';
 import type {RootStackParamList} from '../navigation/AppNavigator';
+import {useGoal} from '../contexts/GoalContext';
+import ScreenWithBottomNav from '../components/ScreenWithBottomNav';
 
 type Props = StackScreenProps<RootStackParamList, 'GoalInput'>;
 
 const GoalInputScreen: React.FC<Props> = ({navigation}) => {
   const [goal, setGoal] = useState('');
+  const { setIsGoalSetting } = useGoal();
+
+  useEffect(() => {
+    // 目標設定モードを維持
+    setIsGoalSetting(true);
+
+    return () => {
+      // この画面から離れても目標設定モードは維持
+    };
+  }, [setIsGoalSetting]);
 
   const handleNext = () => {
     if (goal.trim()) {
@@ -33,60 +45,62 @@ const GoalInputScreen: React.FC<Props> = ({navigation}) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView 
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
-          
-          <Text style={styles.title}>
-            ここで決めたことは30日間続けます
-          </Text>
-
-          <TouchableOpacity 
-            style={styles.inputSection}
-            onPress={() => navigation.navigate('GoalDetail', {
-              initialGoal: goal,
-              onSave: (newGoal: string) => setGoal(newGoal),
-            })}>
-            <Text style={[styles.inputPlaceholder, goal && styles.inputText]}>
-              {goal || '目標を入力してください'}
+    <ScreenWithBottomNav activeTab="home">
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView 
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled">
+            
+            <Text style={styles.title}>
+              ここで決めたことは30日間続けます
             </Text>
-          </TouchableOpacity>
 
-          <Text style={styles.helpTitle}>
-            「目標が書けない」という人へ
-          </Text>
+            <TouchableOpacity 
+              style={styles.inputSection}
+              onPress={() => navigation.navigate('GoalDetail', {
+                initialGoal: goal,
+                onSave: (newGoal: string) => setGoal(newGoal),
+              })}>
+              <Text style={[styles.inputPlaceholder, goal && styles.inputText]}>
+                {goal || '目標を入力してください'}
+              </Text>
+            </TouchableOpacity>
 
-          <Text style={styles.principleText}>
-            目標設定の原則①
-          </Text>
-
-          <TouchableOpacity 
-            style={styles.orangeBox}
-            onPress={() => navigation.navigate('GoalExamples', {
-              onSelectExample: (example: string) => setGoal(example),
-            })}>
-            <Text style={styles.orangeText}>
-              5分で達成できる、{'\n'}最低限の目標
+            <Text style={styles.helpTitle}>
+              「目標が書けない」という人へ
             </Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.nextButton, !goal.trim() && styles.nextButtonDisabled, goal.trim() && styles.nextButtonActive]}
-            onPress={handleNext}
-            disabled={!goal.trim()}>
-            <Text style={[styles.nextButtonText, goal.trim() && styles.nextButtonTextActive]}>
-              次へ
+            <Text style={styles.principleText}>
+              目標設定の原則①
             </Text>
-          </TouchableOpacity>
 
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            <TouchableOpacity 
+              style={styles.orangeBox}
+              onPress={() => navigation.navigate('GoalExamples', {
+                onSelectExample: (example: string) => setGoal(example),
+              })}>
+              <Text style={styles.orangeText}>
+                5分で達成できる、{'\n'}最低限の目標
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.nextButton, !goal.trim() && styles.nextButtonDisabled, goal.trim() && styles.nextButtonActive]}
+              onPress={handleNext}
+              disabled={!goal.trim()}>
+              <Text style={[styles.nextButtonText, goal.trim() && styles.nextButtonTextActive]}>
+                次へ
+              </Text>
+            </TouchableOpacity>
+
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ScreenWithBottomNav>
   );
 };
 

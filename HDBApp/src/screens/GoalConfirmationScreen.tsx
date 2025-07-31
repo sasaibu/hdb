@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,27 @@ import {
 } from 'react-native';
 import type {StackScreenProps} from '@react-navigation/stack';
 import type {RootStackParamList} from '../navigation/AppNavigator';
+import {useGoal} from '../contexts/GoalContext';
+import ScreenWithBottomNav from '../components/ScreenWithBottomNav';
 
 type Props = StackScreenProps<RootStackParamList, 'GoalConfirmation'>;
 
 const GoalConfirmationScreen: React.FC<Props> = ({navigation, route}) => {
+  const { setIsGoalSetting } = useGoal();
+
+  useEffect(() => {
+    // 目標設定モードを維持
+    setIsGoalSetting(true);
+
+    return () => {
+      // この画面から離れても目標設定モードは維持
+    };
+  }, [setIsGoalSetting]);
+
   const handleConfirm = () => {
+    // 目標が確定したら目標設定モードを解除
+    setIsGoalSetting(false);
+    
     // 目標継続画面へ遷移
     navigation.navigate('GoalContinuation', {
       goalType: route.params?.goalType,
@@ -33,15 +49,16 @@ const GoalConfirmationScreen: React.FC<Props> = ({navigation, route}) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}>
-          
-          <Text style={styles.title}>
-            5分でできる目標ですか？
-          </Text>
+    <ScreenWithBottomNav activeTab="home">
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}>
+            
+            <Text style={styles.title}>
+              5分でできる目標ですか？
+            </Text>
 
           <View style={styles.contentContainer}>
             <Text style={styles.contentText}>
@@ -91,8 +108,9 @@ const GoalConfirmationScreen: React.FC<Props> = ({navigation, route}) => {
           </TouchableOpacity>
         </View>
 
-      </View>
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </ScreenWithBottomNav>
   );
 };
 

@@ -1019,6 +1019,10 @@ export class MockApiService {
       'support': `${baseUrl}/support`,
       'faq': `${baseUrl}/faq`,
       
+      // 健診・パルスサーベイ
+      'health-check': `${baseUrl}/health-check`,
+      'pulse-survey': `${baseUrl}/pulse-survey`,
+      
       // 健康情報・コンテンツ
       'health_tips': `${baseUrl}/health/tips`,
       'articles': `${baseUrl}/health/articles`,

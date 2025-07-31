@@ -54,6 +54,7 @@ import DiseasePredictionScreen from '../screens/DiseasePredictionScreen'; // 疾
 import PulseSurveyScreen from '../screens/PulseSurveyScreen'; // パルスサーベイ画面
 import PulseSurveyResultScreen from '../screens/PulseSurveyResultScreen'; // パルスサーベイ結果画面
 import PulseSurveyListScreen from '../screens/PulseSurveyListScreen'; // パルスサーベイ一覧画面
+import DoneScreen from '../screens/DoneScreen';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -118,6 +119,7 @@ export type RootStackParamList = {
   StressCheckAnswer: {checkId: string; title: string}; // ストレスチェック回答
   StressCheckResult: {checkId: string; title: string; answers?: {[key: string]: number}}; // ストレスチェック結果
   PersonalRanking: {eventId: string; eventTitle: string}; // 個人ランキング画面
+  Done: undefined;
 };
 
 export type MainDrawerParamList = {
@@ -597,6 +599,12 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: 'パルスサーベイ一覧',
+        <Stack.Screen      
+          name="Done"
+          component={DoneScreen}
+          options={{
+            headerShown: true, 
+            title: '完了',
             headerStyle: {
               backgroundColor: '#FF8C00',
             },

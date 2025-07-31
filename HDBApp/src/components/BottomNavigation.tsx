@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
+import { useGoalSafe } from '../hooks/useGoalSafe';
 
 const { width } = Dimensions.get('window');
 
@@ -22,7 +23,7 @@ interface BottomNavigationProps {
 
 const tabs: TabItem[] = [
   { key: 'health-check', label: '健診', icon: '🏥' },
-  { key: 'pulse-survey', label: 'パルスサーベイ', icon: '📊' },
+  { key: 'pulse-survey', label: 'パルスサーベイ', icon: '💭' },
   { key: 'home', label: 'ホーム', icon: '🏠' },
   { key: 'record', label: '記録', icon: '📝' },
   { key: 'notifications', label: 'お知らせ', icon: '🔔' },
@@ -32,31 +33,58 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
   activeTab,
   onTabPress,
 }) => {
+  const { isGoalSetting } = useGoalSafe();
+
+  // 目標設定中に有効なタブ（健診、パルスサーベイ、ホームのみ）
+  const enabledTabsDuringGoalSetting = ['health-check', 'pulse-survey', 'home'];
+
+  const isTabEnabled = (tabKey: string) => {
+    if (!isGoalSetting) {
+      return true; // 目標設定中でなければ全てのタブが有効
+    }
+    // 目標設定中は指定されたタブのみ有効
+    return enabledTabsDuringGoalSetting.includes(tabKey);
+  };
+
   return (
     <View style={styles.container}>
-      {tabs.map((tab) => (
-        <TouchableOpacity
-          key={tab.key}
-          style={styles.tab}
-          onPress={() => onTabPress(tab.key)}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.iconPlaceholder, activeTab === tab.key && styles.activeIconPlaceholder]}>
-            <Text style={[styles.icon, activeTab === tab.key && styles.activeIcon]}>
-              {tab.icon || tab.label.charAt(0)}
-            </Text>
-          </View>
-          <Text
-            style={[
-              styles.label,
-              activeTab === tab.key && styles.activeLabel,
-            ]}
-            numberOfLines={1}
+      {tabs.map((tab) => {
+        const isEnabled = isTabEnabled(tab.key);
+        
+        return (
+          <TouchableOpacity
+            key={tab.key}
+            style={[styles.tab, !isEnabled && styles.disabledTab]}
+            onPress={() => isEnabled && onTabPress(tab.key)}
+            activeOpacity={isEnabled ? 0.7 : 1}
+            disabled={!isEnabled}
           >
-            {tab.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <View style={[
+              styles.iconPlaceholder, 
+              activeTab === tab.key && styles.activeIconPlaceholder,
+              !isEnabled && styles.disabledIconPlaceholder
+            ]}>
+              <Text style={[
+                styles.icon, 
+                activeTab === tab.key && styles.activeIcon,
+                !isEnabled && styles.disabledIcon
+              ]}>
+                {tab.icon || tab.label.charAt(0)}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.label,
+                activeTab === tab.key && styles.activeLabel,
+                !isEnabled && styles.disabledLabel
+              ]}
+              numberOfLines={1}
+            >
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };
@@ -111,6 +139,18 @@ const styles = StyleSheet.create({
   activeLabel: {
     color: '#FF6B35',
     fontWeight: '600',
+  },
+  disabledTab: {
+    opacity: 0.5,
+  },
+  disabledIconPlaceholder: {
+    backgroundColor: '#E0E0E0',
+  },
+  disabledIcon: {
+    color: '#999999',
+  },
+  disabledLabel: {
+    color: '#999999',
   },
 });
 

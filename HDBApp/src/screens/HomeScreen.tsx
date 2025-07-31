@@ -23,6 +23,8 @@ import {VitalDataService} from '../services/VitalDataService';
 import theme from '../styles/theme';
 import VitalInputDialog from '../components/VitalInputDialog';
 import ManualInputButton from '../components/ManualInputButton';
+import CelebrationDialog from '../components/CelebrationDialog';
+import { useGoalSafe } from '../hooks/useGoalSafe';
 
 const {width} = Dimensions.get('window');
 
@@ -132,8 +134,28 @@ export default function HomeScreen({navigation}: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedVitalType, setSelectedVitalType] = useState<string>('');
   const vitalDataService = new VitalDataService();
+  const { 
+    setIsGoalSetting, 
+    checkGoalAchievement, 
+    showCelebrationDialog, 
+    setShowCelebrationDialog,
+    setGoalAchievementDate
+  } = useGoalSafe();
 
   useEffect(() => {
+    // ホーム画面に来たら目標設定モードを解除
+    setIsGoalSetting(false);
+    
+    // 30日達成チェック（デモ用に現在日付から30日前を設定）
+    const demoAchievementDate = new Date();
+    demoAchievementDate.setDate(demoAchievementDate.getDate() - 30);
+    setGoalAchievementDate(demoAchievementDate);
+    
+    // 達成判定とダイアログ表示
+    if (checkGoalAchievement()) {
+      setShowCelebrationDialog(true);
+    }
+    
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -169,6 +191,11 @@ export default function HomeScreen({navigation}: Props) {
 
     fetchData();
   }, []);
+
+  const handleCelebrationClose = () => {
+    setShowCelebrationDialog(false);
+    navigation.navigate('Done');
+  };
 
   const handleCardPress = (type: string) => {
     navigation.navigate('VitalData', {title: type});
@@ -381,6 +408,11 @@ export default function HomeScreen({navigation}: Props) {
         onSave={handleSaveVitalData}
         title={selectedVitalType}
         initialValue=""
+      />
+      
+      <CelebrationDialog
+        visible={showCelebrationDialog}
+        onClose={handleCelebrationClose}
       />
     </ScrollView>
   );
