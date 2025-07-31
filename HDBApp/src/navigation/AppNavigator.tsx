@@ -44,6 +44,8 @@ import PointsExchangeScreen from '../screens/PointsExchangeScreen'; // ポイン
 import StressCheckScreen from '../screens/StressCheckScreen'; // ストレスチェック画面
 import StressCheckAnswerScreen from '../screens/StressCheckAnswerScreen'; // ストレスチェック回答画面
 import StressCheckResultScreen from '../screens/StressCheckResultScreen'; // ストレスチェック結果画面
+import EventScreen from '../screens/EventScreen'; // イベント画面
+import PersonalRankingScreen from '../screens/PersonalRankingScreen'; // 個人ランキング画面
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -96,6 +98,7 @@ export type RootStackParamList = {
   PointsExchange: undefined; // ポイント交換画面
   StressCheckAnswer: {checkId: string; title: string}; // ストレスチェック回答
   StressCheckResult: {checkId: string; title: string; answers?: {[key: string]: number}}; // ストレスチェック結果
+  PersonalRanking: {eventId: string; eventTitle: string}; // 個人ランキング画面
 };
 
 export type MainDrawerParamList = {
@@ -113,6 +116,7 @@ export type MainDrawerParamList = {
   PrivacyPolicy: undefined; // 追加
   OpenSourceLicenses: undefined; // 追加
   DataDeletion: undefined; // 追加
+  Event: undefined; // イベント画面
   StressCheck: undefined; // ストレスチェック画面
   Points: undefined; // ポイント画面
   Logout: undefined; // 追加
@@ -222,6 +226,11 @@ function MainDrawer() {
         name="DataDeletion"
         component={DataDeletionScreen}
         options={{title: 'データ削除について'}}
+      />
+      <Drawer.Screen
+        name="Event"
+        component={EventScreen}
+        options={{title: 'イベント'}}
       />
       <Drawer.Screen
         name="StressCheck"
@@ -480,6 +489,18 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: 'ストレスチェック結果',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="PersonalRanking"
+          component={PersonalRankingScreen}
+          options={{
+            headerShown: true,
+            title: '個人ランキング',
             headerStyle: {
               backgroundColor: '#FF8C00',
             },
