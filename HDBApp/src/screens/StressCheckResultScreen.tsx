@@ -24,6 +24,7 @@ interface StressData {
 const StressCheckResultScreen: React.FC<Props> = ({navigation, route}) => {
   const {checkId, title} = route.params;
   const [activeTab, setActiveTab] = useState<MenuTab>('graph');
+  const [menuVisible, setMenuVisible] = useState(false);
 
   // ダミーデータ（実際は回答から計算）
   const stressData: StressData[] = [
@@ -154,7 +155,7 @@ const StressCheckResultScreen: React.FC<Props> = ({navigation, route}) => {
         return (
           <TouchableOpacity
             style={styles.listButton}
-            onPress={() => navigation.navigate('StressCheck')}
+            onPress={() => navigation.goBack()}
             activeOpacity={0.8}>
             <Text style={styles.listButtonText}>アンケート一覧へ戻る</Text>
           </TouchableOpacity>
@@ -236,52 +237,72 @@ const StressCheckResultScreen: React.FC<Props> = ({navigation, route}) => {
     }
   };
 
+  const handleMenuSelect = (tab: MenuTab) => {
+    setActiveTab(tab);
+    setMenuVisible(false);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.menuContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setMenuVisible(!menuVisible)}
+          activeOpacity={0.8}>
+          <View style={styles.hamburgerIcon}>
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+            <View style={styles.hamburgerLine} />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{title}</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      {menuVisible && (
+        <View style={styles.dropdown}>
           <TouchableOpacity
-            style={[styles.menuItem, activeTab === 'list' && styles.activeMenuItem]}
-            onPress={() => setActiveTab('list')}
+            style={[styles.dropdownItem, activeTab === 'list' && styles.activeDropdownItem]}
+            onPress={() => handleMenuSelect('list')}
             activeOpacity={0.8}>
-            <Text style={[styles.menuText, activeTab === 'list' && styles.activeMenuText]}>
+            <Text style={[styles.dropdownText, activeTab === 'list' && styles.activeDropdownText]}>
               一覧表示
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.menuItem, activeTab === 'graph' && styles.activeMenuItem]}
-            onPress={() => setActiveTab('graph')}
+            style={[styles.dropdownItem, activeTab === 'graph' && styles.activeDropdownItem]}
+            onPress={() => handleMenuSelect('graph')}
             activeOpacity={0.8}>
-            <Text style={[styles.menuText, activeTab === 'graph' && styles.activeMenuText]}>
+            <Text style={[styles.dropdownText, activeTab === 'graph' && styles.activeDropdownText]}>
               グラフ
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.menuItem, activeTab === 'advice' && styles.activeMenuItem]}
-            onPress={() => setActiveTab('advice')}
+            style={[styles.dropdownItem, activeTab === 'advice' && styles.activeDropdownItem]}
+            onPress={() => handleMenuSelect('advice')}
             activeOpacity={0.8}>
-            <Text style={[styles.menuText, activeTab === 'advice' && styles.activeMenuText]}>
+            <Text style={[styles.dropdownText, activeTab === 'advice' && styles.activeDropdownText]}>
               アドバイス
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.menuItem, activeTab === 'evaluation' && styles.activeMenuItem]}
-            onPress={() => setActiveTab('evaluation')}
+            style={[styles.dropdownItem, activeTab === 'evaluation' && styles.activeDropdownItem]}
+            onPress={() => handleMenuSelect('evaluation')}
             activeOpacity={0.8}>
-            <Text style={[styles.menuText, activeTab === 'evaluation' && styles.activeMenuText]}>
+            <Text style={[styles.dropdownText, activeTab === 'evaluation' && styles.activeDropdownText]}>
               評価
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.menuItem, activeTab === 'answers' && styles.activeMenuItem]}
-            onPress={() => setActiveTab('answers')}
+            style={[styles.dropdownItem, activeTab === 'answers' && styles.activeDropdownItem]}
+            onPress={() => handleMenuSelect('answers')}
             activeOpacity={0.8}>
-            <Text style={[styles.menuText, activeTab === 'answers' && styles.activeMenuText]}>
+            <Text style={[styles.dropdownText, activeTab === 'answers' && styles.activeDropdownText]}>
               回答結果
             </Text>
           </TouchableOpacity>
-        </ScrollView>
-      </View>
+        </View>
+      )}
 
       <ScrollView style={styles.content}>
         {renderContent()}
@@ -295,7 +316,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F5F5F5',
   },
-  menuContainer: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -305,23 +328,59 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  menuItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 12,
-    borderRadius: 20,
-    backgroundColor: '#F0F0F0',
+  menuButton: {
+    padding: 8,
   },
-  activeMenuItem: {
-    backgroundColor: '#007AFF',
+  hamburgerIcon: {
+    width: 24,
+    height: 24,
+    justifyContent: 'space-around',
   },
-  menuText: {
-    fontSize: 14,
-    color: '#666666',
-    fontWeight: '500',
+  hamburgerLine: {
+    width: 24,
+    height: 2,
+    backgroundColor: '#333333',
   },
-  activeMenuText: {
-    color: '#FFFFFF',
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  activeDropdownItem: {
+    backgroundColor: '#F0F8FF',
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: '#333333',
+  },
+  activeDropdownText: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
