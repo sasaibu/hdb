@@ -12,10 +12,10 @@ import {
 } from '../navigation/AppNavigator';
 import BottomNavigation from '../components/BottomNavigation';
 import HomeScreen from './HomeScreen';
-import GoalContinuationScreen from './GoalContinuationScreen';
-import HealthCheckScreen from './HealthCheckScreen';
+import HealthCheckupScreen from './HealthCheckupScreen';
 import RecordScreen from './RecordScreen';
 import NotificationHistoryScreen from './NotificationHistoryScreen';
+import PulseSurveyListScreen from './PulseSurveyListScreen';
 
 type MainTabScreenNavigationProp = CompositeNavigationProp<
   DrawerNavigationProp<MainDrawerParamList, 'Home'>,
@@ -32,18 +32,9 @@ export default function MainTabScreen({ navigation }: Props) {
   const renderContent = () => {
     switch (activeTab) {
       case 'health-check':
-        return <HealthCheckScreen />;
+        return <HealthCheckupScreen navigation={navigation as any} />;
       case 'pulse-survey':
-        return (
-          <GoalContinuationScreen
-            navigation={navigation as any}
-            route={{
-              key: 'GoalContinuation',
-              name: 'GoalContinuation',
-              params: undefined,
-            }}
-          />
-        );
+        return <PulseSurveyListScreen navigation={navigation as any} />;
       case 'record':
         return <RecordScreen />;
       case 'notifications':

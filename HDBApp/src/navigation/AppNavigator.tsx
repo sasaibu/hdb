@@ -46,6 +46,14 @@ import StressCheckAnswerScreen from '../screens/StressCheckAnswerScreen'; // ス
 import StressCheckResultScreen from '../screens/StressCheckResultScreen'; // ストレスチェック結果画面
 import EventScreen from '../screens/EventScreen'; // イベント画面
 import PersonalRankingScreen from '../screens/PersonalRankingScreen'; // 個人ランキング画面
+import HowToUseScreen from '../screens/HowToUseScreen'; // アプリの使い方画面
+import FAQScreen from '../screens/FAQScreen'; // よくあるご質問画面
+import HealthCheckupScreen from '../screens/HealthCheckupScreen'; // 健診情報画面
+import HealthCheckupDetailScreen from '../screens/HealthCheckupDetailScreen'; // 健診詳細画面
+import DiseasePredictionScreen from '../screens/DiseasePredictionScreen'; // 疾病予測画面
+import PulseSurveyScreen from '../screens/PulseSurveyScreen'; // パルスサーベイ画面
+import PulseSurveyResultScreen from '../screens/PulseSurveyResultScreen'; // パルスサーベイ結果画面
+import PulseSurveyListScreen from '../screens/PulseSurveyListScreen'; // パルスサーベイ一覧画面
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -60,6 +68,17 @@ export type RootStackParamList = {
   NotificationHistory: undefined; // 追加
   OpenSourceLicenses: undefined; // 追加
   GoalInput: undefined; // 追加
+  HealthCheckup: undefined; // 健診情報画面
+  HealthCheckupDetail: {checkupId: string}; // 健診詳細画面
+  DiseasePrediction: undefined; // 疾病予測画面
+  PulseSurvey: undefined; // パルスサーベイ画面
+  PulseSurveyResult: {
+    surveyId: string;
+    answers: Array<{questionId: string; value: number}>;
+    questions: Array<{id: string; text: string; category: string}>;
+    completedAt: string;
+  }; // パルスサーベイ結果画面
+  PulseSurveyList: undefined; // パルスサーベイ一覧画面
   GoalNotification: {
     goalType?: string;
     goalPrinciple1?: string;
@@ -103,25 +122,25 @@ export type RootStackParamList = {
 
 export type MainDrawerParamList = {
   Home: undefined;
-  Profile: undefined;
-  Settings: undefined;
-  Notifications: undefined;
-  MyPage: undefined; // 追加
-  Backup: undefined;
-  Restore: undefined;
-  DataMigrationLogin: undefined; // 追加
-  LinkedServicesSettings: undefined; // 追加
-  Notice: undefined; // 追加
-  Terms: undefined; // 追加
-  PrivacyPolicy: undefined; // 追加
-  OpenSourceLicenses: undefined; // 追加
-  DataDeletion: undefined; // 追加
-  Event: undefined; // イベント画面
-  StressCheck: undefined; // ストレスチェック画面
-  Points: undefined; // ポイント画面
-  Logout: undefined; // 追加
-  GoalSetting: undefined; // 追加
-  // DataMigration: undefined; // 削除
+  Notice: undefined; // お知らせ
+  MyPage: undefined; // マイページ
+  LinkedServicesSettings: undefined; // 連携サービス設定
+  Notifications: undefined; // 通知設定
+  DataMigrationLogin: undefined; // データ移行
+  Terms: undefined; // 利用規約
+  PrivacyPolicy: undefined; // プライバシーポリシー
+  OpenSourceLicenses: undefined; // オープンソースライセンス
+  HowToUse: undefined; // アプリの使い方
+  FAQ: undefined; // よくあるご質問
+  Backup: undefined; // DBバックアップ
+  Restore: undefined; // DBリストア
+  HealthCheckup: undefined; // 健診
+  DataDeletion: undefined; // データ削除について
+  Event: undefined; // イベント
+  StressCheck: undefined; // ストレスチェック
+  Points: undefined; // ポイント
+  Logout: undefined; // ログアウト
+  // 削除: Profile, Settings, GoalSetting
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -151,41 +170,6 @@ function MainDrawer() {
         options={{title: 'ホーム'}}
       />
       <Drawer.Screen
-        name="Profile"
-        component={MyPageScreen}
-        options={{title: 'マイページ'}}
-      />
-      <Drawer.Screen
-        name="Settings"
-        component={VitalListScreen}
-        options={{title: 'バイタル一覧'}}
-      />
-      <Drawer.Screen
-        name="Notifications"
-        component={NotificationSettingsScreen}
-        options={{title: '通知設定'}}
-      />
-      <Drawer.Screen
-        name="Backup"
-        component={BackupScreen}
-        options={{title: 'DBバックアップ'}}
-      />
-      <Drawer.Screen
-        name="Restore"
-        component={RestoreScreen}
-        options={{title: 'DBリストア'}}
-      />
-      <Drawer.Screen
-        name="DataMigrationLogin" // データ移行ログイン画面へ変更
-        component={DataMigrationLoginScreen}
-        options={{title: 'データ移行'}}
-      />
-      <Drawer.Screen
-        name="LinkedServicesSettings" // 追加
-        component={LinkedServicesSettingsScreen}
-        options={{title: '連携サービス設定'}}
-      />
-      <Drawer.Screen
         name="Notice"
         component={NoticeScreen}
         options={({navigation}) => ({
@@ -208,6 +192,26 @@ function MainDrawer() {
         })}
       />
       <Drawer.Screen
+        name="MyPage"
+        component={MyPageScreen}
+        options={{title: 'マイページ'}}
+      />
+      <Drawer.Screen
+        name="LinkedServicesSettings"
+        component={LinkedServicesSettingsScreen}
+        options={{title: '連携サービス設定'}}
+      />
+      <Drawer.Screen
+        name="Notifications"
+        component={NotificationSettingsScreen}
+        options={{title: '通知設定'}}
+      />
+      <Drawer.Screen
+        name="DataMigrationLogin"
+        component={DataMigrationLoginScreen}
+        options={{title: 'データ移行'}}
+      />
+      <Drawer.Screen
         name="Terms"
         component={TermsScreen}
         options={{title: '利用規約'}}
@@ -223,9 +227,34 @@ function MainDrawer() {
         options={{title: 'オープンソースライセンス'}}
       />
       <Drawer.Screen
+        name="HowToUse"
+        component={HowToUseScreen}
+        options={{title: 'アプリの使い方'}}
+      />
+      <Drawer.Screen
+        name="FAQ"
+        component={FAQScreen}
+        options={{title: 'よくあるご質問'}}
+      />
+      <Drawer.Screen
+        name="Backup"
+        component={BackupScreen}
+        options={{title: 'DBバックアップ'}}
+      />
+      <Drawer.Screen
+        name="Restore"
+        component={RestoreScreen}
+        options={{title: 'DBリストア'}}
+      />
+      <Drawer.Screen
         name="DataDeletion"
         component={DataDeletionScreen}
         options={{title: 'データ削除について'}}
+      />
+      <Drawer.Screen
+        name="HealthCheckup"
+        component={HealthCheckupScreen}
+        options={{title: '健診'}}
       />
       <Drawer.Screen
         name="Event"
@@ -246,11 +275,6 @@ function MainDrawer() {
         name="Logout"
         component={LogoutScreen}
         options={{title: 'ログアウト'}}
-      />
-      <Drawer.Screen
-        name="GoalSetting"
-        component={GoalSettingScreen}
-        options={{title: '目標設定'}}
       />
     </Drawer.Navigator>
   );
@@ -501,6 +525,78 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: '個人ランキング',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="HealthCheckup"
+          component={HealthCheckupScreen}
+          options={{
+            headerShown: true,
+            title: '健診情報',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="HealthCheckupDetail"
+          component={HealthCheckupDetailScreen}
+          options={{
+            headerShown: true,
+            title: '健診詳細',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="DiseasePrediction"
+          component={DiseasePredictionScreen}
+          options={{
+            headerShown: true,
+            title: '疾病予測',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="PulseSurvey"
+          component={PulseSurveyScreen}
+          options={{
+            headerShown: true,
+            title: 'パルスサーベイ',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="PulseSurveyResult"
+          component={PulseSurveyResultScreen}
+          options={{
+            headerShown: true,
+            title: 'パルスサーベイ結果',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="PulseSurveyList"
+          component={PulseSurveyListScreen}
+          options={{
+            headerShown: true,
+            title: 'パルスサーベイ一覧',
             headerStyle: {
               backgroundColor: '#FF8C00',
             },

@@ -124,8 +124,6 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
 
-
-
   inputPlaceholder: {
     fontSize: 16,
     color: '#999999',
