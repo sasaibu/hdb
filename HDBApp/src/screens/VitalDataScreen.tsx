@@ -33,7 +33,7 @@ interface VitalListItem {
   value: string;
 }
 
-const VitalDataScreen = ({route}: Props) => {
+const VitalDataScreen = ({route, navigation}: Props) => {
   const {title} = route.params;
   const [filter, setFilter] = useState('今週');
   const [modalVisible, setModalVisible] = useState(false);
@@ -314,23 +314,42 @@ const VitalDataScreen = ({route}: Props) => {
     );
   };
 
-  const renderItem = ({item}: {item: VitalListItem}) => (
-    <View style={styles.listItem}>
-      <TouchableOpacity 
-        style={styles.itemContent}
-        onPress={() => handleEdit(item)}>
-        <View>
-          <Text style={styles.itemDate}>{item.date}</Text>
-          <Text style={styles.itemValue}>{item.value}</Text>
-        </View>
-      </TouchableOpacity>
-      <View style={styles.itemActions}>
-        <TouchableOpacity onPress={() => handleDelete(item.id)}>
-          <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
+  const renderItem = ({item}: {item: VitalListItem}) => {
+    const handleItemPress = () => {
+      // 歩数と心拍数は詳細画面へ遷移
+      if (title === '歩数' || title === '心拍数') {
+        navigation.navigate('VitalDetail', {
+          vitalType: title,
+          date: item.date,
+          recordId: item.id,
+        });
+      } else {
+        // その他は編集モーダル表示
+        handleEdit(item);
+      }
+    };
+
+    return (
+      <View style={styles.listItem}>
+        <TouchableOpacity 
+          style={styles.itemContent}
+          onPress={handleItemPress}>
+          <View style={styles.itemTextContainer}>
+            <Text style={styles.itemDate}>{item.date}</Text>
+            <Text style={styles.itemValue}>{item.value}</Text>
+          </View>
+          {(title === '歩数' || title === '心拍数') && (
+            <Text style={styles.itemArrow}>›</Text>
+          )}
         </TouchableOpacity>
+        <View style={styles.itemActions}>
+          <TouchableOpacity onPress={() => handleDelete(item.id)}>
+            <Text style={[styles.actionText, styles.deleteText]}>削除</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -494,6 +513,16 @@ const styles = StyleSheet.create({
   },
   itemContent: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemTextContainer: {
+    flex: 1,
+  },
+  itemArrow: {
+    fontSize: 20,
+    color: '#999',
+    marginLeft: 8,
   },
   actionText: {
     color: '#007AFF',
