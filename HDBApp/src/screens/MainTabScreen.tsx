@@ -13,10 +13,10 @@ import {
 } from '../navigation/AppNavigator';
 import BottomNavigation from '../components/BottomNavigation';
 import HomeScreen from './HomeScreen';
-import GoalContinuationScreen from './GoalContinuationScreen';
-import HealthCheckScreen from './HealthCheckScreen';
+import HealthCheckupScreen from './HealthCheckupScreen';
 import RecordScreen from './RecordScreen';
 import NotificationHistoryScreen from './NotificationHistoryScreen';
+import PulseSurveyListScreen from './PulseSurveyListScreen';
 import PulseSurveyPlaceholderScreen from './PulseSurveyPlaceholderScreen';
 import HealthCheckPlaceholderScreen from './HealthCheckPlaceholderScreen';
 
@@ -40,7 +40,10 @@ export default function MainTabScreen({ navigation }: Props) {
   const renderContent = () => {
     switch (activeTab) {
       case 'health-check':
-        return <HealthCheckScreen />;
+        return <HealthCheckupScreen navigation={navigation as any} />;
+      case 'pulse-survey':
+        return <PulseSurveyListScreen navigation={navigation as any} />;
+        //return <HealthCheckScreen />;
       case 'pulse-survey':
         return <PulseSurveyPlaceholderScreen />;
       case 'record':

@@ -137,6 +137,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     minHeight: 80,
   },
+
   inputPlaceholder: {
     fontSize: 16,
     color: '#999999',
