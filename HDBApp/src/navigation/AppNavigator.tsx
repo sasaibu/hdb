@@ -289,7 +289,22 @@ export default function AppNavigator() {
         initialRouteName="Splash"
         screenOptions={{headerShown: false}}>
         <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen 
+          name="Login" 
+          component={LoginScreen} 
+          options={{
+            headerShown: true,
+            title: '',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+            headerTitleAlign: 'center',
+          }}
+        />
         <Stack.Screen name="Main" component={MainDrawer} />
         <Stack.Screen
           name="WebView"
@@ -599,6 +614,12 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: 'パルスサーベイ一覧',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
         <Stack.Screen      
           name="Done"
           component={DoneScreen}
