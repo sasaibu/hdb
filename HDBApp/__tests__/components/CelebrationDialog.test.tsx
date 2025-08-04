@@ -1,0 +1,28 @@
+import React from 'react';
+import { render, fireEvent } from '@testing-library/react-native';
+import CelebrationDialog from '../../src/components/CelebrationDialog';
+
+describe('CelebrationDialog', () => {
+  it('renders correctly when visible', () => {
+    const { getByText } = render(
+      <CelebrationDialog visible={true} onClose={() => {}} />
+    );
+    expect(getByText('目標達成おめでとうございます！')).toBeDefined();
+  });
+
+  it('does not render when not visible', () => {
+    const { queryByText } = render(
+      <CelebrationDialog visible={false} onClose={() => {}} />
+    );
+    expect(queryByText('目標達成おめでとうございます！')).toBeNull();
+  });
+
+  it('calls onClose when the close button is pressed', () => {
+    const mockOnClose = jest.fn();
+    const { getByText } = render(
+      <CelebrationDialog visible={true} onClose={mockOnClose} />
+    );
+    fireEvent.press(getByText('閉じる'));
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
+});

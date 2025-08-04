@@ -5,11 +5,12 @@ interface CardProps {
   children: React.ReactNode;
   style?: ViewStyle;
   padding?: number;
+  testID?: string; // Add testID prop
 }
 
-export default function Card({children, style, padding = 16}: CardProps) {
+export default function Card({children, style, padding = 16, testID}: CardProps) {
   return (
-    <View style={[styles.card, {padding}, style]}>
+    <View style={[styles.card, {padding}, style]} testID={testID}>
       {children}
     </View>
   );

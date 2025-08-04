@@ -4,12 +4,13 @@ import theme from '../styles/theme';
 
 interface Props {
   onPress: () => void;
+  title: string; // Add title prop
 }
 
-const ManualInputButton = ({onPress}: Props) => {
+const ManualInputButton = ({onPress, title}: Props) => {
   return (
     <TouchableOpacity style={styles.button} onPress={onPress}>
-      <Text style={styles.buttonText}>手動入力</Text>
+      <Text style={styles.buttonText}>{title}</Text>
     </TouchableOpacity>
   );
 };

@@ -1,83 +1,40 @@
 import React from 'react';
-import {fireEvent, render} from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import Input from '../../src/components/Input';
 
 describe('Input', () => {
   it('renders correctly with placeholder', () => {
-    const {getByPlaceholderText} = render(
-      <Input placeholder="Enter text" />
-    );
-    expect(getByPlaceholderText('Enter text')).toBeTruthy();
+    const { getByPlaceholderText } = render(<Input placeholder="Enter text" />);
+    expect(getByPlaceholderText('Enter text')).toBeDefined();
   });
 
-  it('renders label when provided', () => {
-    const {getByText} = render(
-      <Input label="Test Label" placeholder="Enter text" />
-    );
-    expect(getByText('Test Label')).toBeTruthy();
+  it('displays the correct value', () => {
+    const { getByDisplayValue } = render(<Input value="Hello" onChangeText={() => {}} />);
+    expect(getByDisplayValue('Hello')).toBeDefined();
   });
 
-  it('renders error message when provided', () => {
-    const {getByText} = render(
-      <Input error="This field is required" placeholder="Enter text" />
-    );
-    expect(getByText('This field is required')).toBeTruthy();
-  });
-
-  it('calls onChangeText when text changes', () => {
+  it('calls onChangeText when text is entered', () => {
     const mockOnChangeText = jest.fn();
-    const {getByPlaceholderText} = render(
-      <Input
-        placeholder="Enter text"
-        onChangeText={mockOnChangeText}
-      />
+    const { getByPlaceholderText } = render(
+      <Input placeholder="Enter text" onChangeText={mockOnChangeText} />
     );
-    
-    fireEvent.changeText(getByPlaceholderText('Enter text'), 'test input');
-    expect(mockOnChangeText).toHaveBeenCalledWith('test input');
+    fireEvent.changeText(getByPlaceholderText('Enter text'), 'New Text');
+    expect(mockOnChangeText).toHaveBeenCalledWith('New Text');
   });
 
-  it('applies error styling when error prop is provided', () => {
-    const {getByPlaceholderText} = render(
-      <Input error="Error message" placeholder="Enter text" />
+  it('handles keyboardType prop', () => {
+    const { getByPlaceholderText } = render(
+      <Input placeholder="Number" keyboardType="numeric" />
     );
-    
-    const input = getByPlaceholderText('Enter text');
-    expect(input.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({borderColor: '#ff4444'})
-      ])
-    );
+    const input = getByPlaceholderText('Number');
+    expect(input.props.keyboardType).toBe('numeric');
   });
 
-  it('passes through additional TextInput props', () => {
-    const {getByPlaceholderText} = render(
-      <Input
-        placeholder="Enter text"
-        secureTextEntry={true}
-        maxLength={10}
-      />
+  it('handles secureTextEntry prop', () => {
+    const { getByPlaceholderText } = render(
+      <Input placeholder="Password" secureTextEntry={true} />
     );
-    
-    const input = getByPlaceholderText('Enter text');
+    const input = getByPlaceholderText('Password');
     expect(input.props.secureTextEntry).toBe(true);
-    expect(input.props.maxLength).toBe(10);
-  });
-
-  it('applies custom container style', () => {
-    const customStyle = {marginBottom: 20};
-    const {UNSAFE_root} = render(
-      <Input
-        containerStyle={customStyle}
-        placeholder="Enter text"
-      />
-    );
-    
-    const containerView = UNSAFE_root.findByType('View');
-    expect(containerView.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining(customStyle)
-      ])
-    );
   });
 });

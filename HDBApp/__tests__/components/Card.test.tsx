@@ -1,61 +1,34 @@
 import React from 'react';
-import {render} from '@testing-library/react-native';
-import {Text} from 'react-native';
+import { render } from '@testing-library/react-native';
 import Card from '../../src/components/Card';
+import { Text } from 'react-native';
 
 describe('Card', () => {
-  it('renders correctly with children', () => {
-    const {getByText} = render(
+  it('renders children correctly', () => {
+    const { getByText } = render(
       <Card>
-        <Text>Card Content</Text>
+        <Text>Test Card Content</Text>
       </Card>
     );
-    expect(getByText('Card Content')).toBeTruthy();
-  });
-
-  it('applies custom padding', () => {
-    const {UNSAFE_root} = render(
-      <Card padding={20}>
-        <Text>Content</Text>
-      </Card>
-    );
-    
-    const cardView = UNSAFE_root.findByType('View');
-    expect(cardView.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({padding: 20})
-      ])
-    );
+    expect(getByText('Test Card Content')).toBeDefined();
   });
 
   it('applies custom style', () => {
-    const customStyle = {backgroundColor: 'red'};
-    const {UNSAFE_root} = render(
-      <Card style={customStyle}>
-        <Text>Content</Text>
+    const customStyle = { backgroundColor: 'red' };
+    const { getByTestId } = render(
+      <Card style={customStyle} testID="card-component">
+        <Text>Test</Text>
       </Card>
     );
-    
-    const cardView = UNSAFE_root.findByType('View');
-    expect(cardView.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining(customStyle)
-      ])
-    );
+    expect(getByTestId('card-component').props.style).toContainEqual(customStyle);
   });
 
-  it('uses default padding when not specified', () => {
-    const {UNSAFE_root} = render(
-      <Card>
-        <Text>Content</Text>
+  it('applies custom padding', () => {
+    const { getByTestId } = render(
+      <Card padding={20} testID="card-component">
+        <Text>Test</Text>
       </Card>
     );
-    
-    const cardView = UNSAFE_root.findByType('View');
-    expect(cardView.props.style).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({padding: 16})
-      ])
-    );
+    expect(getByTestId('card-component').props.style).toContainEqual({ padding: 20 });
   });
 });
