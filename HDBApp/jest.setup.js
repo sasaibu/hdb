@@ -148,6 +148,15 @@ jest.mock('react-native', () => {
       getInitialURL: jest.fn(() => Promise.resolve(null)),
     },
     
+    // NativeModules
+    NativeModules: {
+      NotificationModule: {
+        showNotification: jest.fn(),
+        cancelNotification: jest.fn(),
+        cancelAllNotifications: jest.fn(),
+      },
+    },
+    
     // AppState
     AppState: {
       currentState: 'active',
@@ -221,6 +230,55 @@ jest.mock('react-native-sqlite-2', () => {
     })),
   };
 });
+
+// Mock react-native-gesture-handler
+jest.mock('react-native-gesture-handler', () => {
+  const React = require('react');
+  return {
+    GestureHandlerRootView: React.forwardRef((props, ref) => {
+      const {View} = require('react-native');
+      return React.createElement(View, {...props, ref});
+    }),
+    PanGestureHandler: React.forwardRef((props, ref) => {
+      const {View} = require('react-native');  
+      return React.createElement(View, {...props, ref});
+    }),
+    TapGestureHandler: React.forwardRef((props, ref) => {
+      const {View} = require('react-native');
+      return React.createElement(View, {...props, ref});
+    }),
+    FlingGestureHandler: React.forwardRef((props, ref) => {
+      const {View} = require('react-native');
+      return React.createElement(View, {...props, ref});
+    }),
+    State: {
+      BEGAN: 'BEGAN',
+      FAILED: 'FAILED',
+      CANCELLED: 'CANCELLED',
+      ACTIVE: 'ACTIVE',
+      END: 'END',
+    },
+    Directions: {
+      UP: 'UP',
+      DOWN: 'DOWN',
+      LEFT: 'LEFT',
+      RIGHT: 'RIGHT',
+    }
+  };
+});
+
+// Mock react-native-keychain
+jest.doMock('react-native-keychain', () => ({
+  setGenericPassword: jest.fn(() => Promise.resolve(true)),
+  getGenericPassword: jest.fn(() => Promise.resolve({ username: 'test', password: 'test' })),
+  resetGenericPassword: jest.fn(() => Promise.resolve(true)),
+  hasInternetCredentials: jest.fn(() => Promise.resolve(false)),
+  setInternetCredentials: jest.fn(() => Promise.resolve()),
+  getInternetCredentials: jest.fn(() => Promise.resolve(false)),
+  resetInternetCredentials: jest.fn(() => Promise.resolve()),
+  requestSharedWebCredentials: jest.fn(() => Promise.resolve(null)),
+  setSharedWebCredentials: jest.fn(() => Promise.resolve()),
+}), {virtual: true});
 
 // Global test timeout
 jest.setTimeout(10000);

@@ -64,18 +64,18 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>申し訳ございません</Text>
-          <Text style={styles.message}>
+        <View style={styles.container} testID="error-boundary-container">
+          <Text style={styles.title} testID="error-title">申し訳ございません</Text>
+          <Text style={styles.message} testID="error-message">
             予期しないエラーが発生しました。{'\n'}
             アプリを再起動してお試しください。
           </Text>
           {__DEV__ && this.state.error && (
-            <Text style={styles.errorDetails}>
+            <Text style={styles.errorDetails} testID="error-details">
               {this.state.error.toString()}
             </Text>
           )}
-          <TouchableOpacity style={styles.button} onPress={this.handleReload}>
+          <TouchableOpacity style={styles.button} onPress={this.handleReload} testID="retry-button">
             <Text style={styles.buttonText}>再試行</Text>
           </TouchableOpacity>
         </View>

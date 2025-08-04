@@ -80,7 +80,22 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
 }));
 
-jest.mock('../../src/services/NotificationService');
+jest.mock('../../src/services/NotificationService', () => {
+  const mockInstance = {
+    getSettings: jest.fn(),
+    updateSettings: jest.fn(),
+    requestPermission: jest.fn(),
+    sendImmediateNotification: jest.fn(),
+  };
+
+  return {
+    __esModule: true,
+    default: {
+      getInstance: jest.fn(() => mockInstance),
+    },
+    NotificationSettings: {},
+  };
+});
 
 jest.mock('../../src/services/NativeNotificationModule', () => ({
   requestPermission: jest.fn(),
@@ -101,18 +116,12 @@ describe('NotificationSettingsScreen', () => {
     goBack: jest.fn(),
   };
 
-  const mockNotificationService = {
-    getSettings: jest.fn(),
-    updateSettings: jest.fn(),
-    requestPermission: jest.fn(),
-    sendImmediateNotification: jest.fn(),
-    getInstance: jest.fn(),
-  };
+  let mockNotificationService: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     (useNavigation as jest.Mock).mockReturnValue(mockNavigation);
-    (NotificationService.getInstance as jest.Mock).mockReturnValue(mockNotificationService);
+    mockNotificationService = (NotificationService.getInstance as jest.Mock)();
     
     // Default settings with new notification types
     mockNotificationService.getSettings.mockResolvedValue({
