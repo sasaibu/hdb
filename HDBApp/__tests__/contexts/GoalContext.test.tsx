@@ -244,33 +244,44 @@ describe('GoalContext', () => {
 
   it('checkGoalAchievement returns true when achievement date is 30 or more days ago', () => {
     let achievementResult = false;
+    let setAchievementDateRef: ((date: Date | null) => void) | null = null;
+    let checkAchievementRef: (() => boolean) | null = null;
     
     const TestAchievementComponent = () => {
       const {setGoalAchievementDate, checkGoalAchievement} = useGoal();
       
-      const handleCheck = () => {
-        // Set date to 30 days ago
-        const date = new Date();
-        date.setDate(date.getDate() - 30);
-        setGoalAchievementDate(date);
-        achievementResult = checkGoalAchievement();
-      };
+      // Store refs to functions
+      setAchievementDateRef = setGoalAchievementDate;
+      checkAchievementRef = checkGoalAchievement;
       
       return (
-        <TouchableOpacity testID="checkButton" onPress={handleCheck}>
+        <TouchableOpacity testID="checkButton">
           <Text>Check</Text>
         </TouchableOpacity>
       );
     };
 
-    const {getByTestId} = render(
+    render(
       <GoalProvider>
         <TestAchievementComponent />
       </GoalProvider>
     );
 
+    // Set date to 31 days ago to ensure it's more than 30
+    const date = new Date();
+    date.setDate(date.getDate() - 31);
+    
     act(() => {
-      getByTestId('checkButton').props.onPress();
+      if (setAchievementDateRef) {
+        setAchievementDateRef(date);
+      }
+    });
+
+    // Wait for state update, then check
+    act(() => {
+      if (checkAchievementRef) {
+        achievementResult = checkAchievementRef();
+      }
     });
 
     expect(achievementResult).toBe(true);

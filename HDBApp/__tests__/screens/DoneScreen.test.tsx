@@ -12,37 +12,35 @@ jest.mock('@react-navigation/native', () => ({
 
 // Mock theme
 jest.mock('../../src/styles/theme', () => ({
-  default: {
-    colors: {
-      background: {
-        primary: '#FFFFFF',
-        secondary: '#F5F5F5',
-      },
-      text: {
-        primary: '#333333',
-        secondary: '#666666',
-        inverse: '#FFFFFF',
-      },
-      primary: {
-        500: '#007AFF',
-        600: '#0056CC',
-      },
-      success: '#28A745',
-      border: {
-        light: '#E0E0E0',
-      },
+  colors: {
+    background: {
+      primary: '#FFFFFF',
+      secondary: '#F5F5F5',
     },
-    borderRadius: {
-      xl: 12,
+    text: {
+      primary: '#333333',
+      secondary: '#666666',
+      inverse: '#FFFFFF',
     },
-    shadow: {
-      md: {
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-      },
+    primary: {
+      500: '#007AFF',
+      600: '#0056CC',
+    },
+    success: '#28A745',
+    border: {
+      light: '#E0E0E0',
+    },
+  },
+  borderRadius: {
+    xl: 12,
+  },
+  shadow: {
+    md: {
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
     },
   },
 }));
