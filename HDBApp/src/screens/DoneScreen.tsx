@@ -77,6 +77,7 @@ const DoneScreen: React.FC = () => {
           style={styles.homeButton}
           onPress={handleBackToHome}
           activeOpacity={0.8}
+          testID="home-button"
         >
           <Text style={styles.homeButtonText}>ホームに戻る</Text>
         </TouchableOpacity>
