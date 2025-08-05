@@ -17,6 +17,7 @@ jest.mock('@react-navigation/native', () => {
   const actualNav = jest.requireActual('@react-navigation/native');
   return {
     ...actualNav,
+    NavigationContainer: ({ children }) => children,
     useNavigation: () => ({
       navigate: jest.fn(),
       replace: jest.fn(),
@@ -29,6 +30,22 @@ jest.mock('@react-navigation/native', () => {
     useFocusEffect: jest.fn(),
   };
 });
+
+// Mock stack navigator
+jest.mock('@react-navigation/stack', () => ({
+  createStackNavigator: () => ({
+    Navigator: ({ children }) => children,
+    Screen: () => null,
+  }),
+}));
+
+// Mock drawer navigator
+jest.mock('@react-navigation/drawer', () => ({
+  createDrawerNavigator: () => ({
+    Navigator: ({ children }) => children,
+    Screen: () => null,
+  }),
+}));
 
 // Mock SafeAreaProvider
 jest.mock('react-native-safe-area-context', () => {
@@ -68,26 +85,60 @@ jest.mock('react-native', () => {
   
   // Create mock components that don't require actual React Native
   const mockComponent = (name) => React.forwardRef((props, ref) => {
+    const { children, ...restProps } = props;
     return React.createElement('View', {
-      ...props,
+      ...restProps,
       ref,
       testID: props.testID || name,
       'data-component': name
+    }, children);
+  });
+
+  // Special handling for Text component to render children
+  const TextComponent = React.forwardRef((props, ref) => {
+    const { children, ...restProps } = props;
+    return React.createElement('Text', {
+      ...restProps,
+      ref,
+      testID: props.testID || 'Text',
+      'data-component': 'Text'
+    }, children);
+  });
+
+  // Special handling for TextInput to support placeholder
+  const TextInputComponent = React.forwardRef((props, ref) => {
+    const { children, ...restProps } = props;
+    return React.createElement('TextInput', {
+      ...restProps,
+      ref,
+      testID: props.testID || 'TextInput',
+      'data-component': 'TextInput'
+    }, children);
+  });
+
+  // ActivityIndicator component
+  const ActivityIndicator = React.forwardRef((props, ref) => {
+    return React.createElement('ActivityIndicator', {
+      ...props,
+      ref,
+      testID: props.testID || 'ActivityIndicator',
+      'data-component': 'ActivityIndicator'
     });
   });
 
   return {
     // Basic components
     View: mockComponent('View'),
-    Text: mockComponent('Text'),
+    Text: TextComponent,
     ScrollView: mockComponent('ScrollView'),
     TouchableOpacity: mockComponent('TouchableOpacity'),
     TouchableHighlight: mockComponent('TouchableHighlight'),
     Pressable: mockComponent('Pressable'),
     Image: mockComponent('Image'),
-    TextInput: mockComponent('TextInput'),
+    TextInput: TextInputComponent,
     Switch: mockComponent('Switch'),
     Button: mockComponent('Button'),
+    ActivityIndicator: ActivityIndicator,
     
     // List components
     FlatList: React.forwardRef((props, ref) => {
@@ -163,6 +214,9 @@ jest.mock('react-native', () => {
       addEventListener: jest.fn(),
       removeEventListener: jest.fn(),
     },
+    
+    // Color scheme hook
+    useColorScheme: jest.fn(() => 'light'),
     
     // StyleSheet
     StyleSheet: {
@@ -279,6 +333,41 @@ jest.doMock('react-native-keychain', () => ({
   requestSharedWebCredentials: jest.fn(() => Promise.resolve(null)),
   setSharedWebCredentials: jest.fn(() => Promise.resolve()),
 }), {virtual: true});
+
+// Mock react-native-svg
+jest.doMock('react-native-svg', () => {
+  const React = require('react');
+  const mockComponent = (name) => React.forwardRef((props, ref) => 
+    React.createElement('View', { ...props, ref, testID: props.testID || name })
+  );
+  
+  return {
+    __esModule: true,
+    default: mockComponent('Svg'),
+    Svg: mockComponent('Svg'),
+    Circle: mockComponent('Circle'),
+    Ellipse: mockComponent('Ellipse'),
+    G: mockComponent('G'),
+    Text: mockComponent('SvgText'),
+    TSpan: mockComponent('TSpan'),
+    TextPath: mockComponent('TextPath'),
+    Path: mockComponent('Path'),
+    Polygon: mockComponent('Polygon'),
+    Polyline: mockComponent('Polyline'),
+    Line: mockComponent('Line'),
+    Rect: mockComponent('Rect'),
+    Use: mockComponent('Use'),
+    Image: mockComponent('SvgImage'),
+    Symbol: mockComponent('Symbol'),
+    Defs: mockComponent('Defs'),
+    LinearGradient: mockComponent('LinearGradient'),
+    RadialGradient: mockComponent('RadialGradient'),
+    Stop: mockComponent('Stop'),
+    ClipPath: mockComponent('ClipPath'),
+    Mask: mockComponent('Mask'),
+    Pattern: mockComponent('Pattern'),
+  };
+}, { virtual: true });
 
 // Global test timeout
 jest.setTimeout(10000);

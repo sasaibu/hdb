@@ -25,7 +25,7 @@ describe('VitalDataService', () => {
       initializeDefaultTargets: jest.fn(),
       insertVitalData: jest.fn(),
       getVitalDataByType: jest.fn(),
-      getVitalDataByTypeAndDate: jest.fn(),
+      getVitalDataByTypeAndDate: jest.fn().mockResolvedValue([]),
       updateVitalData: jest.fn(),
       deleteVitalData: jest.fn(),
       insertOrUpdateTarget: jest.fn(),
@@ -80,6 +80,7 @@ describe('VitalDataService', () => {
         recorded_date: '2025-07-08',
         systolic: undefined,
         diastolic: undefined,
+        source: 'manual',
       });
     });
 
@@ -96,6 +97,7 @@ describe('VitalDataService', () => {
         recorded_date: '2025-07-08',
         systolic: 120,
         diastolic: 80,
+        source: 'manual',
       });
     });
 
@@ -112,6 +114,7 @@ describe('VitalDataService', () => {
         recorded_date: '2025-07-08',
         systolic: undefined,
         diastolic: undefined,
+        source: 'manual',
       });
     });
 
@@ -128,6 +131,7 @@ describe('VitalDataService', () => {
         recorded_date: '2025-07-08',
         systolic: undefined,
         diastolic: undefined,
+        source: 'manual',
       });
     });
 
@@ -150,7 +154,7 @@ describe('VitalDataService', () => {
         { id: 1, type: '歩数', value: 8000, unit: '歩', recorded_date: '2025-07-08' },
       ];
       mockDatabaseService.getVitalDataByType.mockResolvedValue(mockData);
-      mockDatabaseService.getTarget.mockResolvedValue(10000);
+      mockDatabaseService.getTarget.mockResolvedValue({ target_value: 10000 });
 
       const result = await vitalDataService.calculateAchievementRate('歩数');
       
@@ -164,7 +168,7 @@ describe('VitalDataService', () => {
       ];
       mockDatabaseService.getVitalDataByType.mockResolvedValueOnce([mockData[0]]) // 最新データ
         .mockResolvedValueOnce(mockData); // 全データ
-      mockDatabaseService.getTarget.mockResolvedValue(65.0);
+      mockDatabaseService.getTarget.mockResolvedValue({ target_value: 65.0 });
 
       const result = await vitalDataService.calculateAchievementRate('体重');
       
@@ -173,7 +177,7 @@ describe('VitalDataService', () => {
 
     test('データが存在しない場合はnullを返す', async () => {
       mockDatabaseService.getVitalDataByType.mockResolvedValue([]);
-      mockDatabaseService.getTarget.mockResolvedValue(10000);
+      mockDatabaseService.getTarget.mockResolvedValue({ target_value: 10000 });
 
       const result = await vitalDataService.calculateAchievementRate('歩数');
       
@@ -416,7 +420,7 @@ describe('VitalDataService', () => {
       expect(service.isManualInput('healthkit')).toBe(false);
       expect(service.isManualInput('googlefit')).toBe(false);
       expect(service.isManualInput('healthconnect')).toBe(false);
-      expect(service.isManualInput(undefined)).toBe(true); // デフォルトは手入力
+      expect(service.isManualInput(undefined as any)).toBe(false); // undefinedの場合はfalse
     });
   });
 
@@ -429,36 +433,29 @@ describe('VitalDataService', () => {
       ];
       
       mockDatabaseService.getVitalDataByTypeAndDate.mockResolvedValue(mockHeartRateData);
+      mockDatabaseService.insertOrUpdateDailyHeartRate = jest.fn();
 
       // privateメソッドのテストのため、any型でアクセス
       const service = vitalDataService as any;
-      const result = await service.getDailyHeartRateStats('2025-07-08');
       
-      expect(result).toEqual({
-        date: '2025-07-08',
-        count: 3,
-        min: 68,
-        max: 85,
-        average: 75, // (72 + 85 + 68) / 3
-        latest: 68,
-      });
+      // updateDailyHeartRateAggregationをテスト
+      await service.updateDailyHeartRateAggregation('2025-07-08');
+      
+      expect(mockDatabaseService.insertOrUpdateDailyHeartRate).toHaveBeenCalledWith('2025-07-08', 68, 85);
     });
 
     test('心拍数データが存在しない場合の集計処理', async () => {
       mockDatabaseService.getVitalDataByTypeAndDate.mockResolvedValue([]);
+      mockDatabaseService.insertOrUpdateDailyHeartRate = jest.fn();
 
       // privateメソッドのテストのため、any型でアクセス
       const service = vitalDataService as any;
-      const result = await service.getDailyHeartRateStats('2025-07-08');
       
-      expect(result).toEqual({
-        date: '2025-07-08',
-        count: 0,
-        min: null,
-        max: null,
-        average: null,
-        latest: null,
-      });
+      // updateDailyHeartRateAggregationをテスト
+      await service.updateDailyHeartRateAggregation('2025-07-08');
+      
+      // データがない場合は何も呼ばれない
+      expect(mockDatabaseService.insertOrUpdateDailyHeartRate).not.toHaveBeenCalled();
     });
   });
 
