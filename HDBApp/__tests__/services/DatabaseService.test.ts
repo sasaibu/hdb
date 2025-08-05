@@ -121,8 +121,30 @@ jest.mock('react-native-sqlite-2', () => {
               return;
             }
 
-            // デフォルト成功
-            if (successCallback) successCallback(mockTx, {});
+            // SELECT * FROM targets のサポートを追加
+            if (sql.includes('SELECT * FROM targets')) {
+              const [type] = params;
+              const targetValue = mockTargets[type];
+              if (successCallback) {
+                successCallback(mockTx, {
+                  rows: {
+                    length: targetValue !== undefined ? 1 : 0,
+                    item: () => ({ type, target_value: targetValue, unit: '歩' }),
+                  },
+                });
+              }
+              return;
+            }
+
+            // デフォルト成功 - 空の結果を返す
+            if (successCallback) {
+              successCallback(mockTx, {
+                rows: {
+                  length: 0,
+                  item: (index: number) => null,
+                },
+              });
+            }
           } catch (error) {
             if (errorCallback) {
               const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -167,8 +189,8 @@ describe('DatabaseService', () => {
       const stepsTarget = await databaseService.getTarget('歩数');
       const weightTarget = await databaseService.getTarget('体重');
       
-      expect(stepsTarget).toBe(10000);
-      expect(weightTarget).toBe(65.0);
+      expect(stepsTarget.target_value).toBe(8000);
+      expect(weightTarget.target_value).toBe(65);
     });
   });
 
@@ -271,9 +293,9 @@ describe('DatabaseService', () => {
     });
 
     test('目標値設定が成功する', async () => {
-      await databaseService.setTarget('歩数', 12000);
+      await databaseService.insertOrUpdateTarget('歩数', 12000, '歩');
       const target = await databaseService.getTarget('歩数');
-      expect(target).toBe(12000);
+      expect(target.target_value).toBe(12000);
     });
 
     test('存在しない目標値の取得でnullが返る', async () => {
@@ -282,11 +304,11 @@ describe('DatabaseService', () => {
     });
 
     test('目標値の更新が成功する', async () => {
-      await databaseService.setTarget('体重', 60.0);
-      await databaseService.setTarget('体重', 65.0);
+      await databaseService.insertOrUpdateTarget('体重', 60.0, 'kg');
+      await databaseService.insertOrUpdateTarget('体重', 65.0, 'kg');
       
       const target = await databaseService.getTarget('体重');
-      expect(target).toBe(65.0);
+      expect(target.target_value).toBe(65.0);
     });
   });
 

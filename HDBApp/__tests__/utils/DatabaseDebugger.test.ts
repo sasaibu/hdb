@@ -292,7 +292,7 @@ describe('DatabaseDebugger', () => {
 
       await databaseDebugger.printDebugInfo();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('❌ デバッグ情報取得エラー:', expect.any(Error));
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Database status check failed:', expect.any(Error));
       
       consoleErrorSpy.mockRestore();
     });

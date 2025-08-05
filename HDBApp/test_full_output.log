@@ -1,0 +1,5 @@
+
+> HDBApp@0.0.1 test
+> jest --passWithNoTests --maxWorkers=2 2
+
+No tests found, exiting with code 0

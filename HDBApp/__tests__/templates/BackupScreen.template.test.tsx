@@ -163,20 +163,14 @@ describe('BackupScreen', () => {
     expect(getByTestId('backup-button')).toBeTruthy();
   });
 
-  it('displays backup information', () => {
+  it('displays correct text content', () => {
     const { getByText } = renderBackupScreen();
     
     expect(getByText('DBバックアップ')).toBeTruthy();
     expect(getByText('バックアップの実行')).toBeTruthy();
   });
 
-  it('loads existing backups on mount', () => {
-    const { getByTestId } = renderBackupScreen();
-    
-    expect(getByTestId('backup-screen')).toBeTruthy();
-  });
-
-  it('creates backup when button is pressed', async () => {
+  it('shows loading when backup button is pressed', async () => {
     const { getByTestId, queryByTestId } = renderBackupScreen();
     
     const button = getByTestId('backup-button');
@@ -192,16 +186,35 @@ describe('BackupScreen', () => {
     });
   });
 
-  it('shows progress during backup creation', async () => {
+  it('shows backup info after successful backup', async () => {
     const { getByTestId, queryByTestId } = renderBackupScreen();
     
     const button = getByTestId('backup-button');
     fireEvent.press(button);
     
-    expect(queryByTestId('loading-spinner')).toBeTruthy();
+    await waitFor(() => {
+      expect(queryByTestId('backup-info')).toBeTruthy();
+      expect(queryByTestId('backup-id')).toBeTruthy();
+      expect(queryByTestId('backup-size')).toBeTruthy();
+    });
   });
 
-  it('handles backup creation error', async () => {
+  it('shows success alert after backup', async () => {
+    const { Alert } = require('react-native');
+    const { getByTestId } = renderBackupScreen();
+    
+    const button = getByTestId('backup-button');
+    fireEvent.press(button);
+    
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        '成功',
+        'バックアップが完了しました'
+      );
+    });
+  });
+
+  it('handles backup error', async () => {
     const { Alert } = require('react-native');
     const { apiClient } = require('../../src/services/api/apiClient');
     
@@ -219,42 +232,5 @@ describe('BackupScreen', () => {
         'バックアップ中にエラーが発生しました'
       );
     });
-  });
-
-  it('navigates back when back button is pressed', () => {
-    const { getByTestId } = renderBackupScreen();
-    
-    expect(getByTestId('backup-screen')).toBeTruthy();
-  });
-
-  it('shows delete confirmation for backup item', async () => {
-    const { getByTestId } = renderBackupScreen();
-    
-    expect(getByTestId('backup-screen')).toBeTruthy();
-  });
-
-  it('deletes backup when confirmed', async () => {
-    const { getByTestId } = renderBackupScreen();
-    
-    expect(getByTestId('backup-screen')).toBeTruthy();
-  });
-
-  it('displays backup size in appropriate units', () => {
-    const { getByTestId } = renderBackupScreen();
-    
-    // Test just renders correctly - the backup info will show after API call
-    expect(getByTestId('backup-screen')).toBeTruthy();
-  });
-
-  it('shows empty state when no backups exist', () => {
-    const { getByTestId } = renderBackupScreen();
-    
-    expect(getByTestId('backup-screen')).toBeTruthy();
-  });
-
-  it('limits backup history to 10 items', async () => {
-    const { getByTestId } = renderBackupScreen();
-    
-    expect(getByTestId('backup-screen')).toBeTruthy();
   });
 });

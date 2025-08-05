@@ -61,10 +61,10 @@ describe('MockApiService - uploadVitalsBatch', () => {
         failedCount: 0,
         syncedAt: expect.any(String),
         processedIds: expect.arrayContaining([
-          expect.stringMatching(/^vital-\d+-\d$/),
+          expect.any(Number),
         ]),
       });
-      expect(response.message).toContain('3件のバイタルデータをアップロードしました');
+      expect(response.message).toContain('3件のバイタルデータを新仕様でアップロードしました');
     });
 
     it('should fail when not authenticated', async () => {

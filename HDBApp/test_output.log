@@ -1,0 +1,12 @@
+
+> HDBApp@0.0.1 test
+> jest --testTimeout=10000 --maxWorkers=1 2
+
+No tests found, exiting with code 1
+Run with `--passWithNoTests` to exit with code 0
+In /mnt/c/Users/systena/hdb/HDBApp
+  408 files checked.
+  testMatch: /mnt/c/Users/systena/hdb/HDBApp/__tests__/**/*.(test|spec).{js,jsx,ts,tsx}, /mnt/c/Users/systena/hdb/HDBApp/src/**/__tests__/**/*.(test|spec).{js,jsx,ts,tsx} - 48 matches
+  testPathIgnorePatterns: /node_modules/ - 408 matches
+  testRegex:  - 0 matches
+Pattern: 2 - 0 matches

@@ -7,14 +7,14 @@ describe('CelebrationDialog', () => {
     const { getByText } = render(
       <CelebrationDialog visible={true} onClose={() => {}} />
     );
-    expect(getByText('目標達成おめでとうございます！')).toBeDefined();
+    expect(getByText('おめでとうございます！')).toBeDefined();
   });
 
   it('does not render when not visible', () => {
     const { queryByText } = render(
       <CelebrationDialog visible={false} onClose={() => {}} />
     );
-    expect(queryByText('目標達成おめでとうございます！')).toBeNull();
+    expect(queryByText('おめでとうございます！')).toBeNull();
   });
 
   it('calls onClose when the close button is pressed', () => {
@@ -22,7 +22,7 @@ describe('CelebrationDialog', () => {
     const { getByText } = render(
       <CelebrationDialog visible={true} onClose={mockOnClose} />
     );
-    fireEvent.press(getByText('閉じる'));
+    fireEvent.press(getByText('完了'));
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 });

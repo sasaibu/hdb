@@ -14,6 +14,33 @@ jest.mock('../../src/services/NativeNotificationModule', () => ({
   showNotification: jest.fn(),
 }));
 
+// Mock PermissionsAndroid
+jest.mock('react-native', () => ({
+  Platform: {
+    OS: 'ios',
+    Version: 10,
+  },
+  PermissionsAndroid: {
+    PERMISSIONS: {
+      POST_NOTIFICATIONS: 'android.permission.POST_NOTIFICATIONS',
+    },
+    RESULTS: {
+      GRANTED: 'granted',
+      DENIED: 'denied',
+    },
+    check: jest.fn(),
+    request: jest.fn(),
+  },
+  Alert: {
+    alert: jest.fn((title, message, buttons) => {
+      // Auto-call the "yes" button callback for iOS permission test
+      if (buttons && buttons[1] && buttons[1].onPress) {
+        buttons[1].onPress();
+      }
+    }),
+  },
+}));
+
 // Spy on Alert.alert to track calls
 const alertSpy = jest.spyOn(Alert, 'alert');
 
@@ -154,10 +181,11 @@ describe('NotificationService', () => {
     it('shows alert on iOS', async () => {
       (Platform.OS as any) = 'ios';
       
+      // Since iOS doesn't have a programmatic way to request permission,
+      // we just check that the method returns true
       const granted = await notificationService.requestPermission();
       
-      // Just check that the method returns a boolean
-      expect(typeof granted).toBe('boolean');
+      expect(granted).toBe(true);
     });
 
     it('handles permission request error on Android', async () => {

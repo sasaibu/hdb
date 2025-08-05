@@ -172,7 +172,16 @@ jest.mock('react-native', () => {
     KeyboardAvoidingView: mockComponent('KeyboardAvoidingView'),
     
     // Modal and overlay
-    Modal: mockComponent('Modal'),
+    Modal: React.forwardRef((props, ref) => {
+      const { visible = true, children, ...restProps } = props;
+      if (!visible) return null;
+      return React.createElement('Modal', {
+        ...restProps,
+        ref,
+        testID: props.testID || 'Modal',
+        'data-component': 'Modal'
+      }, children);
+    }),
     
     // Platform and device info
     Platform: {
@@ -229,12 +238,19 @@ jest.mock('react-native', () => {
       View: mockComponent('AnimatedView'),
       Text: mockComponent('AnimatedText'),
       ScrollView: mockComponent('AnimatedScrollView'),
-      Value: jest.fn(() => ({
-        setValue: jest.fn(),
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        interpolate: jest.fn(() => ({ setValue: jest.fn() })),
-      })),
+      Value: function AnimatedValue(initialValue) {
+        this._value = initialValue;
+        this.setValue = jest.fn();
+        this.addListener = jest.fn();
+        this.removeListener = jest.fn();
+        this.interpolate = jest.fn(() => ({
+          setValue: jest.fn(),
+          addListener: jest.fn(),
+          removeListener: jest.fn(),
+          _value: initialValue,
+        }));
+        return this;
+      },
       timing: jest.fn(() => ({ start: jest.fn() })),
       spring: jest.fn(() => ({ start: jest.fn() })),
       decay: jest.fn(() => ({ start: jest.fn() })),
@@ -368,6 +384,23 @@ jest.doMock('react-native-svg', () => {
     Pattern: mockComponent('Pattern'),
   };
 }, { virtual: true });
+
+// Mock react-native-fs
+jest.doMock('react-native-fs', () => ({
+  DocumentDirectoryPath: '/mock/documents',
+  readFile: jest.fn(() => Promise.resolve('mock file content')),
+  exists: jest.fn(() => Promise.resolve(true)),
+  writeFile: jest.fn(() => Promise.resolve()),
+  unlink: jest.fn(() => Promise.resolve()),
+  mkdir: jest.fn(() => Promise.resolve()),
+  readDir: jest.fn(() => Promise.resolve([])),
+  stat: jest.fn(() => Promise.resolve({
+    isFile: () => true,
+    isDirectory: () => false,
+    size: 1024,
+    mtime: new Date(),
+  })),
+}), { virtual: true });
 
 // Global test timeout
 jest.setTimeout(10000);
