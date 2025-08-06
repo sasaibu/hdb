@@ -54,6 +54,7 @@ import DiseasePredictionScreen from '../screens/DiseasePredictionScreen'; // 疾
 import PulseSurveyScreen from '../screens/PulseSurveyScreen'; // パルスサーベイ画面
 import PulseSurveyResultScreen from '../screens/PulseSurveyResultScreen'; // パルスサーベイ結果画面
 import PulseSurveyListScreen from '../screens/PulseSurveyListScreen'; // パルスサーベイ一覧画面
+import RealHealthDataScreen from '../screens/RealHealthDataScreen'; // Health Connectデータ取得画面
 import DoneScreen from '../screens/DoneScreen';
 
 export type RootStackParamList = {
@@ -80,6 +81,7 @@ export type RootStackParamList = {
     completedAt: string;
   }; // パルスサーベイ結果画面
   PulseSurveyList: undefined; // パルスサーベイ一覧画面
+  RealHealthData: undefined; // Health Connectデータ取得画面
   GoalNotification: {
     goalType?: string;
     goalPrinciple1?: string;
@@ -141,6 +143,7 @@ export type MainDrawerParamList = {
   Event: undefined; // イベント
   StressCheck: undefined; // ストレスチェック
   Points: undefined; // ポイント
+  RealHealthData: undefined; // Health Connectデータ取得
   Logout: undefined; // ログアウト
   // 削除: Profile, Settings, GoalSetting
 };
@@ -272,6 +275,11 @@ function MainDrawer() {
         name="Points"
         component={PointsScreen}
         options={{title: 'ポイント'}}
+      />
+      <Drawer.Screen
+        name="RealHealthData"
+        component={RealHealthDataScreen}
+        options={{title: 'Health Connectデータ取得'}}
       />
       <Drawer.Screen
         name="Logout"
@@ -614,6 +622,18 @@ export default function AppNavigator() {
           options={{
             headerShown: true,
             title: 'パルスサーベイ一覧',
+            headerStyle: {
+              backgroundColor: '#FF8C00',
+            },
+            headerTintColor: '#FFFFFF',
+          }}
+        />
+        <Stack.Screen
+          name="RealHealthData"
+          component={RealHealthDataScreen}
+          options={{
+            headerShown: true,
+            title: 'Health Connectデータ取得',
             headerStyle: {
               backgroundColor: '#FF8C00',
             },

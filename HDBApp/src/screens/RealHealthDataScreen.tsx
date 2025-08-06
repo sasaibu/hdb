@@ -49,7 +49,7 @@ const RealHealthDataScreen = () => {
         return;
       }
 
-      // 権限リクエスト
+      // 権限リクエスト（既に権限がある場合はスキップ）
       const permissionGranted = await healthService.requestPermissions();
       addLog(`権限取得: ${permissionGranted ? '✅ 許可' : '❌ 拒否'}`);
 
