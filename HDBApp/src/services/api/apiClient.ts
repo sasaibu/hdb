@@ -58,7 +58,7 @@ class RealApiClient implements IApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
+  private async request(endpoint: string, options: RequestInit = {}, retryCount = 0): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
       'Content-Type': 'application/json',
@@ -66,11 +66,20 @@ class RealApiClient implements IApiClient {
       ...options.headers,
     };
 
+    // AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, API_CONFIG.TIMEOUT);
+
     try {
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -79,7 +88,41 @@ class RealApiClient implements IApiClient {
       }
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+
+      // Handle timeout error
+      if (error.name === 'AbortError') {
+        const timeoutError = new Error('API Error: Request timed out.');
+        timeoutError.name = 'TimeoutError';
+        
+        // Retry logic for timeout errors
+        if (retryCount < 2) {
+          console.warn(`Request timeout, retrying... (attempt ${retryCount + 1}/3)`);
+          return this.request(endpoint, options, retryCount + 1);
+        }
+        
+        console.error('API request timeout after retries:', error);
+        throw timeoutError;
+      }
+
+      // Handle network errors
+      if (error.message === 'Failed to fetch' || error.message === 'Network request failed') {
+        const networkError = new Error('ネットワークに接続できません');
+        networkError.name = 'NetworkError';
+        
+        // Retry logic for network errors
+        if (retryCount < 2) {
+          console.warn(`Network error, retrying... (attempt ${retryCount + 1}/3)`);
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          return this.request(endpoint, options, retryCount + 1);
+        }
+        
+        console.error('API network error after retries:', error);
+        throw networkError;
+      }
+
       console.error('API request error:', error);
       throw error;
     }

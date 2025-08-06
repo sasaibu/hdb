@@ -287,13 +287,22 @@ export class VitalDataService {
     healthKitEnabled: boolean;
     googleFitEnabled: boolean;
   }> {
-    const healthKitEnabled = await AsyncStorage.getItem('healthkit_enabled') === 'true';
-    const googleFitEnabled = await AsyncStorage.getItem('googlefit_enabled') === 'true';
-    
-    return {
-      healthKitEnabled,
-      googleFitEnabled,
-    };
+    try {
+      const healthKitEnabled = await AsyncStorage.getItem('healthkit_enabled') === 'true';
+      const googleFitEnabled = await AsyncStorage.getItem('googlefit_enabled') === 'true';
+      
+      return {
+        healthKitEnabled,
+        googleFitEnabled,
+      };
+    } catch (error) {
+      console.error('Error loading health platform status:', error);
+      // エラー時はデフォルト値を返す
+      return {
+        healthKitEnabled: false,
+        googleFitEnabled: false,
+      };
+    }
   }
 
   // バイタルAWSへのデータアップロード（同期）
@@ -328,10 +337,20 @@ export class VitalDataService {
       if (response.success) {
         console.log(`Successfully uploaded ${response.data.uploadedCount} records to バイタルAWS`);
         
-        // 同期済みフラグを更新
-        for (const record of unsyncedData) {
-          if (record.id) {
-            await this.markAsSynced(record.id);
+        // processedIdsのみ同期済みフラグを更新
+        if (response.data.processedIds && response.data.processedIds.length > 0) {
+          for (const processedId of response.data.processedIds) {
+            const record = unsyncedData.find(r => r.id === parseInt(processedId.replace('vital-', '')));
+            if (record && record.id) {
+              await this.markAsSynced(record.id);
+            }
+          }
+        } else {
+          // processedIdsがない場合は全件成功とみなす（後方互換性）
+          for (const record of unsyncedData) {
+            if (record.id) {
+              await this.markAsSynced(record.id);
+            }
           }
         }
         

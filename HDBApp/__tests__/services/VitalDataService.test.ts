@@ -664,4 +664,424 @@ describe('VitalDataService', () => {
       });
     });
   });
+
+  describe('エッジケースのテスト', () => {
+    describe('バイタルデータ追加の境界値テスト', () => {
+      test('負の値を追加しようとした場合の処理', async () => {
+        mockDatabaseService.insertVitalData.mockResolvedValue(1);
+
+        const result = await vitalDataService.addVitalData('歩数', -100, '2025-07-08');
+        
+        expect(result).toBe(1);
+        expect(mockDatabaseService.insertVitalData).toHaveBeenCalledWith({
+          type: '歩数',
+          value: -100, // 負の値でも保存される（ビジネスロジックによる）
+          unit: '歩',
+          recorded_date: '2025-07-08',
+          systolic: undefined,
+          diastolic: undefined,
+          source: 'manual',
+        });
+      });
+
+      test('極端に大きな値を追加した場合の処理', async () => {
+        mockDatabaseService.insertVitalData.mockResolvedValue(1);
+
+        const result = await vitalDataService.addVitalData('歩数', 999999999, '2025-07-08');
+        
+        expect(result).toBe(1);
+        expect(mockDatabaseService.insertVitalData).toHaveBeenCalledWith({
+          type: '歩数',
+          value: 999999999,
+          unit: '歩',
+          recorded_date: '2025-07-08',
+          systolic: undefined,
+          diastolic: undefined,
+          source: 'manual',
+        });
+      });
+
+      test('小数点を含む歩数データの処理', async () => {
+        mockDatabaseService.insertVitalData.mockResolvedValue(1);
+
+        const result = await vitalDataService.addVitalData('歩数', 8000.5, '2025-07-08');
+        
+        expect(result).toBe(1);
+        expect(mockDatabaseService.insertVitalData).toHaveBeenCalledWith({
+          type: '歩数',
+          value: 8000.5,
+          unit: '歩',
+          recorded_date: '2025-07-08',
+          systolic: undefined,
+          diastolic: undefined,
+          source: 'manual',
+        });
+      });
+
+      test('血圧の収縮期と拡張期が逆転している場合', async () => {
+        mockDatabaseService.insertVitalData.mockResolvedValue(1);
+
+        const result = await vitalDataService.addVitalData('血圧', 80, '2025-07-08', 80, 120);
+        
+        expect(result).toBe(1);
+        expect(mockDatabaseService.insertVitalData).toHaveBeenCalledWith({
+          type: '血圧',
+          value: 80,
+          unit: 'mmHg',
+          recorded_date: '2025-07-08',
+          systolic: 80,
+          diastolic: 120, // 逆転していてもそのまま保存
+          source: 'manual',
+        });
+      });
+
+      test('日付が未来の場合', async () => {
+        mockDatabaseService.insertVitalData.mockResolvedValue(1);
+        const futureDate = '2099-12-31';
+
+        const result = await vitalDataService.addVitalData('歩数', 8000, futureDate);
+        
+        expect(result).toBe(1);
+        expect(mockDatabaseService.insertVitalData).toHaveBeenCalledWith({
+          type: '歩数',
+          value: 8000,
+          unit: '歩',
+          recorded_date: futureDate,
+          systolic: undefined,
+          diastolic: undefined,
+          source: 'manual',
+        });
+      });
+
+      test('無効な日付形式の場合', async () => {
+        mockDatabaseService.insertVitalData.mockResolvedValue(1);
+
+        const result = await vitalDataService.addVitalData('歩数', 8000, 'invalid-date');
+        
+        expect(result).toBe(1);
+        expect(mockDatabaseService.insertVitalData).toHaveBeenCalledWith({
+          type: '歩数',
+          value: 8000,
+          unit: '歩',
+          recorded_date: 'invalid-date', // 無効な日付でもそのまま渡される
+          systolic: undefined,
+          diastolic: undefined,
+          source: 'manual',
+        });
+      });
+    });
+
+    describe('達成率計算のエッジケース', () => {
+      test('目標値が0の場合の達成率計算', async () => {
+        const mockData = [
+          { id: 1, type: '歩数', value: 8000, unit: '歩', recorded_date: '2025-07-08' },
+        ];
+        mockDatabaseService.getVitalDataByType.mockResolvedValue(mockData);
+        mockDatabaseService.getTarget.mockResolvedValue({ target_value: 0 });
+
+        const result = await vitalDataService.calculateAchievementRate('歩数');
+        
+        expect(result).toBeNull(); // 目標値が0の場合はnullを返す
+      });
+
+      test('実績が目標値を大幅に超えている場合', async () => {
+        const mockData = [
+          { id: 1, type: '歩数', value: 50000, unit: '歩', recorded_date: '2025-07-08' },
+        ];
+        mockDatabaseService.getVitalDataByType.mockResolvedValue(mockData);
+        mockDatabaseService.getTarget.mockResolvedValue({ target_value: 10000 });
+
+        const result = await vitalDataService.calculateAchievementRate('歩数');
+        
+        expect(result).toBe(100); // 100%でキャップされる
+      });
+
+      test('体重の場合で実績が目標値より大きい場合', async () => {
+        const mockData = [
+          { id: 1, type: '体重', value: 70.0, unit: 'kg', recorded_date: '2025-07-08' },
+        ];
+        mockDatabaseService.getVitalDataByType.mockResolvedValueOnce([mockData[0]])
+          .mockResolvedValueOnce(mockData);
+        mockDatabaseService.getTarget.mockResolvedValue({ target_value: 65.0 });
+
+        const result = await vitalDataService.calculateAchievementRate('体重');
+        
+        // 初期値からの改善率を計算するが、初期値が1つしかない場合は100
+        expect(result).toBe(100);
+      });
+    });
+
+    describe('データフォーマットのエッジケース', () => {
+      test('非常に大きな数値のフォーマット', () => {
+        const record = {
+          id: 1,
+          type: '歩数',
+          value: 1234567890,
+          unit: '歩',
+          recorded_date: '2025-07-08',
+        };
+
+        const result = vitalDataService.formatValueForDisplay(record);
+        
+        expect(result).toBe('1,234,567,890 歩');
+      });
+
+      test('小数点以下が多い体重データのフォーマット', () => {
+        const record = {
+          id: 1,
+          type: '体重',
+          value: 65.123456789,
+          unit: 'kg',
+          recorded_date: '2025-07-08',
+        };
+
+        const result = vitalDataService.formatValueForDisplay(record);
+        
+        expect(result).toBe('65.123456789 kg'); // 値はそのまま表示される
+      });
+
+      test('血圧データで拡張期が欠損している場合', () => {
+        const record = {
+          id: 1,
+          type: '血圧',
+          value: 120,
+          unit: 'mmHg',
+          systolic: 120,
+          diastolic: undefined,
+          recorded_date: '2025-07-08',
+        };
+
+        const result = vitalDataService.formatValueForDisplay(record);
+        
+        expect(result).toBe('120 mmHg'); // 拡張期なしで表示
+      });
+
+      test('未知のバイタルタイプの場合', () => {
+        const record = {
+          id: 1,
+          type: '未知のタイプ',
+          value: 100,
+          unit: '不明',
+          recorded_date: '2025-07-08',
+        };
+
+        const result = vitalDataService.formatValueForDisplay(record);
+        
+        expect(result).toBe('100 不明');
+      });
+    });
+  });
+
+  describe('エラーハンドリングの強化', () => {
+    describe('データベースエラーの処理', () => {
+      test('初期化時のデータベースエラー', async () => {
+        mockDatabaseService.initDatabase.mockRejectedValue(new Error('Database connection failed'));
+
+        await expect(vitalDataService.initializeService()).rejects.toThrow('Database connection failed');
+      });
+
+      test('データ追加時のデータベースエラー', async () => {
+        mockDatabaseService.insertVitalData.mockRejectedValue(new Error('Insert failed'));
+
+        await expect(vitalDataService.addVitalData('歩数', 8000, '2025-07-08')).rejects.toThrow('Insert failed');
+      });
+
+      test('データ取得時のデータベースエラー', async () => {
+        mockDatabaseService.getVitalDataByType.mockRejectedValue(new Error('Query failed'));
+
+        await expect(vitalDataService.getVitalDataByType('歩数')).rejects.toThrow('Query failed');
+      });
+    });
+
+    describe('ヘルスプラットフォーム連携エラー', () => {
+      test('ヘルスプラットフォームからのデータ取得エラー', async () => {
+        mockHealthPlatformService.fetchRecentHealthData.mockRejectedValue(new Error('HealthKit not available'));
+
+        await expect(vitalDataService.syncHealthPlatformData()).rejects.toThrow('HealthKit not available');
+      });
+
+      test('ヘルスプラットフォームデータの不正な形式', async () => {
+        const invalidHealthData = [
+          {
+            id: 'health-1',
+            type: 'unknown' as any, // 不正なタイプ
+            value: null as any, // null値
+            unit: '歩',
+            measuredAt: '2025-07-11T09:00:00Z',
+            source: 'healthkit' as const,
+          },
+        ];
+
+        mockHealthPlatformService.fetchRecentHealthData.mockResolvedValue(invalidHealthData);
+        mockDatabaseService.getVitalDataByTypeAndDate.mockResolvedValue([]);
+
+        // エラーをスローするか、スキップするかはビジネスロジック次第
+        await vitalDataService.syncHealthPlatformData();
+
+        // 不正なデータはスキップされる
+        expect(mockDatabaseService.insertVitalData).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('API通信エラー', () => {
+      test('ネットワークエラー時の再試行処理', async () => {
+        const unsyncedData = [
+          {
+            id: 1,
+            type: '歩数',
+            value: 8000,
+            unit: '歩',
+            recorded_date: '2025-07-11',
+            sync_status: 'pending',
+          },
+        ];
+
+        mockDatabaseService.executeSql.mockImplementation((sql: string) => {
+          if (sql.includes('SELECT')) {
+            return Promise.resolve({
+              rows: {
+                length: unsyncedData.length,
+                item: (index: number) => unsyncedData[index],
+              },
+            });
+          }
+          return Promise.resolve({});
+        });
+
+        // 最初はエラー、再試行で成功
+        (apiClient.uploadVitalsBatch as jest.Mock)
+          .mockRejectedValueOnce(new Error('Network timeout'))
+          .mockResolvedValueOnce({
+            success: true,
+            data: {
+              uploadedCount: 1,
+              failedCount: 0,
+              syncedAt: '2025-07-11T10:00:00Z',
+              processedIds: ['vital-1'],
+            },
+          });
+
+        // 再試行ロジックがない場合はエラーをスロー
+        await expect(vitalDataService.uploadToVitalAWS()).rejects.toThrow('Network timeout');
+      });
+
+      test('部分的なアップロード失敗の処理', async () => {
+        const unsyncedData = [
+          {
+            id: 1,
+            type: '歩数',
+            value: 8000,
+            unit: '歩',
+            recorded_date: '2025-07-11',
+            sync_status: 'pending',
+          },
+          {
+            id: 2,
+            type: '体重',
+            value: 65.5,
+            unit: 'kg',
+            recorded_date: '2025-07-11',
+            sync_status: 'pending',
+          },
+        ];
+
+        mockDatabaseService.executeSql.mockImplementation((sql: string) => {
+          if (sql.includes('SELECT')) {
+            return Promise.resolve({
+              rows: {
+                length: unsyncedData.length,
+                item: (index: number) => unsyncedData[index],
+              },
+            });
+          }
+          return Promise.resolve({});
+        });
+
+        (apiClient.uploadVitalsBatch as jest.Mock).mockResolvedValue({
+          success: true,
+          data: {
+            uploadedCount: 1,
+            failedCount: 1,
+            syncedAt: '2025-07-11T10:00:00Z',
+            processedIds: ['vital-1'],
+            failedIds: ['vital-2'],
+          },
+        });
+
+        await vitalDataService.uploadToVitalAWS();
+
+        // 成功したIDのみ更新される
+        expect(mockDatabaseService.executeSql).toHaveBeenCalledWith(
+          expect.stringContaining('UPDATE vital_data'),
+          [1]
+        );
+        expect(mockDatabaseService.executeSql).not.toHaveBeenCalledWith(
+          expect.stringContaining('UPDATE vital_data'),
+          [2]
+        );
+      });
+    });
+
+    describe('AsyncStorageエラー', () => {
+      test('AsyncStorage読み込みエラー時のフォールバック', async () => {
+        (AsyncStorage.getItem as jest.Mock).mockRejectedValue(new Error('Storage unavailable'));
+
+        const status = await vitalDataService.getHealthPlatformStatus();
+
+        // エラー時はデフォルト値を返す
+        expect(status).toEqual({
+          healthKitEnabled: false,
+          googleFitEnabled: false,
+        });
+      });
+    });
+  });
+
+  describe('並行処理とレースコンディション', () => {
+    test('同時に複数のデータ追加が実行された場合', async () => {
+      mockDatabaseService.insertVitalData
+        .mockResolvedValueOnce(1)
+        .mockResolvedValueOnce(2)
+        .mockResolvedValueOnce(3);
+
+      const promises = [
+        vitalDataService.addVitalData('歩数', 8000, '2025-07-08'),
+        vitalDataService.addVitalData('体重', 65.5, '2025-07-08'),
+        vitalDataService.addVitalData('体温', 36.5, '2025-07-08'),
+      ];
+
+      const results = await Promise.all(promises);
+
+      expect(results).toEqual([1, 2, 3]);
+      expect(mockDatabaseService.insertVitalData).toHaveBeenCalledTimes(3);
+    });
+
+    test('同期処理が並行して実行された場合', async () => {
+      const mockHealthData = [
+        {
+          id: 'health-1',
+          type: 'steps' as const,
+          value: 10000,
+          unit: '歩',
+          measuredAt: '2025-07-11T09:00:00Z',
+          source: 'healthkit' as const,
+        },
+      ];
+
+      mockHealthPlatformService.fetchRecentHealthData.mockResolvedValue(mockHealthData);
+      mockDatabaseService.getVitalDataByTypeAndDate.mockResolvedValue([]);
+      mockDatabaseService.insertVitalData.mockResolvedValue(1);
+
+      // 同時に2回同期を実行
+      const promises = [
+        vitalDataService.syncHealthPlatformData(),
+        vitalDataService.syncHealthPlatformData(),
+      ];
+
+      await Promise.all(promises);
+
+      // 重複して実行されることを確認（実際のアプリではロック機構が必要）
+      expect(mockHealthPlatformService.fetchRecentHealthData).toHaveBeenCalledTimes(2);
+    });
+  });
 });

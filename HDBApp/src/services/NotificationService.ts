@@ -139,7 +139,13 @@ class NotificationService {
 
   async updateSettings(newSettings: Partial<NotificationSettings>): Promise<void> {
     this.settings = {...this.settings, ...newSettings};
-    await AsyncStorage.setItem('notification_settings', JSON.stringify(this.settings));
+    
+    try {
+      await AsyncStorage.setItem('notification_settings', JSON.stringify(this.settings));
+    } catch (error) {
+      console.warn('Failed to save notification settings:', error);
+      // Continue without throwing - settings are updated in memory
+    }
     
     // Reschedule notifications based on new settings
     this.clearAllScheduledNotifications();

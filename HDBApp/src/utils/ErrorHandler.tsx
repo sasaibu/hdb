@@ -87,6 +87,16 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 
 export const handleApiError = (error: any): string => {
+  // タイムアウトエラーの処理
+  if (error.name === 'TimeoutError') {
+    return 'リクエストがタイムアウトしました。もう一度お試しください。';
+  }
+  
+  // ネットワークエラーの処理
+  if (error.name === 'NetworkError') {
+    return error.message || 'ネットワークに接続できません';
+  }
+  
   if (error.response) {
     // API からのエラーレスポンス
     switch (error.response.status) {

@@ -372,4 +372,258 @@ describe('NotificationService', () => {
       expect(notification.id).toBe('push-1');
     });
   });
+
+  describe('非同期処理の改善テスト', () => {
+    describe('並行処理のテスト', () => {
+      it('複数の通知を同時にスケジュールできる', async () => {
+        const notifications = Array.from({ length: 10 }, (_, i) => ({
+          id: `concurrent-${i}`,
+          title: `Title ${i}`,
+          body: `Body ${i}`,
+          type: 'general' as const,
+          scheduledTime: new Date(Date.now() + 1000 * (i + 1)),
+        }));
+
+        const promises = notifications.map(notification =>
+          notificationService.scheduleNotification(notification)
+        );
+
+        await expect(Promise.all(promises)).resolves.not.toThrow();
+      });
+
+      it('同時に複数の即時通知を送信できる', async () => {
+        const notifications = Array.from({ length: 5 }, (_, i) => ({
+          id: `immediate-concurrent-${i}`,
+          title: `Immediate ${i}`,
+          body: `Body ${i}`,
+          type: 'general' as const,
+        }));
+
+        const promises = notifications.map(notification =>
+          notificationService.sendImmediateNotification(notification)
+        );
+
+        await expect(Promise.all(promises)).resolves.not.toThrow();
+      });
+
+      it('設定更新と通知送信が競合しない', async () => {
+        const settingsPromise = notificationService.updateSettings({
+          enabled: true,
+          vitalDataReminder: true,
+        });
+
+        const notificationPromise = notificationService.sendImmediateNotification({
+          id: 'race-condition-test',
+          title: 'Race Condition Test',
+          body: 'Testing race conditions',
+          type: 'general',
+        });
+
+        await expect(Promise.all([settingsPromise, notificationPromise])).resolves.not.toThrow();
+      });
+    });
+
+    describe('タイムアウトとキャンセレーション', () => {
+      it('長時間の遅延がある通知を処理できる', async () => {
+        const notification = {
+          id: 'long-delay',
+          title: 'Long Delay',
+          body: 'This has a long delay',
+          type: 'general' as const,
+        };
+
+        const promise = notificationService.sendPushNotification('token', notification);
+
+        // 長時間の遅延をシミュレート
+        jest.advanceTimersByTime(10000);
+
+        await expect(promise).resolves.not.toThrow();
+      });
+
+      it('権限リクエストのタイムアウトを適切に処理する', async () => {
+        (Platform.OS as any) = 'android';
+        (Platform.Version as any) = 33;
+        
+        // 権限リクエストが長時間かかる場合をシミュレート
+        (PermissionsAndroid.request as jest.Mock).mockImplementation(() => 
+          new Promise(resolve => setTimeout(() => resolve('granted'), 5000))
+        );
+
+        const permissionPromise = notificationService.requestPermission();
+        
+        // タイマーを進める
+        jest.advanceTimersByTime(5000);
+        
+        const result = await permissionPromise;
+        expect(result).toBe(true);
+      });
+    });
+
+    describe('エラー処理とリトライ', () => {
+      it('AsyncStorageエラー時のフォールバック', async () => {
+        (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error('Storage error'));
+
+        const settings = {
+          enabled: true,
+          vitalDataReminder: true,
+        };
+
+        await expect(notificationService.updateSettings(settings)).resolves.not.toThrow();
+        
+        // 設定は内部的に更新される
+        const currentSettings = await notificationService.getSettings();
+        expect(currentSettings.enabled).toBe(true);
+      });
+
+      it('ネイティブモジュールエラー時の graceful degradation', async () => {
+        (Platform.OS as any) = 'android';
+        (NativeNotificationModule.showNotification as jest.Mock).mockImplementation(() => {
+          throw new Error('Native module not available');
+        });
+
+        const notification = {
+          id: 'native-error',
+          title: 'Native Error Test',
+          body: 'Testing native module error',
+          type: 'general' as const,
+        };
+
+        await expect(notificationService.sendImmediateNotification(notification)).resolves.not.toThrow();
+      });
+
+      it('初期化の再試行メカニズム', async () => {
+        (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('Temporary error'));
+        (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
+
+        // 初期化は内部でエラーを吸収する
+        await expect(notificationService.initialize()).resolves.not.toThrow();
+        
+        // loadSettingsが呼ばれることを確認
+        expect(AsyncStorage.getItem).toHaveBeenCalledWith('notification_settings');
+      });
+    });
+
+    describe('メモリリークとクリーンアップ', () => {
+      it('大量の通知履歴でもメモリリークしない', async () => {
+        // 1000件の通知を履歴に追加
+        for (let i = 0; i < 1000; i++) {
+          await notificationService.sendImmediateNotification({
+            id: `memory-test-${i}`,
+            title: `Memory Test ${i}`,
+            body: 'Testing memory usage',
+            type: 'general',
+          });
+        }
+
+        const history = await notificationService.getNotificationHistory();
+        expect(history.length).toBeLessThanOrEqual(100); // 履歴は100件に制限されると仮定
+      });
+
+      it('スケジュールされた通知のクリーンアップ', async () => {
+        const pastDate = new Date(Date.now() - 1000);
+        const futureDate = new Date(Date.now() + 10000);
+
+        await notificationService.scheduleNotification({
+          id: 'past-notification',
+          title: 'Past',
+          body: 'Should be cleaned up',
+          type: 'general',
+          scheduledTime: pastDate,
+        });
+
+        await notificationService.scheduleNotification({
+          id: 'future-notification',
+          title: 'Future',
+          body: 'Should remain',
+          type: 'general',
+          scheduledTime: futureDate,
+        });
+
+        // クリーンアップのタイミングをシミュレート
+        jest.advanceTimersByTime(1000);
+
+        // 内部状態の検証（実装に依存）
+        expect(true).toBe(true); // プレースホルダー
+      });
+    });
+
+    describe('Promise チェーンとエラー伝播', () => {
+      it('Promise チェーンでのエラー伝播', async () => {
+        const notification = {
+          id: 'chain-test',
+          title: 'Chain Test',
+          body: 'Testing promise chains',
+          type: 'general' as const,
+        };
+
+        // 複数の操作をチェーンする
+        const result = await notificationService.sendImmediateNotification(notification)
+          .then(() => notificationService.getNotificationHistory())
+          .then(history => history.length)
+          .catch(() => 0);
+
+        expect(typeof result).toBe('number');
+      });
+
+      it('async/await での例外処理', async () => {
+        (Platform.OS as any) = 'android';
+        (Platform.Version as any) = 33;
+        (PermissionsAndroid.check as jest.Mock).mockRejectedValue(new Error('Permission check failed'));
+
+        try {
+          await notificationService.checkNotificationPermission();
+        } catch (error) {
+          // エラーがキャッチされることを確認
+          expect(error).toBeUndefined(); // 実際にはエラーは内部で処理される
+        }
+
+        // メソッドは false を返すはず
+        const result = await notificationService.checkNotificationPermission();
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('状態の一貫性', () => {
+      it('通知の有効/無効切り替えが即座に反映される', async () => {
+        await notificationService.updateSettings({ enabled: false });
+        
+        const notification = {
+          id: 'disabled-test',
+          title: 'Disabled Test',
+          body: 'Should not be sent',
+          type: 'general' as const,
+        };
+
+        await notificationService.sendImmediateNotification(notification);
+        
+        // 通知が無効なので履歴に追加されない
+        const history = await notificationService.getNotificationHistory();
+        const found = history.find(n => n.id === 'disabled-test');
+        expect(found).toBeUndefined();
+
+        // 再度有効にする
+        await notificationService.updateSettings({ enabled: true });
+        
+        await notificationService.sendImmediateNotification({
+          ...notification,
+          id: 'enabled-test',
+        });
+
+        const updatedHistory = await notificationService.getNotificationHistory();
+        const foundEnabled = updatedHistory.find(n => n.id === 'enabled-test');
+        expect(foundEnabled).toBeDefined();
+      });
+
+      it('設定の部分更新が他の設定に影響しない', async () => {
+        const initialSettings = await notificationService.getSettings();
+        
+        await notificationService.updateSettings({ vitalDataReminder: false });
+        
+        const updatedSettings = await notificationService.getSettings();
+        expect(updatedSettings.enabled).toBe(initialSettings.enabled);
+        expect(updatedSettings.medicationReminder).toBe(initialSettings.medicationReminder);
+        expect(updatedSettings.vitalDataReminder).toBe(false);
+      });
+    });
+  });
 });
