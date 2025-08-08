@@ -153,11 +153,11 @@ sequenceDiagram
     participant AWS as バイタルAWS
     
     Note over App,DB: 目標表示
-    App->>DB: goals テーブル取得
+    App->>DB: user_targets テーブル取得
     DB-->>App: ユーザーが設定した目標一覧
     
     Note over App,DB: 目標設定・編集
-    App->>DB: goals テーブル更新
+    App->>DB: user_targets テーブル更新
     Note over DB: 目標タイプ、目標値、期間を保存
     DB-->>App: 保存結果
     
@@ -274,14 +274,14 @@ sequenceDiagram
     
     Note over WebView,App: リダイレクト処理
     WebView->>App: リダイレクト（ディープリンク）
-    Note over App: hdbapp://transfer-complete?oldUserId=XXX&newUserId=YYY
+    Note over App: hdbappnew://transfer-complete?oldUserId=XXX&newUserId=YYY
     
     Note over App,DB: 端末側データ移行
     App->>DB: トランザクション開始
     App->>DB: 転籍前ユーザーIDのデータ検索
     DB-->>App: 該当データ一覧
     App->>DB: 全テーブルのuser_idを転籍後IDに更新
-    Note over App,DB: users, vital_data, missions等全テーブル
+    Note over App,DB: users, vital_data, user_targets等全テーブル
     App->>DB: トランザクションコミット
     
     Note over App,Storage: 移行完了処理
@@ -388,11 +388,11 @@ sequenceDiagram
 
 3. **端末側処理**
    - WebViewからのリダイレクト（ディープリンク）でアプリ側に通知
-   - リダイレクトURL例：`hdbapp://transfer-complete?oldUserId=XXX&newUserId=YYY`
+   - リダイレクトURL例：`hdbappnew://transfer-complete?oldUserId=XXX&newUserId=YYY`
    - アプリ内DBの全テーブルのuser_idを一括更新（トランザクション処理）
 
 ### 実装上の注意点
-- **ディープリンク設定**：iOS/Androidでのカスタムスキーム（hdbapp://）の設定が必要
+- **ディープリンク設定**：iOS/Androidでのカスタムスキーム（hdbappnew://）の設定が必要
 - **トランザクション処理**：データ整合性を保つため、全テーブルの更新は単一トランザクション内で実行
 - **エラーハンドリング**：転籍処理中のエラーに対する適切なリカバリー処理
 - **状態管理**：転籍完了フラグをAsyncStorageに保存し、重複処理を防止
@@ -400,8 +400,8 @@ sequenceDiagram
 ### 更新対象テーブル
 - users
 - vital_data
-- missions
-- events
-- notifications
-- linked_services
+- user_targets
+- daily_achievements
+- achievement_summary
+- external_services
 - その他user_idカラムを持つ全テーブル

@@ -25,9 +25,15 @@ export class VitalDataService {
   }
 
   // バイタルデータの追加
-  async addVitalData(type: string, value: number, date?: string, systolic?: number, diastolic?: number, source: string = 'manual'): Promise<number> {
+  async addVitalData(type: string, value: number, date?: string | Date, systolic?: number, diastolic?: number, source: string = 'manual'): Promise<number> {
     const unit = this.getUnitByType(type);
-    const recordedDate = date || new Date().toISOString().split('T')[0];
+    let recordedDate: string;
+    
+    if (date instanceof Date) {
+      recordedDate = date.toISOString().split('T')[0];
+    } else {
+      recordedDate = date || new Date().toISOString().split('T')[0];
+    }
 
     const data: VitalDataRecord = {
       type,
@@ -173,54 +179,52 @@ export class VitalDataService {
     };
   }
 
-  // ダミーデータの挿入（テスト用）
+  // ダミーデータの挿入（テスト用）- mockData.tsのデータを使用
   async insertDummyData(): Promise<void> {
-    const dummyData = [
-      // 歩数データ
-      { type: '歩数', value: 8456, date: '2025-07-02' },
-      { type: '歩数', value: 7890, date: '2025-07-01' },
-      { type: '歩数', value: 9123, date: '2025-06-30' },
-      
-      // 体重データ
-      { type: '体重', value: 65.2, date: '2025-07-02' },
-      { type: '体重', value: 65.5, date: '2025-07-01' },
-      { type: '体重', value: 65.4, date: '2025-06-30' },
-      
-      // 体温データ
-      { type: '体温', value: 36.5, date: '2025-07-02' },
-      { type: '体温', value: 36.6, date: '2025-07-01' },
-      { type: '体温', value: 36.4, date: '2025-06-30' },
-      
-      // 血圧データ
-      { type: '血圧', value: 120, date: '2025-07-02', systolic: 120, diastolic: 80 },
-      { type: '血圧', value: 122, date: '2025-07-01', systolic: 122, diastolic: 81 },
-      { type: '血圧', value: 118, date: '2025-06-30', systolic: 118, diastolic: 79 },
-      
-      // 心拍数データ
-      { type: '心拍数', value: 72, date: '2025-07-02' },
-      { type: '心拍数', value: 75, date: '2025-07-01' },
-      { type: '心拍数', value: 68, date: '2025-06-30' },
-      
-      // 脈拍データ
-      { type: '脈拍', value: 74, date: '2025-07-02' },
-      { type: '脈拍', value: 77, date: '2025-07-01' },
-      { type: '脈拍', value: 70, date: '2025-06-30' },
-      { type: '脈拍', value: 72, date: '2025-06-29' },
-      { type: '脈拍', value: 75, date: '2025-06-28' },
-      { type: '脈拍', value: 73, date: '2025-06-27' },
-      { type: '脈拍', value: 71, date: '2025-06-26' },
-      { type: '脈拍', value: 76, date: '2025-06-25' },
-      { type: '脈拍', value: 74, date: '2025-06-24' },
-      { type: '脈拍', value: 73, date: '2025-06-23' },
-    ];
+    // 既存のダミーデータをクリア（重複を避けるため）
+    try {
+      await this.dbService.executeSql('DELETE FROM vital_data WHERE source = ? OR source = ?', ['manual', 'healthkit']);
+      console.log('Existing dummy data cleared');
+    } catch (error) {
+      console.log('No existing data to clear or error clearing:', error);
+    }
+
+    // mockData.tsからデータをインポート
+    const { mockVitals } = await import('./api/mockData');
+    
+    // 型マッピング（API形式 → 日本語）
+    const typeMap: Record<string, string> = {
+      'steps': '歩数',
+      'weight': '体重',
+      'temperature': '体温',
+      'bloodPressure': '血圧',
+      'heartRate': '心拍数',
+      'pulse': '脈拍',
+    };
 
     try {
-      for (const item of dummyData) {
-        await this.addVitalData(item.type, item.value, item.date, item.systolic, item.diastolic);
+      for (const mockVital of mockVitals) {
+        const type = typeMap[mockVital.type];
+        if (!type) continue;
+
+        const date = mockVital.measuredAt.split('T')[0]; // ISO日付から日付部分を抽出
+        
+        // 血圧の場合はvalue2（拡張期血圧）も設定
+        const systolic = mockVital.type === 'bloodPressure' ? mockVital.value : undefined;
+        const diastolic = mockVital.type === 'bloodPressure' ? mockVital.value2 : undefined;
+        
+        await this.addVitalData(
+          type,
+          mockVital.value,
+          date,
+          systolic,
+          diastolic,
+          mockVital.source
+        );
       }
-      console.log('Dummy data inserted successfully');
+      console.log(`Mock data inserted successfully: ${mockVitals.length} records`);
     } catch (error) {
-      console.error('Error inserting dummy data:', error);
+      console.error('Error inserting mock data:', error);
       throw error;
     }
   }
@@ -388,6 +392,38 @@ export class VitalDataService {
     };
     
     return typeMap[type] || type;
+  }
+
+  // データ更新
+  async updateVitalData(id: number, value: number, diastolic?: number): Promise<void> {
+    try {
+      let sql: string;
+      let params: any[];
+      
+      if (diastolic !== undefined) {
+        // 血圧の場合
+        sql = `
+          UPDATE vital_data 
+          SET value = ?, diastolic = ?, updated_at = datetime('now')
+          WHERE id = ?
+        `;
+        params = [value, diastolic, id];
+      } else {
+        // その他のバイタル
+        sql = `
+          UPDATE vital_data 
+          SET value = ?, updated_at = datetime('now')
+          WHERE id = ?
+        `;
+        params = [value, id];
+      }
+      
+      await this.dbService.executeSql(sql, params);
+      console.log(`Updated vital data record with id: ${id}`);
+    } catch (error) {
+      console.error('Error updating vital data:', error);
+      throw error;
+    }
   }
 
   // 測定項目コード変換（新ER図対応）

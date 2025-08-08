@@ -8,6 +8,8 @@ import {
   FlatList,
   Alert,
   Dimensions,
+  TextInput,
+  Modal,
 } from 'react-native';
 import {DrawerNavigationProp} from '@react-navigation/drawer';
 import {CompositeNavigationProp} from '@react-navigation/native';
@@ -58,6 +60,9 @@ const VitalListScreen = ({navigation}: Props) => {
   const [vitalData, setVitalData] = useState<{[key: string]: VitalListItem[]}>({});
   const [loading, setLoading] = useState(true);
   const [vitalDataService] = useState(() => new VitalDataService());
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<VitalListItem | null>(null);
+  const [editValue, setEditValue] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
   const screenWidth = Dimensions.get('window').width;
 
@@ -213,12 +218,49 @@ const VitalListScreen = ({navigation}: Props) => {
     
     if (editMode) {
       toggleItemSelection(item.id);
-    } else if (currentTab.id === 'steps') {
-      // 歩数の場合は詳細画面に遷移
-      navigation.navigate('VitalData', {title: '歩数'});
     } else {
-      // その他は編集ダイアログ（今回は簡易実装）
-      Alert.alert('編集', `${currentTab.title}の編集機能は今後実装予定です。`);
+      // 歩数と心拍数の場合は詳細画面へ
+      if (currentTab.id === 'steps' || currentTab.id === 'heartRate') {
+        navigation.navigate('VitalDetail', {
+          vitalType: currentTab.title,
+          date: item.date,
+          recordId: item.id,
+        });
+      } else {
+        // その他は編集モーダルを表示
+        setEditingItem(item);
+        setEditValue(item.numericValue.toString());
+        setShowEditModal(true);
+      }
+    }
+  };
+
+  // 編集保存処理
+  const handleSaveEdit = async () => {
+    if (!editingItem || !editValue) return;
+
+    try {
+      const numericValue = parseFloat(editValue);
+      if (isNaN(numericValue)) {
+        Alert.alert('エラー', '正しい数値を入力してください。');
+        return;
+      }
+
+      // データを更新
+      await vitalDataService.updateVitalData(
+        parseInt(editingItem.id),
+        numericValue
+      );
+
+      // 画面を更新
+      await loadVitalData();
+      setShowEditModal(false);
+      setEditingItem(null);
+      setEditValue('');
+      Alert.alert('成功', 'データを更新しました。');
+    } catch (error) {
+      console.error('Error updating data:', error);
+      Alert.alert('エラー', 'データの更新に失敗しました。');
     }
   };
 
@@ -331,6 +373,55 @@ const VitalListScreen = ({navigation}: Props) => {
 
       {/* データリスト */}
       {renderVitalList()}
+
+      {/* 編集モーダル */}
+      <Modal
+        visible={showEditModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {editingItem && VITAL_TABS[activeTab].title}の編集
+            </Text>
+            <Text style={styles.modalDate}>{editingItem?.date}</Text>
+            
+            <TextInput
+              style={styles.modalInput}
+              value={editValue}
+              onChangeText={setEditValue}
+              keyboardType="numeric"
+              placeholder="値を入力"
+            />
+            
+            <Text style={styles.modalUnit}>
+              {VITAL_TABS[activeTab].unit}
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowEditModal(false);
+                  setEditingItem(null);
+                  setEditValue('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>キャンセル</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleSaveEdit}
+              >
+                <Text style={styles.saveButtonText}>保存</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -371,33 +462,34 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     backgroundColor: '#fff',
-    borderBottomWidth: 0,
-    height: 32,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    maxHeight: 60,
   },
   tabContent: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    height: 32,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    alignItems: 'center',
   },
   tab: {
     paddingHorizontal: 12,
-    paddingVertical: 0,
+    paddingVertical: 8,
     marginHorizontal: 4,
-    borderRadius: 4,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    height: 32,
+    minHeight: 44,
   },
   activeTab: {
     backgroundColor: '#007AFF',
   },
   tabIcon: {
-    fontSize: 18,
-    marginRight: 6,
+    fontSize: 16,
+    marginRight: 4,
   },
   tabText: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#666',
     fontWeight: '600',
   },
@@ -486,6 +578,78 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  modalDate: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 18,
+    width: '100%',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalUnit: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f0f0f0',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButton: {
+    backgroundColor: '#007AFF',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
