@@ -155,3 +155,4 @@ The app uses SQLite with the following main tables:
 - Full test coverage for components, screens, services, and hooks
 - Mock implementations for all external dependencies
 - Test files located in `__tests__/` directory alongside source files
+- とか###とかは消してください
