@@ -19,7 +19,12 @@ import {
   RootStackParamList,
 } from '../navigation/AppNavigator';
 import {apiClient} from '../services/api/apiClient';
+import {VitalDataService} from '../services/VitalDataService';
 import theme from '../styles/theme';
+import VitalInputDialog from '../components/VitalInputDialog';
+import ManualInputButton from '../components/ManualInputButton';
+import CelebrationDialog from '../components/CelebrationDialog';
+import { useGoalSafe } from '../hooks/useGoalSafe';
 
 const {width} = Dimensions.get('window');
 
@@ -126,8 +131,31 @@ export default function HomeScreen({navigation}: Props) {
   const [rankingData, setRankingData] = useState<RankingData[]>([]);
   const [loading, setLoading] = useState(true);
   const [vitalSummary, setVitalSummary] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedVitalType, setSelectedVitalType] = useState<string>('');
+  const vitalDataService = new VitalDataService();
+  const { 
+    setIsGoalSetting, 
+    checkGoalAchievement, 
+    showCelebrationDialog, 
+    setShowCelebrationDialog,
+    setGoalAchievementDate
+  } = useGoalSafe();
 
   useEffect(() => {
+    // ホーム画面に来たら目標設定モードを解除
+    setIsGoalSetting(false);
+    
+    // 30日達成チェック（デモ用に現在日付から30日前を設定）
+    const demoAchievementDate = new Date();
+    demoAchievementDate.setDate(demoAchievementDate.getDate() - 30);
+    setGoalAchievementDate(demoAchievementDate);
+    
+    // 達成判定とダイアログ表示
+    if (checkGoalAchievement()) {
+      setShowCelebrationDialog(true);
+    }
+    
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -164,8 +192,75 @@ export default function HomeScreen({navigation}: Props) {
     fetchData();
   }, []);
 
+  const handleCelebrationClose = () => {
+    setShowCelebrationDialog(false);
+    navigation.navigate('Done');
+  };
+
   const handleCardPress = (type: string) => {
     navigation.navigate('VitalData', {title: type});
+  };
+
+  const handleManualInput = () => {
+    setModalVisible(true);
+  };
+
+  const handleSaveVitalData = async (value: string, value2?: string, date?: Date) => {
+    if (!selectedVitalType || !date) return;
+
+    try {
+      const numericValue = parseFloat(value);
+      if (isNaN(numericValue)) {
+        Alert.alert('エラー', '正しい数値を入力してください。');
+        return;
+      }
+
+      let systolic, diastolic;
+      if (selectedVitalType === '血圧' && value2) {
+        systolic = numericValue;
+        diastolic = parseFloat(value2);
+      }
+
+      await vitalDataService.addVitalData(
+        selectedVitalType,
+        numericValue,
+        date,
+        systolic,
+        diastolic,
+        'manual'
+      );
+
+      Alert.alert('成功', `${date.toLocaleDateString('ja-JP')}の${selectedVitalType}データを追加しました。`);
+      setModalVisible(false);
+      
+      // データを再読み込み
+      const fetchData = async () => {
+        const response = await apiClient.getVitalSummary();
+        if (response.success) {
+          setVitalSummary(response.data);
+        }
+      };
+      fetchData();
+    } catch (error) {
+      console.error('Error saving vital data:', error);
+      Alert.alert('エラー', 'データの保存に失敗しました。');
+    }
+  };
+
+  const showVitalTypeSelection = () => {
+    Alert.alert(
+      'データの種類を選択',
+      '入力するデータの種類を選択してください',
+      [
+        {text: '歩数', onPress: () => {setSelectedVitalType('歩数'); setModalVisible(true);}},
+        {text: '体重', onPress: () => {setSelectedVitalType('体重'); setModalVisible(true);}},
+        {text: '体温', onPress: () => {setSelectedVitalType('体温'); setModalVisible(true);}},
+        {text: '血圧', onPress: () => {setSelectedVitalType('血圧'); setModalVisible(true);}},
+        {text: '心拍数', onPress: () => {setSelectedVitalType('心拍数'); setModalVisible(true);}},
+        {text: 'キャンセル', style: 'cancel'},
+      ],
+      {cancelable: true}
+    );
   };
 
   const handleWebViewDemo = () => {
@@ -240,6 +335,8 @@ export default function HomeScreen({navigation}: Props) {
       <WelcomeHeader />
       
       <QuickStats vitalSummary={vitalSummary} />
+      
+      <ManualInputButton onPress={showVitalTypeSelection} />
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>バイタルデータ 📊</Text>
@@ -304,6 +401,19 @@ export default function HomeScreen({navigation}: Props) {
       </View>
 
       <View style={styles.bottomSpacer} />
+      
+      <VitalInputDialog
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={handleSaveVitalData}
+        title={selectedVitalType}
+        initialValue=""
+      />
+      
+      <CelebrationDialog
+        visible={showCelebrationDialog}
+        onClose={handleCelebrationClose}
+      />
     </ScrollView>
   );
 }

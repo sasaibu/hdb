@@ -145,7 +145,8 @@ const NewVitalInputDialog: React.FC<NewVitalInputDialogProps> = ({
               vitalType === '体重' ? 'weight' :
               vitalType === '体温' ? 'temperature' :
               vitalType === '血圧' ? 'bloodPressure' :
-              vitalType === '心拍数' ? 'heartRate' : vitalType,
+              vitalType === '心拍数' ? 'heartRate' :
+              vitalType === '脈拍' ? 'pulse' : vitalType,
         value: parseFloat(value),
         value2: vitalType === '血圧' ? parseFloat(value2) : undefined,
         unit: getUnit(),

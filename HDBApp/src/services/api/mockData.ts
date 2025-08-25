@@ -12,67 +12,61 @@ export const mockUsers = {
 };
 
 export const mockVitals = [
-  {
-    id: 'vital-001',
-    userId: 'user-001',
-    type: 'steps',
-    value: 8500,
-    unit: '歩',
-    measuredAt: '2025-07-11T09:00:00Z',
-    source: 'manual',
-    createdAt: '2025-07-11T09:05:00Z',
-  },
-  {
-    id: 'vital-002',
-    userId: 'user-001',
-    type: 'weight',
-    value: 65.5,
-    unit: 'kg',
-    measuredAt: '2025-07-11T07:00:00Z',
-    source: 'manual',
-    createdAt: '2025-07-11T07:05:00Z',
-  },
-  {
-    id: 'vital-003',
-    userId: 'user-001',
-    type: 'temperature',
-    value: 36.5,
-    unit: '℃',
-    measuredAt: '2025-07-11T07:00:00Z',
-    source: 'manual',
-    createdAt: '2025-07-11T07:05:00Z',
-  },
-  {
-    id: 'vital-004',
-    userId: 'user-001',
-    type: 'bloodPressure',
-    value: 120,
-    value2: 80,
-    unit: 'mmHg',
-    measuredAt: '2025-07-11T07:00:00Z',
-    source: 'manual',
-    createdAt: '2025-07-11T07:05:00Z',
-  },
-  {
-    id: 'vital-005',
-    userId: 'user-001',
-    type: 'heartRate',
-    value: 72,
-    unit: 'bpm',
-    measuredAt: '2025-07-11T07:00:00Z',
-    source: 'healthkit',
-    createdAt: '2025-07-11T07:05:00Z',
-  },
-  {
-    id: 'vital-006',
-    userId: 'user-001',
-    type: 'pulse',
-    value: 74,
-    unit: 'bpm',
-    measuredAt: '2025-07-11T07:00:00Z',
-    source: 'manual',
-    createdAt: '2025-07-11T07:05:00Z',
-  },
+  // 歩数データ（過去2週間）
+  { id: 'vital-001', userId: 'user-001', type: 'steps', value: 8500, unit: '歩', measuredAt: '2025-07-24T09:00:00Z', source: 'manual', createdAt: '2025-07-24T09:05:00Z' },
+  { id: 'vital-002', userId: 'user-001', type: 'steps', value: 9200, unit: '歩', measuredAt: '2025-07-23T09:00:00Z', source: 'healthkit', createdAt: '2025-07-23T09:05:00Z' },
+  { id: 'vital-003', userId: 'user-001', type: 'steps', value: 7800, unit: '歩', measuredAt: '2025-07-22T09:00:00Z', source: 'manual', createdAt: '2025-07-22T09:05:00Z' },
+  { id: 'vital-004', userId: 'user-001', type: 'steps', value: 10500, unit: '歩', measuredAt: '2025-07-21T09:00:00Z', source: 'healthkit', createdAt: '2025-07-21T09:05:00Z' },
+  { id: 'vital-005', userId: 'user-001', type: 'steps', value: 6800, unit: '歩', measuredAt: '2025-07-20T09:00:00Z', source: 'manual', createdAt: '2025-07-20T09:05:00Z' },
+  { id: 'vital-006', userId: 'user-001', type: 'steps', value: 9800, unit: '歩', measuredAt: '2025-07-19T09:00:00Z', source: 'healthkit', createdAt: '2025-07-19T09:05:00Z' },
+  { id: 'vital-007', userId: 'user-001', type: 'steps', value: 8200, unit: '歩', measuredAt: '2025-07-18T09:00:00Z', source: 'manual', createdAt: '2025-07-18T09:05:00Z' },
+  { id: 'vital-008', userId: 'user-001', type: 'steps', value: 11200, unit: '歩', measuredAt: '2025-07-17T09:00:00Z', source: 'healthkit', createdAt: '2025-07-17T09:05:00Z' },
+  { id: 'vital-009', userId: 'user-001', type: 'steps', value: 7500, unit: '歩', measuredAt: '2025-07-16T09:00:00Z', source: 'manual', createdAt: '2025-07-16T09:05:00Z' },
+  { id: 'vital-010', userId: 'user-001', type: 'steps', value: 9600, unit: '歩', measuredAt: '2025-07-15T09:00:00Z', source: 'healthkit', createdAt: '2025-07-15T09:05:00Z' },
+
+  // 体重データ（過去2週間）
+  { id: 'vital-011', userId: 'user-001', type: 'weight', value: 65.5, unit: 'kg', measuredAt: '2025-07-24T07:00:00Z', source: 'manual', createdAt: '2025-07-24T07:05:00Z' },
+  { id: 'vital-012', userId: 'user-001', type: 'weight', value: 65.3, unit: 'kg', measuredAt: '2025-07-23T07:00:00Z', source: 'manual', createdAt: '2025-07-23T07:05:00Z' },
+  { id: 'vital-013', userId: 'user-001', type: 'weight', value: 65.7, unit: 'kg', measuredAt: '2025-07-22T07:00:00Z', source: 'manual', createdAt: '2025-07-22T07:05:00Z' },
+  { id: 'vital-014', userId: 'user-001', type: 'weight', value: 65.4, unit: 'kg', measuredAt: '2025-07-21T07:00:00Z', source: 'manual', createdAt: '2025-07-21T07:05:00Z' },
+  { id: 'vital-015', userId: 'user-001', type: 'weight', value: 65.8, unit: 'kg', measuredAt: '2025-07-20T07:00:00Z', source: 'manual', createdAt: '2025-07-20T07:05:00Z' },
+  { id: 'vital-016', userId: 'user-001', type: 'weight', value: 65.2, unit: 'kg', measuredAt: '2025-07-19T07:00:00Z', source: 'manual', createdAt: '2025-07-19T07:05:00Z' },
+  { id: 'vital-017', userId: 'user-001', type: 'weight', value: 65.6, unit: 'kg', measuredAt: '2025-07-18T07:00:00Z', source: 'manual', createdAt: '2025-07-18T07:05:00Z' },
+  { id: 'vital-018', userId: 'user-001', type: 'weight', value: 65.9, unit: 'kg', measuredAt: '2025-07-17T07:00:00Z', source: 'manual', createdAt: '2025-07-17T07:05:00Z' },
+
+  // 体温データ（過去2週間）
+  { id: 'vital-019', userId: 'user-001', type: 'temperature', value: 36.5, unit: '℃', measuredAt: '2025-07-24T07:00:00Z', source: 'manual', createdAt: '2025-07-24T07:05:00Z' },
+  { id: 'vital-020', userId: 'user-001', type: 'temperature', value: 36.4, unit: '℃', measuredAt: '2025-07-23T07:00:00Z', source: 'manual', createdAt: '2025-07-23T07:05:00Z' },
+  { id: 'vital-021', userId: 'user-001', type: 'temperature', value: 36.6, unit: '℃', measuredAt: '2025-07-22T07:00:00Z', source: 'manual', createdAt: '2025-07-22T07:05:00Z' },
+  { id: 'vital-022', userId: 'user-001', type: 'temperature', value: 36.3, unit: '℃', measuredAt: '2025-07-21T07:00:00Z', source: 'manual', createdAt: '2025-07-21T07:05:00Z' },
+  { id: 'vital-023', userId: 'user-001', type: 'temperature', value: 36.7, unit: '℃', measuredAt: '2025-07-20T07:00:00Z', source: 'manual', createdAt: '2025-07-20T07:05:00Z' },
+  { id: 'vital-024', userId: 'user-001', type: 'temperature', value: 36.5, unit: '℃', measuredAt: '2025-07-19T07:00:00Z', source: 'manual', createdAt: '2025-07-19T07:05:00Z' },
+
+  // 血圧データ（過去2週間）
+  { id: 'vital-025', userId: 'user-001', type: 'bloodPressure', value: 120, value2: 80, unit: 'mmHg', measuredAt: '2025-07-24T07:00:00Z', source: 'manual', createdAt: '2025-07-24T07:05:00Z' },
+  { id: 'vital-026', userId: 'user-001', type: 'bloodPressure', value: 118, value2: 78, unit: 'mmHg', measuredAt: '2025-07-23T07:00:00Z', source: 'manual', createdAt: '2025-07-23T07:05:00Z' },
+  { id: 'vital-027', userId: 'user-001', type: 'bloodPressure', value: 122, value2: 82, unit: 'mmHg', measuredAt: '2025-07-22T07:00:00Z', source: 'manual', createdAt: '2025-07-22T07:05:00Z' },
+  { id: 'vital-028', userId: 'user-001', type: 'bloodPressure', value: 115, value2: 75, unit: 'mmHg', measuredAt: '2025-07-21T07:00:00Z', source: 'manual', createdAt: '2025-07-21T07:05:00Z' },
+  { id: 'vital-029', userId: 'user-001', type: 'bloodPressure', value: 125, value2: 85, unit: 'mmHg', measuredAt: '2025-07-20T07:00:00Z', source: 'manual', createdAt: '2025-07-20T07:05:00Z' },
+
+  // 心拍数データ（過去2週間）
+  { id: 'vital-030', userId: 'user-001', type: 'heartRate', value: 72, unit: 'bpm', measuredAt: '2025-07-24T07:00:00Z', source: 'healthkit', createdAt: '2025-07-24T07:05:00Z' },
+  { id: 'vital-031', userId: 'user-001', type: 'heartRate', value: 68, unit: 'bpm', measuredAt: '2025-07-23T07:00:00Z', source: 'healthkit', createdAt: '2025-07-23T07:05:00Z' },
+  { id: 'vital-032', userId: 'user-001', type: 'heartRate', value: 75, unit: 'bpm', measuredAt: '2025-07-22T07:00:00Z', source: 'healthkit', createdAt: '2025-07-22T07:05:00Z' },
+  { id: 'vital-033', userId: 'user-001', type: 'heartRate', value: 70, unit: 'bpm', measuredAt: '2025-07-21T07:00:00Z', source: 'healthkit', createdAt: '2025-07-21T07:05:00Z' },
+  { id: 'vital-034', userId: 'user-001', type: 'heartRate', value: 73, unit: 'bpm', measuredAt: '2025-07-20T07:00:00Z', source: 'healthkit', createdAt: '2025-07-20T07:05:00Z' },
+
+  // 脈拍データ（過去2週間）
+  { id: 'vital-035', userId: 'user-001', type: 'pulse', value: 74, unit: 'bpm', measuredAt: '2025-07-24T07:00:00Z', source: 'manual', createdAt: '2025-07-24T07:05:00Z' },
+  { id: 'vital-036', userId: 'user-001', type: 'pulse', value: 76, unit: 'bpm', measuredAt: '2025-07-23T07:00:00Z', source: 'manual', createdAt: '2025-07-23T07:05:00Z' },
+  { id: 'vital-037', userId: 'user-001', type: 'pulse', value: 72, unit: 'bpm', measuredAt: '2025-07-22T07:00:00Z', source: 'manual', createdAt: '2025-07-22T07:05:00Z' },
+  { id: 'vital-038', userId: 'user-001', type: 'pulse', value: 78, unit: 'bpm', measuredAt: '2025-07-21T07:00:00Z', source: 'manual', createdAt: '2025-07-21T07:05:00Z' },
+  { id: 'vital-039', userId: 'user-001', type: 'pulse', value: 71, unit: 'bpm', measuredAt: '2025-07-20T07:00:00Z', source: 'manual', createdAt: '2025-07-20T07:05:00Z' },
+  { id: 'vital-040', userId: 'user-001', type: 'pulse', value: 75, unit: 'bpm', measuredAt: '2025-07-19T07:00:00Z', source: 'manual', createdAt: '2025-07-19T07:05:00Z' },
+  { id: 'vital-041', userId: 'user-001', type: 'pulse', value: 73, unit: 'bpm', measuredAt: '2025-07-18T07:00:00Z', source: 'manual', createdAt: '2025-07-18T07:05:00Z' },
+  { id: 'vital-042', userId: 'user-001', type: 'pulse', value: 77, unit: 'bpm', measuredAt: '2025-07-17T07:00:00Z', source: 'manual', createdAt: '2025-07-17T07:05:00Z' },
+  { id: 'vital-043', userId: 'user-001', type: 'pulse', value: 74, unit: 'bpm', measuredAt: '2025-07-16T07:00:00Z', source: 'manual', createdAt: '2025-07-16T07:05:00Z' },
+  { id: 'vital-044', userId: 'user-001', type: 'pulse', value: 76, unit: 'bpm', measuredAt: '2025-07-15T07:00:00Z', source: 'manual', createdAt: '2025-07-15T07:05:00Z' },
 ];
 
 export const mockRankings = [
@@ -188,6 +182,11 @@ export const generateVitalSummary = (userId: string) => {
       latest: 72,
       average7days: 70,
       restingRate: 65,
+    },
+    pulse: {
+      latest: 74,
+      average7days: 74,
+      restingRate: 68,
     },
   };
 };

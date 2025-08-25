@@ -30,21 +30,32 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
   const [healthConnectEnabled, setHealthConnectEnabled] = useState(false);
   const [healthKitEnabled, setHealthKitEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOnboarding, setIsOnboarding] = useState(false);
   
   const healthPlatformService = MockHealthPlatformService.getInstance();
   const vitalDataService = new VitalDataService();
 
   useEffect(() => {
     loadSettings();
+    checkOnboarding();
   }, []);
+
+  const checkOnboarding = async () => {
+    const isFirstLogin = await AsyncStorage.getItem('isFirstLogin');
+    setIsOnboarding(isFirstLogin === null || isFirstLogin === 'true');
+  };
 
   const loadSettings = async () => {
     try {
+      // 新ER図対応: AsyncStorage項目追加
+      const newAppEnabled = await AsyncStorage.getItem('new_app_enabled');
       const healthKit = await AsyncStorage.getItem('healthkit_enabled');
       const googleFit = await AsyncStorage.getItem('googlefit_enabled');
+      const healthConnect = await AsyncStorage.getItem('health_connect_enabled');
       
+      setNewAppEnabled(newAppEnabled === 'true');
       setHealthKitEnabled(healthKit === 'true');
-      setHealthConnectEnabled(googleFit === 'true');
+      setHealthConnectEnabled(healthConnect === 'true' || googleFit === 'true');
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -112,6 +123,7 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
       }
 
       await healthPlatformService.setGoogleFitEnabled(value);
+      await AsyncStorage.setItem('health_connect_enabled', value.toString());
       setHealthConnectEnabled(value);
       
       if (value) {
@@ -133,6 +145,25 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
     } catch (error) {
       console.error('Error toggling Health Connect:', error);
       Alert.alert('エラー', 'ヘルスコネクト設定の変更に失敗しました。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewAppToggle = async (value: boolean) => {
+    setIsLoading(true);
+    try {
+      await AsyncStorage.setItem('new_app_enabled', value.toString());
+      setNewAppEnabled(value);
+      
+      if (value) {
+        Alert.alert('成功', '新アプリ連携が有効になりました。');
+      } else {
+        Alert.alert('確認', '新アプリ連携が無効になりました。');
+      }
+    } catch (error) {
+      console.error('Error toggling new app:', error);
+      Alert.alert('エラー', '新アプリ連携設定の変更に失敗しました。');
     } finally {
       setIsLoading(false);
     }
@@ -166,6 +197,16 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
 
   return (
     <ScrollView style={styles.container}>
+      {isOnboarding && (
+        <View style={styles.onboardingHeader}>
+          <Text style={styles.step}>ステップ 3/4</Text>
+          <Text style={styles.onboardingTitle}>連携サービス設定</Text>
+          <Text style={styles.onboardingSubtitle}>
+            他のヘルスケアサービスとデータを連携できます
+          </Text>
+        </View>
+      )}
+      
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>連携サービス</Text>
 
@@ -198,9 +239,12 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
         )}
 
         <View style={styles.settingItem}>
-          <Text style={styles.settingLabel}>新アプリ</Text>
+          <View>
+            <Text style={styles.settingLabel}>新アプリ連携</Text>
+            <Text style={styles.settingDescription}>新アプリとの連携を有効にする</Text>
+          </View>
           <Switch
-            onValueChange={setNewAppEnabled}
+            onValueChange={handleNewAppToggle}
             value={newAppEnabled}
             disabled={isLoading}
           />
@@ -225,13 +269,32 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
         </Text>
       </View>
 
-      <TouchableOpacity 
-        style={styles.syncButton} 
-        onPress={syncHealthData}
-        disabled={isLoading || (!healthKitEnabled && !healthConnectEnabled)}
-      >
-        <Text style={styles.syncButtonText}>今すぐ同期</Text>
-      </TouchableOpacity>
+      {!isOnboarding && (
+        <TouchableOpacity 
+          style={styles.syncButton} 
+          onPress={syncHealthData}
+          disabled={isLoading || (!healthKitEnabled && !healthConnectEnabled)}
+        >
+          <Text style={styles.syncButtonText}>今すぐ同期</Text>
+        </TouchableOpacity>
+      )}
+      
+      {isOnboarding && (
+        <View style={styles.onboardingFooter}>
+          <TouchableOpacity
+            style={styles.nextButton}
+            onPress={() => navigation.navigate('HealthcareDataMigration')}
+          >
+            <Text style={styles.nextButtonText}>次へ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.skipButton}
+            onPress={() => navigation.navigate('HealthcareDataMigration')}
+          >
+            <Text style={styles.skipButtonText}>スキップ</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -239,7 +302,7 @@ export default function LinkedServicesSettingsScreen({navigation}: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f2f5',
+    backgroundColor: '#fff',
     padding: 15,
   },
   section: {
@@ -322,5 +385,48 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  onboardingHeader: {
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  step: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 8,
+  },
+  onboardingTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  onboardingSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 22,
+  },
+  onboardingFooter: {
+    marginTop: 20,
+  },
+  nextButton: {
+    backgroundColor: '#FF6B35',
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  nextButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  skipButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  skipButtonText: {
+    color: '#999',
+    fontSize: 16,
   },
 });

@@ -18,18 +18,22 @@
 | users | ユーザー認証情報 | user_id, hdb_key, token_expires_at, created_at, updated_at | トークンはKeychainに保存 |
 | user_profile | ユーザープロフィール | user_id, nickname, avatar_type, birth_date, gender, height, target_weight, personal_id, created_at, updated_at | マイページ情報 |
 | device_info | デバイス情報 | device_id, device_token, platform, app_version, last_sync_at, created_at, updated_at | device_tokenはFCM用 |
+| data_sources | データソース情報 | id, user_id, source_name, device_name, source_type, is_active, created_at, updated_at | HealthKit/ヘルスコネクト等のデータソース管理 |
 | **バイタルデータ関連** ||||
-| vital_steps | 歩数データ | id, user_id, measured_at, value, source_type, device_name, is_manual, sync_status, synced_at, created_at, updated_at | source_type: healthkit/sensor/manual |
+| vital_data | 統合バイタルデータ | vital_id, user_id, data_source_id, measurement_code, measured_start_at, measured_end_at, value1, value2, value3, is_manual, sync_status, created_at, updated_at | 新ER図に基づく統合テーブル |
+| daily_steps | 1日歩数集計 | date, user_id, data_source_id, estimated_steps, manual_steps, sync_status, created_at, updated_at | 歩数の日次集計テーブル |
+| daily_heart_rate | 1日心拍数集計 | date, user_id, data_source_id, min_value, max_value, sync_status, created_at, updated_at | 心拍数の日次集計テーブル |
+| vital_steps | 歩数データ | id, user_id, measured_at, value, source_type, device_name, is_manual, sync_status, synced_at, created_at, updated_at | 既存互換用（段階的移行） |
 | vital_weight | 体重データ | id, user_id, measured_at, value, body_fat_rate, source_type, is_manual, sync_status, synced_at, created_at, updated_at | 体脂肪率も含む |
 | vital_blood_pressure | 血圧データ | id, user_id, measured_at, systolic, diastolic, pulse, source_type, is_manual, sync_status, synced_at, created_at, updated_at | 最高/最低血圧と脈拍 |
 | vital_temperature | 体温データ | id, user_id, measured_at, value, source_type, is_manual, sync_status, synced_at, created_at, updated_at | |
+| measurement_codes | 測定項目コード | code, name, unit, category, is_active, created_at, updated_at | 測定項目のマスターテーブル |
 | vital_sync_log | 同期ログ | id, table_name, record_id, sync_type, sync_status, error_message, synced_at, created_at | 同期状態の管理 |
 | **目標・達成管理** ||||
 | user_targets | ユーザー目標値 | user_id, vital_type, target_value, period_type, start_date, end_date, created_at, updated_at | vital_type: steps/weight等 |
-| achievement_records | 達成記録 | id, user_id, vital_type, target_value, achieved_value, achievement_rate, achieved_date, created_at | 目標達成履歴 |
-| **ミッション・イベント** ||||
-| missions | ミッション情報 | id, mission_id, title, description, target_type, target_value, start_date, end_date, reward_points, sync_status, created_at, updated_at | サーバーから取得 |
-| user_missions | ユーザーミッション進捗 | user_id, mission_id, current_value, status, completed_at, sync_status, created_at, updated_at | status: active/completed |
+| daily_achievements | 日次達成状況 | user_id, target_id, achievement_date, is_achieved, achieved_value, target_value, created_at, updated_at | 日ごとの達成状況を管理 |
+| achievement_summary | 達成サマリー | user_id, target_id, total_count, current_streak, max_streak, last_achieved_at, created_at, updated_at | 継続回数と表示用サマリー |
+| achievement_records | 達成記録 | id, user_id, vital_type, target_value, achieved_value, achievement_rate, achieved_date, created_at | 目標達成履歴（既存互換） |
 | **通知・お知らせ** ||||
 | announcements | お知らせ | id, announcement_id, title, body, category, priority, read_at, created_at | サーバーから取得 |
 | notification_settings | 通知設定 | user_id, notification_type, push_enabled, email_enabled, time_from, time_to, created_at, updated_at | 種別ごとの通知設定 |
@@ -41,6 +45,37 @@
 | migration_log | データ移行ログ | id, user_id, source_user_id, migration_type, status, started_at, completed_at, error_message | 転籍データ移行 |
 | **キャッシュ** ||||
 | ranking_cache | ランキングキャッシュ | id, ranking_type, period_type, rank, user_id, nickname, avatar_type, value, cached_at | 表示用キャッシュ |
+
+## 測定項目コード仕様
+
+新ER図で定義された測定項目コードを以下のように実装：
+
+| コード | 項目名 | 単位 | カテゴリ | 備考 |
+|-------|--------|------|---------|------|
+| 1000 | 歩数（概算） | 歩 | activity | デバイス自動計測 |
+| 1001 | 歩数（手入力） | 歩 | activity | ユーザー手動入力 |
+| 1100 | 体重 | kg | body | - |
+| 1101 | 体脂肪率 | % | body | - |
+| 1200 | 血圧 | mmHg | vital | 収縮期/拡張期をvalue1/value2に格納 |
+| 1210 | 心拍数 | bpm | vital | - |
+| 1400 | 体温 | ℃ | vital | - |
+
+### 新ER図設計の考慮事項
+
+**統合バイタルデータテーブル（vital_data）の活用**:
+- Health ConnectやHealthKitからの複数値データ（血圧等）はvalue1, value2, value3に分散格納
+- データソース別の管理によりデバイス混在環境での重複データ制御
+- 測定項目コードによる統一的なデータ管理
+
+**日次集計テーブルの導入**:
+- daily_stepsとdaily_heart_rateテーブルでパフォーマンス向上
+- 複数データソース間での最大値選択ロジック（歩数等）
+- バイタルAWSへの送信データ最適化
+
+**データソース管理の強化**:
+- data_sourcesテーブルでHealthKit、ヘルスコネクト等を統一管理
+- デバイス別、アプリ別のデータ識別
+- 転職時のユーザーデータ付け替えサポート
 
 ## Firebaseで管理するデータ
 
@@ -70,6 +105,36 @@
 3. **バイタルデータ**:
    - HealthKit/ヘルスコネクト → SQLite（vital_*テーブル） → バイタルAWS
    - 全てローカルDBで管理、Firebaseには保存しない
+
+## 目標達成管理の詳細仕様
+
+### 日次達成状況の管理
+目標達成は**日ごとの達成状況**と**継続回数の表示**を分離して管理します。
+
+#### 例：7/1から目標設定した場合
+```
+設定日: 7/1
+7/1 未達成 (is_achieved: false)
+7/2 未達成 (is_achieved: false)  
+7/3 達成   (is_achieved: true)   ← 1回目
+7/4 達成   (is_achieved: true)   ← 2回目
+7/5 未達成 (is_achieved: false)
+7/6 達成   (is_achieved: true)   ← 3回目
+7/7 達成   (is_achieved: true)   ← 4回目 (本日分Done)
+```
+
+#### テーブル設計のポイント
+- **daily_achievements**: 各日の達成状況を個別に記録
+- **achievement_summary**: 継続回数や最大連続記録を集計管理
+- **表示ロジック**: 「○回目」「Done」は達成済み日数をカウント
+- **継続性分析**: 日次データから連続達成日数や達成パターンを分析可能
+
+#### 画面表示例
+```
+目標: 1日8000歩
+達成状況: 4回目 Done ✓
+継続記録: 最大2日連続
+```
 
 ## Keychain/Keystoreで管理するデータ
 

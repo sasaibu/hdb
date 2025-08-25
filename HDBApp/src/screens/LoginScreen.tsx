@@ -17,6 +17,7 @@ import {StackNavigationProp} from '@react-navigation/stack';
 import {RootStackParamList} from '../navigation/AppNavigator';
 import {mockApi} from '../services/api/mockApi';
 import theme from '../styles/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width, height} = Dimensions.get('window');
 
@@ -76,28 +77,84 @@ export default function LoginScreen({navigation}: Props) {
       const response = await mockApi.login(email, password);
 
       if (response.success) {
-        Alert.alert('成功', 'ログインしました。', [
-          {
-            text: 'OK',
-            onPress: () => {
-              // 退場アニメーション
-              Animated.parallel([
-                Animated.timing(fadeAnim, {
-                  toValue: 0,
-                  duration: 300,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(scaleAnim, {
-                  toValue: 1.05,
-                  duration: 300,
-                  useNativeDriver: true,
-                }),
-              ]).start(() => {
-                navigation.replace('Main');
-              });
+        // testuser/1234の場合は常にMainへ遷移
+        if (email === 'testuser' && password === '1234') {
+          Alert.alert('成功', 'ログインしました。', [
+            {
+              text: 'OK',
+              onPress: () => {
+                // 退場アニメーション
+                Animated.parallel([
+                  Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }),
+                  Animated.timing(scaleAnim, {
+                    toValue: 1.05,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }),
+                ]).start(() => {
+                  navigation.replace('Main');
+                });
+              },
             },
-          },
-        ]);
+          ]);
+        } else {
+          // その他のユーザーの場合は初回ログインかチェック
+          const isFirstLogin = await AsyncStorage.getItem('isFirstLogin');
+          
+          if (isFirstLogin === null || isFirstLogin === 'true') {
+            // 初回ログインの場合
+            Alert.alert('成功', 'ログインしました。', [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // 退場アニメーション
+                  Animated.parallel([
+                    Animated.timing(fadeAnim, {
+                      toValue: 0,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }),
+                    Animated.timing(scaleAnim, {
+                      toValue: 1.05,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }),
+                  ]).start(() => {
+                    navigation.replace('ServiceTerms'); // サービス利用条件画面へ
+                  });
+                },
+              },
+            ]);
+          } else {
+            // 通常ログインの場合
+            Alert.alert('成功', 'ログインしました。', [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // 退場アニメーション
+                  Animated.parallel([
+                    Animated.timing(fadeAnim, {
+                      toValue: 0,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }),
+                    Animated.timing(scaleAnim, {
+                      toValue: 1.05,
+                      duration: 300,
+                      useNativeDriver: true,
+                    }),
+                  ]).start(() => {
+                    navigation.replace('Main');
+                  });
+                },
+              },
+            ]);
+          }
+        }
       } else {
         Alert.alert('エラー', response.error || 'ログインに失敗しました。');
       }

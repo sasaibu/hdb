@@ -1,0 +1,475 @@
+{
+  "generatedAt": "2025-08-06T10:46:37.334483",
+  "description": "Health Connect API データ構造サンプル（実データではありません）",
+  "dataTypes": {
+    "Steps": {
+      "description": "歩数データ",
+      "samples": [
+        {
+          "id": "steps_0_6",
+          "dataType": "Steps",
+          "count": 33,
+          "startTime": "2025-08-05T16:46:37.334483",
+          "endTime": "2025-08-05T17:46:37.334483",
+          "metadata": {
+            "dataOrigin": "com.google.android.apps.fitness",
+            "device": {
+              "manufacturer": "Google",
+              "model": "Pixel 7",
+              "type": "PHONE"
+            },
+            "clientRecordId": "client_steps_0_6",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "steps_0_7",
+          "dataType": "Steps",
+          "count": 115,
+          "startTime": "2025-08-05T17:46:37.334483",
+          "endTime": "2025-08-05T18:46:37.334483",
+          "metadata": {
+            "dataOrigin": "com.google.android.apps.fitness",
+            "device": {
+              "manufacturer": "Google",
+              "model": "Pixel 7",
+              "type": "PHONE"
+            },
+            "clientRecordId": "client_steps_0_7",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "steps_0_8",
+          "dataType": "Steps",
+          "count": 64,
+          "startTime": "2025-08-05T18:46:37.334483",
+          "endTime": "2025-08-05T19:46:37.334483",
+          "metadata": {
+            "dataOrigin": "com.google.android.apps.fitness",
+            "device": {
+              "manufacturer": "Google",
+              "model": "Pixel 7",
+              "type": "PHONE"
+            },
+            "clientRecordId": "client_steps_0_8",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        }
+      ]
+    },
+    "HeartRate": {
+      "description": "心拍数データ",
+      "samples": [
+        {
+          "id": "heart_rate_0_0",
+          "dataType": "HeartRate",
+          "beatsPerMinute": 99,
+          "time": "2025-08-06T10:46:37.334483",
+          "measurementMethod": "MEASUREMENT_METHOD_MANUAL",
+          "metadata": {
+            "dataOrigin": "com.samsung.health",
+            "device": {
+              "manufacturer": "Samsung",
+              "model": "Galaxy Watch 5",
+              "type": "WATCH"
+            },
+            "clientRecordId": "client_hr_0_0",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "heart_rate_0_1",
+          "dataType": "HeartRate",
+          "beatsPerMinute": 66,
+          "time": "2025-08-06T06:46:37.334483",
+          "measurementMethod": "MEASUREMENT_METHOD_MANUAL",
+          "metadata": {
+            "dataOrigin": "com.samsung.health",
+            "device": {
+              "manufacturer": "Samsung",
+              "model": "Galaxy Watch 5",
+              "type": "WATCH"
+            },
+            "clientRecordId": "client_hr_0_1",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "heart_rate_0_2",
+          "dataType": "HeartRate",
+          "beatsPerMinute": 100,
+          "time": "2025-08-06T02:46:37.334483",
+          "measurementMethod": "MEASUREMENT_METHOD_MANUAL",
+          "metadata": {
+            "dataOrigin": "com.samsung.health",
+            "device": {
+              "manufacturer": "Samsung",
+              "model": "Galaxy Watch 5",
+              "type": "WATCH"
+            },
+            "clientRecordId": "client_hr_0_2",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        }
+      ]
+    },
+    "BloodPressure": {
+      "description": "血圧データ",
+      "samples": [
+        {
+          "id": "bp_0_morning",
+          "dataType": "BloodPressure",
+          "systolic": {
+            "value": 117,
+            "unit": "MILLIMETER_OF_MERCURY"
+          },
+          "diastolic": {
+            "value": 72,
+            "unit": "MILLIMETER_OF_MERCURY"
+          },
+          "time": "2025-08-05T17:46:37.334483",
+          "measurementLocation": "MEASUREMENT_LOCATION_LEFT_UPPER_ARM",
+          "bodyPosition": "BODY_POSITION_SITTING",
+          "metadata": {
+            "dataOrigin": "com.omron.connect",
+            "device": {
+              "manufacturer": "OMRON",
+              "model": "HEM-7281T",
+              "type": "UNKNOWN"
+            },
+            "clientRecordId": "client_bp_0_morning",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "bp_0_evening",
+          "dataType": "BloodPressure",
+          "systolic": {
+            "value": 127,
+            "unit": "MILLIMETER_OF_MERCURY"
+          },
+          "diastolic": {
+            "value": 83,
+            "unit": "MILLIMETER_OF_MERCURY"
+          },
+          "time": "2025-08-06T05:46:37.334483",
+          "measurementLocation": "MEASUREMENT_LOCATION_LEFT_UPPER_ARM",
+          "bodyPosition": "BODY_POSITION_SITTING",
+          "metadata": {
+            "dataOrigin": "com.omron.connect",
+            "device": {
+              "manufacturer": "OMRON",
+              "model": "HEM-7281T",
+              "type": "UNKNOWN"
+            },
+            "clientRecordId": "client_bp_0_evening",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "bp_1_morning",
+          "dataType": "BloodPressure",
+          "systolic": {
+            "value": 120,
+            "unit": "MILLIMETER_OF_MERCURY"
+          },
+          "diastolic": {
+            "value": 77,
+            "unit": "MILLIMETER_OF_MERCURY"
+          },
+          "time": "2025-08-04T17:46:37.334483",
+          "measurementLocation": "MEASUREMENT_LOCATION_LEFT_UPPER_ARM",
+          "bodyPosition": "BODY_POSITION_SITTING",
+          "metadata": {
+            "dataOrigin": "com.omron.connect",
+            "device": {
+              "manufacturer": "OMRON",
+              "model": "HEM-7281T",
+              "type": "UNKNOWN"
+            },
+            "clientRecordId": "client_bp_1_morning",
+            "lastModifiedTime": "2025-08-05T10:46:37.334483"
+          }
+        }
+      ]
+    },
+    "Weight": {
+      "description": "体重データ",
+      "samples": [
+        {
+          "id": "weight_0",
+          "dataType": "Weight",
+          "weight": {
+            "value": 64.8,
+            "unit": "KILOGRAM"
+          },
+          "time": "2025-08-05T18:46:37.334483",
+          "metadata": {
+            "dataOrigin": "com.withings.wiscale2",
+            "device": {
+              "manufacturer": "Withings",
+              "model": "Body+",
+              "type": "SCALE"
+            },
+            "clientRecordId": "client_weight_0",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "weight_1",
+          "dataType": "Weight",
+          "weight": {
+            "value": 65.2,
+            "unit": "KILOGRAM"
+          },
+          "time": "2025-08-04T18:46:37.334483",
+          "metadata": {
+            "dataOrigin": "com.withings.wiscale2",
+            "device": {
+              "manufacturer": "Withings",
+              "model": "Body+",
+              "type": "SCALE"
+            },
+            "clientRecordId": "client_weight_1",
+            "lastModifiedTime": "2025-08-05T10:46:37.334483"
+          }
+        },
+        {
+          "id": "weight_2",
+          "dataType": "Weight",
+          "weight": {
+            "value": 65.4,
+            "unit": "KILOGRAM"
+          },
+          "time": "2025-08-03T18:46:37.334483",
+          "metadata": {
+            "dataOrigin": "com.withings.wiscale2",
+            "device": {
+              "manufacturer": "Withings",
+              "model": "Body+",
+              "type": "SCALE"
+            },
+            "clientRecordId": "client_weight_2",
+            "lastModifiedTime": "2025-08-04T10:46:37.334483"
+          }
+        }
+      ]
+    },
+    "SleepSession": {
+      "description": "睡眠データ",
+      "samples": [
+        {
+          "id": "sleep_0",
+          "dataType": "SleepSession",
+          "startTime": "2025-08-05T03:46:37.334483",
+          "endTime": "2025-08-05T17:46:37.334483",
+          "duration": 28800000,
+          "stages": [
+            {
+              "stage": "STAGE_TYPE_AWAKE",
+              "startTime": "2025-08-05T03:46:37.334483",
+              "endTime": "2025-08-05T03:52:37.334483"
+            },
+            {
+              "stage": "STAGE_TYPE_LIGHT",
+              "startTime": "2025-08-05T03:52:37.334483",
+              "endTime": "2025-08-05T05:46:37.334483"
+            },
+            {
+              "stage": "STAGE_TYPE_DEEP",
+              "startTime": "2025-08-05T05:46:37.334483",
+              "endTime": "2025-08-05T07:46:37.334483"
+            },
+            {
+              "stage": "STAGE_TYPE_REM",
+              "startTime": "2025-08-05T07:46:37.334483",
+              "endTime": "2025-08-05T17:46:37.334483"
+            }
+          ],
+          "metadata": {
+            "dataOrigin": "com.google.android.apps.fitness",
+            "device": {
+              "manufacturer": "Google",
+              "model": "Pixel Watch",
+              "type": "WATCH"
+            },
+            "clientRecordId": "client_sleep_0",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "sleep_1",
+          "dataType": "SleepSession",
+          "startTime": "2025-08-04T03:46:37.334483",
+          "endTime": "2025-08-04T17:46:37.334483",
+          "duration": 21600000,
+          "stages": [
+            {
+              "stage": "STAGE_TYPE_AWAKE",
+              "startTime": "2025-08-04T03:46:37.334483",
+              "endTime": "2025-08-04T03:52:37.334483"
+            },
+            {
+              "stage": "STAGE_TYPE_LIGHT",
+              "startTime": "2025-08-04T03:52:37.334483",
+              "endTime": "2025-08-04T05:46:37.334483"
+            },
+            {
+              "stage": "STAGE_TYPE_DEEP",
+              "startTime": "2025-08-04T05:46:37.334483",
+              "endTime": "2025-08-04T07:46:37.334483"
+            },
+            {
+              "stage": "STAGE_TYPE_REM",
+              "startTime": "2025-08-04T07:46:37.334483",
+              "endTime": "2025-08-04T17:46:37.334483"
+            }
+          ],
+          "metadata": {
+            "dataOrigin": "com.google.android.apps.fitness",
+            "device": {
+              "manufacturer": "Google",
+              "model": "Pixel Watch",
+              "type": "WATCH"
+            },
+            "clientRecordId": "client_sleep_1",
+            "lastModifiedTime": "2025-08-05T10:46:37.334483"
+          }
+        }
+      ]
+    },
+    "BodyTemperature": {
+      "description": "体温データ",
+      "samples": [
+        {
+          "id": "temp_0",
+          "dataType": "BodyTemperature",
+          "temperature": {
+            "value": 36.9,
+            "unit": "CELSIUS"
+          },
+          "time": "2025-08-05T18:46:37.334483",
+          "measurementLocation": "MEASUREMENT_LOCATION_ARMPIT",
+          "metadata": {
+            "dataOrigin": "com.healthcare.thermometer",
+            "device": {
+              "manufacturer": "OMRON",
+              "model": "MC-681",
+              "type": "UNKNOWN"
+            },
+            "clientRecordId": "client_temp_0",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "temp_1",
+          "dataType": "BodyTemperature",
+          "temperature": {
+            "value": 36.4,
+            "unit": "CELSIUS"
+          },
+          "time": "2025-08-04T18:46:37.334483",
+          "measurementLocation": "MEASUREMENT_LOCATION_ARMPIT",
+          "metadata": {
+            "dataOrigin": "com.healthcare.thermometer",
+            "device": {
+              "manufacturer": "OMRON",
+              "model": "MC-681",
+              "type": "UNKNOWN"
+            },
+            "clientRecordId": "client_temp_1",
+            "lastModifiedTime": "2025-08-05T10:46:37.334483"
+          }
+        },
+        {
+          "id": "temp_2",
+          "dataType": "BodyTemperature",
+          "temperature": {
+            "value": 36.7,
+            "unit": "CELSIUS"
+          },
+          "time": "2025-08-03T18:46:37.334483",
+          "measurementLocation": "MEASUREMENT_LOCATION_ARMPIT",
+          "metadata": {
+            "dataOrigin": "com.healthcare.thermometer",
+            "device": {
+              "manufacturer": "OMRON",
+              "model": "MC-681",
+              "type": "UNKNOWN"
+            },
+            "clientRecordId": "client_temp_2",
+            "lastModifiedTime": "2025-08-04T10:46:37.334483"
+          }
+        }
+      ]
+    },
+    "ExerciseSession": {
+      "description": "運動データ",
+      "samples": [
+        {
+          "id": "exercise_0",
+          "dataType": "ExerciseSession",
+          "exerciseType": "EXERCISE_TYPE_CYCLING",
+          "startTime": "2025-08-06T02:46:37.334483",
+          "endTime": "2025-08-06T03:11:37.334483",
+          "duration": 1500000,
+          "calories": 225,
+          "distance": 2500,
+          "metadata": {
+            "dataOrigin": "com.strava.app",
+            "device": {
+              "manufacturer": "Garmin",
+              "model": "Forerunner 255",
+              "type": "WATCH"
+            },
+            "clientRecordId": "client_exercise_0",
+            "lastModifiedTime": "2025-08-06T10:46:37.334483"
+          }
+        },
+        {
+          "id": "exercise_1",
+          "dataType": "ExerciseSession",
+          "exerciseType": "EXERCISE_TYPE_WALKING",
+          "startTime": "2025-08-05T02:46:37.334483",
+          "endTime": "2025-08-05T03:20:37.334483",
+          "duration": 2040000,
+          "calories": 238,
+          "distance": 3400,
+          "metadata": {
+            "dataOrigin": "com.strava.app",
+            "device": {
+              "manufacturer": "Garmin",
+              "model": "Forerunner 255",
+              "type": "WATCH"
+            },
+            "clientRecordId": "client_exercise_1",
+            "lastModifiedTime": "2025-08-05T10:46:37.334483"
+          }
+        }
+      ]
+    }
+  },
+  "permissions": {
+    "required": [
+      "android.permission.health.READ_STEPS",
+      "android.permission.health.READ_HEART_RATE",
+      "android.permission.health.READ_BLOOD_PRESSURE",
+      "android.permission.health.READ_WEIGHT",
+      "android.permission.health.READ_SLEEP",
+      "android.permission.health.READ_BODY_TEMPERATURE",
+      "android.permission.health.READ_EXERCISE"
+    ]
+  },
+  "dataOrigins": {
+    "description": "データ提供元アプリの例",
+    "apps": [
+      "com.google.android.apps.fitness (Google Fit)",
+      "com.samsung.health (Samsung Health)",
+      "com.withings.wiscale2 (Withings)",
+      "com.omron.connect (OMRON Connect)",
+      "com.strava.app (Strava)",
+      "com.fitbit.FitbitMobile (Fitbit)"
+    ]
+  }
+}
